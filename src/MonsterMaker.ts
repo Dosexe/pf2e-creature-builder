@@ -138,24 +138,49 @@ export class MonsterMaker extends FormApplication {
 
     protected async _updateObject(_event: Event, formData?: object) {
         if(formData) {
+            // Validate and set level
+            const formLevel = String(formData[Statistics.level]);
+            this.level = Levels.includes(formLevel) ? formLevel : '1';
+            console.log("Monster Maker Submit - Level:", this.level, "Form data:", formData);
+            
+            // Always create a new actor - Monster Maker creates new creatures
+            const newActorData = {
+                name: formData[Statistics.name] || "New Monster",
+                type: "npc",
+            };
+            const newActor = await Actor.create(newActorData);
+            if (!newActor) {
+                console.error("Failed to create new actor");
+                return;
+            }
+            
             const updateData = {}
-            this.level = formData[Statistics.level]
             for(const key of Object.keys(formData)) {
                 if(actorFields[key]) {
                     const actorField = actorFields[key]
                     const option = formData[key]
-                    updateData[actorField] = parseInt(statisticValues[key][this.level][option], 10)
+                    if (statisticValues[key]?.[this.level]?.[option] !== undefined) {
+                        updateData[actorField] = parseInt(statisticValues[key][this.level][option], 10)
+                    }
                 }
             }
             Object.assign(updateData, this.applyName(formData))
             Object.assign(updateData, this.applyLevel())
             Object.assign(updateData, this.applyTraits(formData))
-            await this.actor.update(updateData);
+            await newActor.update(updateData);
+            
+            // Store original actor reference and use new actor for item creation
+            const originalActor = this.actor;
+            this.actor = newActor;
             await this.actor.update(this.applyHitPoints(formData))
             await this.applyStrike(formData)
             await this.applySpellcasting(formData)
             await this.applySkills(formData)
             await this.applyLoreSkills(formData)
+            this.actor = originalActor;
+            
+            // Open the new actor's sheet
+            newActor.sheet?.render(true);
         }
     }
 
