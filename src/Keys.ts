@@ -118,6 +118,26 @@ export const RoadMaps = {
         [Statistics.strikeDamage]: Options.low,
         [Statistics.spellcasting]: Options.high
     },
+    // Special Roadmaps
+    "PF2EMONSTERMAKER.skilledNPC": {
+        [Statistics.per]: Options.moderate,
+        [Statistics.str]: Options.low,
+        [Statistics.dex]: Options.low,
+        [Statistics.con]: Options.low,
+        [Statistics.int]: Options.high,
+        [Statistics.wis]: Options.moderate,
+        [Statistics.cha]: Options.moderate,
+        [Statistics.ac]: Options.low,
+        [Statistics.fort]: Options.low,
+        [Statistics.ref]: Options.low,
+        [Statistics.wil]: Options.moderate,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.low,
+        [Statistics.strikeDamage]: Options.low,
+        [Statistics.society]: Options.high,
+        [Statistics.diplomacy]: Options.moderate,
+        [Statistics.deception]: Options.moderate
+    },
     // Class Roadmaps
     "PF2EMONSTERMAKER.alchemist": {
         [Statistics.per]: Options.low,
