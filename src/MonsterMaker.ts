@@ -6,6 +6,14 @@ import type {BaseActor} from "@league-of-foundry-developers/foundry-vtt-types/sr
 export class MonsterMaker extends FormApplication {
     data = DefaultCreatureStatistics
     level = "-1"
+    private _uniqueId: string
+
+    constructor(object: any, options?: any) {
+        super(object, options);
+        // Generate unique ID at construction time to prevent form caching
+        this._uniqueId = `monsterMakerForm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        console.log("MonsterMaker constructor - object:", object, "this.object:", this.object);
+    }
 
     // Getter to always get fresh actor reference from this.object
     get actor(): BaseActor {
@@ -28,9 +36,9 @@ export class MonsterMaker extends FormApplication {
         });
     }
 
-    // Override to make the form ID unique per actor
+    // Override to make the form ID unique - prevents caching
     get id() {
-        return `monsterMakerForm-${(this.object as any)?.id || 'new'}`;
+        return this._uniqueId;
     }
 
     applyName(formData) {
@@ -310,6 +318,13 @@ export class MonsterMaker extends FormApplication {
 
     // @ts-expect-error
     getData() {
+        console.log("=== MonsterMaker getData() ===");
+        console.log("this.object:", this.object);
+        console.log("this.actor:", this.actor);
+        console.log("this.actor?.name:", (this.actor as any)?.name);
+        console.log("this.actor?.system:", (this.actor as any)?.system);
+        console.log("Level raw:", foundry.utils.getProperty(this.actor, 'system.details.level.value'));
+        
         Handlebars.registerHelper('json', (context) => JSON.stringify(context));
         
         // Detect current actor stats
@@ -317,6 +332,10 @@ export class MonsterMaker extends FormApplication {
         const detectedTraits = this.detectTraits();
         const detectedLoreSkills = this.detectLoreSkills();
         const actorLevel = String(foundry.utils.getProperty(this.actor, 'system.details.level.value') ?? 1);
+        
+        console.log("actorLevel:", actorLevel);
+        console.log("detectedStats:", detectedStats);
+        console.log("=== End getData() ===");
         
         return {
             "CreatureStatistics": JSON.parse(JSON.stringify(this.data)), 
