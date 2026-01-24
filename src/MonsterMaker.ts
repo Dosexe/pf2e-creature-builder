@@ -5,8 +5,16 @@ import type {BaseActor} from "@league-of-foundry-developers/foundry-vtt-types/sr
 
 export class MonsterMaker extends FormApplication {
     data = DefaultCreatureStatistics
-    actor = <BaseActor>this.object
     level = "-1"
+
+    // Getter to always get fresh actor reference from this.object
+    get actor(): BaseActor {
+        return this.object as BaseActor;
+    }
+
+    set actor(value: BaseActor) {
+        this.object = value;
+    }
 
     static get defaultOptions() {
         return mergeObject(FormApplication.defaultOptions, {
@@ -18,6 +26,11 @@ export class MonsterMaker extends FormApplication {
             height: 833,
             width: 400
         });
+    }
+
+    // Override to make the form ID unique per actor
+    get id() {
+        return `monsterMakerForm-${(this.object as any)?.id || 'new'}`;
     }
 
     applyName(formData) {
