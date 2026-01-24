@@ -85,6 +85,7 @@ export enum Options {
 }
 
 export const RoadMaps = {
+    // Monster Roadmaps
     "PF2EMONSTERMAKER.brute": {
         [Statistics.per]: Options.low, [Statistics.str]: Options.extreme, [Statistics.con]: Options.high,
         [Statistics.dex]: Options.low, [Statistics.int]: Options.low, [Statistics.wis]: Options.low,
@@ -112,6 +113,178 @@ export const RoadMaps = {
         [Statistics.cha]: Options.high,
         [Statistics.fort]: Options.low,
         [Statistics.wil]: Options.high,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.low,
+        [Statistics.strikeDamage]: Options.low,
+        [Statistics.spellcasting]: Options.high
+    },
+    // Class Roadmaps
+    "PF2EMONSTERMAKER.alchemist": {
+        [Statistics.per]: Options.low,
+        [Statistics.crafting]: Options.high,
+        [Statistics.int]: Options.high,
+        [Statistics.dex]: Options.moderate,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.moderate,
+        [Statistics.strikeDamage]: Options.moderate
+    },
+    "PF2EMONSTERMAKER.barbarian": {
+        [Statistics.athletics]: Options.high,
+        [Statistics.str]: Options.high,
+        [Statistics.con]: Options.high,
+        [Statistics.ac]: Options.high,
+        [Statistics.fort]: Options.high,
+        [Statistics.hp]: Options.high,
+        [Statistics.strikeBonus]: Options.moderate,
+        [Statistics.strikeDamage]: Options.extreme
+    },
+    "PF2EMONSTERMAKER.bard": {
+        [Statistics.occultism]: Options.moderate,
+        [Statistics.performance]: Options.high,
+        [Statistics.cha]: Options.high,
+        [Statistics.fort]: Options.low,
+        [Statistics.wil]: Options.high,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.low,
+        [Statistics.strikeDamage]: Options.low,
+        [Statistics.spellcasting]: Options.high
+    },
+    "PF2EMONSTERMAKER.champion": {
+        [Statistics.per]: Options.low,
+        [Statistics.religion]: Options.moderate,
+        [Statistics.str]: Options.high,
+        [Statistics.cha]: Options.moderate,
+        [Statistics.ac]: Options.extreme,
+        [Statistics.ref]: Options.low,
+        [Statistics.strikeBonus]: Options.moderate,
+        [Statistics.strikeDamage]: Options.high
+    },
+    "PF2EMONSTERMAKER.clericCloistered": {
+        [Statistics.per]: Options.high,
+        [Statistics.religion]: Options.high,
+        [Statistics.ac]: Options.low,
+        [Statistics.wis]: Options.high,
+        [Statistics.fort]: Options.low,
+        [Statistics.wil]: Options.high,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.low,
+        [Statistics.strikeDamage]: Options.low,
+        [Statistics.spellcasting]: Options.high
+    },
+    "PF2EMONSTERMAKER.clericWarpriest": {
+        [Statistics.religion]: Options.moderate,
+        [Statistics.str]: Options.high,
+        [Statistics.wis]: Options.moderate,
+        [Statistics.ac]: Options.high,
+        [Statistics.ref]: Options.low,
+        [Statistics.wil]: Options.high,
+        [Statistics.spellcasting]: Options.high
+    },
+    "PF2EMONSTERMAKER.druid": {
+        [Statistics.per]: Options.high,
+        [Statistics.nature]: Options.high,
+        [Statistics.wis]: Options.high,
+        [Statistics.wil]: Options.high,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.low,
+        [Statistics.strikeDamage]: Options.low,
+        [Statistics.spellcasting]: Options.high
+    },
+    "PF2EMONSTERMAKER.fighter": {
+        [Statistics.athletics]: Options.high,
+        [Statistics.str]: Options.high,
+        [Statistics.ac]: Options.high,
+        [Statistics.wil]: Options.low,
+        [Statistics.strikeBonus]: Options.high,
+        [Statistics.strikeDamage]: Options.high
+    },
+    "PF2EMONSTERMAKER.investigator": {
+        [Statistics.per]: Options.high,
+        [Statistics.society]: Options.high,
+        [Statistics.int]: Options.high,
+        [Statistics.fort]: Options.low,
+        [Statistics.wil]: Options.high,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.moderate,
+        [Statistics.strikeDamage]: Options.high
+    },
+    "PF2EMONSTERMAKER.monk": {
+        [Statistics.acrobatics]: Options.high,
+        [Statistics.athletics]: Options.high,
+        [Statistics.dex]: Options.high,
+        [Statistics.wis]: Options.moderate,
+        [Statistics.ac]: Options.high,
+        [Statistics.strikeBonus]: Options.moderate,
+        [Statistics.strikeDamage]: Options.high
+    },
+    "PF2EMONSTERMAKER.oracle": {
+        [Statistics.religion]: Options.high,
+        [Statistics.cha]: Options.high,
+        [Statistics.ac]: Options.low,
+        [Statistics.fort]: Options.low,
+        [Statistics.wil]: Options.high,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.low,
+        [Statistics.strikeDamage]: Options.low,
+        [Statistics.spellcasting]: Options.high
+    },
+    "PF2EMONSTERMAKER.ranger": {
+        [Statistics.per]: Options.high,
+        [Statistics.nature]: Options.moderate,
+        [Statistics.survival]: Options.high,
+        [Statistics.str]: Options.high,
+        [Statistics.ac]: Options.high,
+        [Statistics.strikeBonus]: Options.high,
+        [Statistics.strikeDamage]: Options.high
+    },
+    "PF2EMONSTERMAKER.rogue": {
+        [Statistics.per]: Options.high,
+        [Statistics.stealth]: Options.high,
+        [Statistics.thievery]: Options.high,
+        [Statistics.dex]: Options.high,
+        [Statistics.ac]: Options.high,
+        [Statistics.fort]: Options.low,
+        [Statistics.ref]: Options.high,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.moderate,
+        [Statistics.strikeDamage]: Options.high
+    },
+    "PF2EMONSTERMAKER.sorcerer": {
+        [Statistics.per]: Options.low,
+        [Statistics.cha]: Options.high,
+        [Statistics.ac]: Options.low,
+        [Statistics.fort]: Options.low,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.low,
+        [Statistics.strikeDamage]: Options.low,
+        [Statistics.spellcasting]: Options.high
+    },
+    "PF2EMONSTERMAKER.swashbuckler": {
+        [Statistics.per]: Options.high,
+        [Statistics.acrobatics]: Options.high,
+        [Statistics.dex]: Options.high,
+        [Statistics.ac]: Options.high,
+        [Statistics.fort]: Options.low,
+        [Statistics.ref]: Options.high,
+        [Statistics.strikeBonus]: Options.moderate,
+        [Statistics.strikeDamage]: Options.high
+    },
+    "PF2EMONSTERMAKER.witch": {
+        [Statistics.per]: Options.low,
+        [Statistics.int]: Options.high,
+        [Statistics.ac]: Options.low,
+        [Statistics.fort]: Options.low,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.low,
+        [Statistics.strikeDamage]: Options.low,
+        [Statistics.spellcasting]: Options.high
+    },
+    "PF2EMONSTERMAKER.wizard": {
+        [Statistics.per]: Options.low,
+        [Statistics.arcana]: Options.high,
+        [Statistics.int]: Options.high,
+        [Statistics.ac]: Options.low,
+        [Statistics.fort]: Options.low,
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,

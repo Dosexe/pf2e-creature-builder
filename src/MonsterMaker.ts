@@ -25,6 +25,15 @@ export class MonsterMaker extends FormApplication {
         return {"name": name}
     }
 
+    applyTraits(formData) {
+        const traitsString = formData["PF2EMONSTERMAKER.traits"];
+        if (traitsString && traitsString.trim() !== '') {
+            const traits = traitsString.split(',').map((t: string) => t.trim().toLowerCase()).filter((t: string) => t !== '');
+            return {"system.traits.value": traits}
+        }
+        return {}
+    }
+
     applyLevel() {
         return {"system.details.level.value": parseInt(this.level)}
     }
@@ -97,6 +106,34 @@ export class MonsterMaker extends FormApplication {
         }
     }
 
+    async applyLoreSkills(formData) {
+        // Find all lore skills in the form data
+        const loreSkills: {name: string, option: string}[] = [];
+        for (const key of Object.keys(formData)) {
+            if (key.startsWith('loreName')) {
+                const id = key.replace('loreName', '');
+                const name = formData['loreName' + id];
+                const levelOption = formData['loreLevel' + id];
+                if (name && name.trim() !== '' && levelOption !== Options.none) {
+                    loreSkills.push({ name: name.trim(), option: levelOption });
+                }
+            }
+        }
+
+        // Apply each lore skill
+        for (const lore of loreSkills) {
+            const value = parseInt(statisticValues[Statistics.acrobatics][this.level][lore.option]); // Use skills table
+            const skillKey = lore.name.toLowerCase().replace(/\s+/g, '-');
+            const skill = 'system.skills.lore-' + skillKey;
+            await this.actor.update(foundry.utils.flattenObject({
+                [skill]: {
+                    base: value,
+                    label: lore.name + ' Lore'
+                }
+            }));
+        }
+    }
+
     protected async _updateObject(event: Event, formData?: object) {
         if(formData) {
             let updateData = {}
@@ -110,11 +147,13 @@ export class MonsterMaker extends FormApplication {
             }
             Object.assign(updateData, this.applyName(formData))
             Object.assign(updateData, this.applyLevel())
+            Object.assign(updateData, this.applyTraits(formData))
             await this.actor.update(updateData);
             await this.actor.update(this.applyHitPoints(formData))
             await this.applyStrike(formData)
             await this.applySpellcasting(formData)
             await this.applySkills(formData)
+            await this.applyLoreSkills(formData)
         }
     }
 

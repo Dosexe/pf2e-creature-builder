@@ -51,11 +51,36 @@
     "PF2EMONSTERMAKER.soldier":"Żołnierz",
     "PF2EMONSTERMAKER.spellcaster":"Sztukmistrz",
 
+    "PF2EMONSTERMAKER.alchemist":"Alchemik",
+    "PF2EMONSTERMAKER.barbarian":"Barbarzyńca",
+    "PF2EMONSTERMAKER.bard":"Bard",
+    "PF2EMONSTERMAKER.champion":"Czempion",
+    "PF2EMONSTERMAKER.clericCloistered":"Kleryk (Klasztorny)",
+    "PF2EMONSTERMAKER.clericWarpriest":"Kleryk (Kapłan Wojny)",
+    "PF2EMONSTERMAKER.druid":"Druid",
+    "PF2EMONSTERMAKER.fighter":"Wojownik",
+    "PF2EMONSTERMAKER.investigator":"Śledczy",
+    "PF2EMONSTERMAKER.monk":"Mnich",
+    "PF2EMONSTERMAKER.oracle":"Wyrocznia",
+    "PF2EMONSTERMAKER.ranger":"Tropiciel",
+    "PF2EMONSTERMAKER.rogue":"Łotrzyk",
+    "PF2EMONSTERMAKER.sorcerer":"Czarownik",
+    "PF2EMONSTERMAKER.swashbuckler":"Szermierz",
+    "PF2EMONSTERMAKER.witch":"Wiedźma",
+    "PF2EMONSTERMAKER.wizard":"Czarodziej",
+
     "PF2EMONSTERMAKER.extreme": "Ekstremalne",
     "PF2EMONSTERMAKER.high": "Wysokie",
     "PF2EMONSTERMAKER.moderate": "Umiarkowane",
     "PF2EMONSTERMAKER.low": "Niskie",
     "PF2EMONSTERMAKER.terrible": "Koszmarny",
     "PF2EMONSTERMAKER.abysmal": "Fatalny",
-    "PF2EMONSTERMAKER.none": "Brak"
+    "PF2EMONSTERMAKER.none": "Brak",
+
+    "PF2EMONSTERMAKER.loreSkills": "Umiejętności Wiedzy",
+    "PF2EMONSTERMAKER.addLore": "+ Dodaj Wiedzę",
+    "PF2EMONSTERMAKER.loreName": "Nazwa wiedzy (np. Wojna)",
+
+    "PF2EMONSTERMAKER.traits": "Cechy",
+    "PF2EMONSTERMAKER.traitsPlaceholder": "Wpisz cechę i naciśnij Enter"
 }

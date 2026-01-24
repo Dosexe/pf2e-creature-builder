@@ -51,11 +51,36 @@
     "PF2EMONSTERMAKER.soldier":"Soldier",
     "PF2EMONSTERMAKER.spellcaster":"Spellcaster",
 
+    "PF2EMONSTERMAKER.alchemist":"Alchemist",
+    "PF2EMONSTERMAKER.barbarian":"Barbarian",
+    "PF2EMONSTERMAKER.bard":"Bard",
+    "PF2EMONSTERMAKER.champion":"Champion",
+    "PF2EMONSTERMAKER.clericCloistered":"Cleric (Cloistered)",
+    "PF2EMONSTERMAKER.clericWarpriest":"Cleric (Warpriest)",
+    "PF2EMONSTERMAKER.druid":"Druid",
+    "PF2EMONSTERMAKER.fighter":"Fighter",
+    "PF2EMONSTERMAKER.investigator":"Investigator",
+    "PF2EMONSTERMAKER.monk":"Monk",
+    "PF2EMONSTERMAKER.oracle":"Oracle",
+    "PF2EMONSTERMAKER.ranger":"Ranger",
+    "PF2EMONSTERMAKER.rogue":"Rogue",
+    "PF2EMONSTERMAKER.sorcerer":"Sorcerer",
+    "PF2EMONSTERMAKER.swashbuckler":"Swashbuckler",
+    "PF2EMONSTERMAKER.witch":"Witch",
+    "PF2EMONSTERMAKER.wizard":"Wizard",
+
     "PF2EMONSTERMAKER.extreme": "Extreme",
     "PF2EMONSTERMAKER.high": "High",
     "PF2EMONSTERMAKER.moderate": "Moderate",
     "PF2EMONSTERMAKER.low": "Low",
     "PF2EMONSTERMAKER.terrible": "Terrible",
     "PF2EMONSTERMAKER.abysmal": "Abysmal",
-    "PF2EMONSTERMAKER.none": "None"
+    "PF2EMONSTERMAKER.none": "None",
+
+    "PF2EMONSTERMAKER.loreSkills": "Lore Skills",
+    "PF2EMONSTERMAKER.addLore": "+ Add Lore",
+    "PF2EMONSTERMAKER.loreName": "Lore name (e.g. Warfare)",
+
+    "PF2EMONSTERMAKER.traits": "Traits",
+    "PF2EMONSTERMAKER.traitsPlaceholder": "Type trait and press Enter"
 }

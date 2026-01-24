@@ -51,11 +51,36 @@
     "PF2EMONSTERMAKER.soldier":"士兵型",
     "PF2EMONSTERMAKER.spellcaster":"法术施展型",
 
+    "PF2EMONSTERMAKER.alchemist":"炼金术士",
+    "PF2EMONSTERMAKER.barbarian":"野蛮人",
+    "PF2EMONSTERMAKER.bard":"吟游诗人",
+    "PF2EMONSTERMAKER.champion":"斗士",
+    "PF2EMONSTERMAKER.clericCloistered":"牧师（修道士）",
+    "PF2EMONSTERMAKER.clericWarpriest":"牧师（战斗祭司）",
+    "PF2EMONSTERMAKER.druid":"德鲁伊",
+    "PF2EMONSTERMAKER.fighter":"战士",
+    "PF2EMONSTERMAKER.investigator":"调查员",
+    "PF2EMONSTERMAKER.monk":"武僧",
+    "PF2EMONSTERMAKER.oracle":"先知",
+    "PF2EMONSTERMAKER.ranger":"游侠",
+    "PF2EMONSTERMAKER.rogue":"游荡者",
+    "PF2EMONSTERMAKER.sorcerer":"术士",
+    "PF2EMONSTERMAKER.swashbuckler":"游荡剑客",
+    "PF2EMONSTERMAKER.witch":"巫师",
+    "PF2EMONSTERMAKER.wizard":"法师",
+
     "PF2EMONSTERMAKER.extreme": "强大",
     "PF2EMONSTERMAKER.high": "优秀",
     "PF2EMONSTERMAKER.moderate": "适中",
     "PF2EMONSTERMAKER.low": "不足",
     "PF2EMONSTERMAKER.terrible": "糟糕",
     "PF2EMONSTERMAKER.abysmal": "一无是处",
-    "PF2EMONSTERMAKER.none": "无"
+    "PF2EMONSTERMAKER.none": "无",
+
+    "PF2EMONSTERMAKER.loreSkills": "学识技能",
+    "PF2EMONSTERMAKER.addLore": "+ 添加学识",
+    "PF2EMONSTERMAKER.loreName": "学识名称（例如：战争）",
+
+    "PF2EMONSTERMAKER.traits": "特性",
+    "PF2EMONSTERMAKER.traitsPlaceholder": "输入特性后按回车"
 }
