@@ -1,5 +1,49 @@
 import {Options, Statistics} from "./Keys";
 
+// Reverse lookup: given an actual value, find the closest matching Option
+export function detectStatLevel(statisticType: Statistics, creatureLevel: string, actualValue: number): Options {
+    const valueTable = statisticValues[statisticType];
+    if (!valueTable || !valueTable[creatureLevel]) {
+        return Options.moderate;
+    }
+    
+    const levelTable = valueTable[creatureLevel];
+    let closestOption = Options.moderate;
+    let closestDiff = Infinity;
+    
+    // Check each option and find the closest match
+    for (const [option, tableValue] of Object.entries(levelTable)) {
+        const numValue = parseInt(tableValue as string);
+        if (isNaN(numValue)) continue;
+        
+        const diff = Math.abs(actualValue - numValue);
+        if (diff < closestDiff) {
+            closestDiff = diff;
+            closestOption = option as Options;
+        }
+    }
+    
+    return closestOption;
+}
+
+// Special detection for HP which has different thresholds
+export function detectHPLevel(creatureLevel: string, actualHP: number): Options {
+    const hpTable = statisticValues[Statistics.hp][creatureLevel];
+    if (!hpTable) return Options.moderate;
+    
+    const low = parseInt(hpTable[Options.low]);
+    const moderate = parseInt(hpTable[Options.moderate]);
+    const high = parseInt(hpTable[Options.high]);
+    
+    // Determine which bracket the HP falls into
+    const lowMidpoint = (low + moderate) / 2;
+    const highMidpoint = (moderate + high) / 2;
+    
+    if (actualHP <= lowMidpoint) return Options.low;
+    if (actualHP >= highMidpoint) return Options.high;
+    return Options.moderate;
+}
+
 const aliases = {
     abilityScores: {
         "-1": {

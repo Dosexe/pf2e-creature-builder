@@ -84,5 +84,7 @@
     "PF2EMONSTERMAKER.loreName": "Nazwa wiedzy (np. Wojna)",
 
     "PF2EMONSTERMAKER.traits": "Cechy",
-    "PF2EMONSTERMAKER.traitsPlaceholder": "Wpisz cechę i naciśnij Enter"
+    "PF2EMONSTERMAKER.traitsPlaceholder": "Wpisz cechę i naciśnij Enter",
+
+    "PF2EMONSTERMAKER.resetDefaults": "Przywróć domyślne"
 }

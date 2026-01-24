@@ -102,3 +102,18 @@
     flex: 1;
 }
 
+/* Reset button styling */
+#monsterMakerForm .monsterMakerResetButton {
+    background-color: #666;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+#monsterMakerForm .monsterMakerResetButton:hover {
+    background-color: #555;
+}
+

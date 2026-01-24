@@ -84,5 +84,7 @@
     "PF2EMONSTERMAKER.loreName": "学识名称（例如：战争）",
 
     "PF2EMONSTERMAKER.traits": "特性",
-    "PF2EMONSTERMAKER.traitsPlaceholder": "输入特性后按回车"
+    "PF2EMONSTERMAKER.traitsPlaceholder": "输入特性后按回车",
+
+    "PF2EMONSTERMAKER.resetDefaults": "重置为默认值"
 }

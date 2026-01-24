@@ -1,5 +1,5 @@
 import {actorFields, DefaultCreatureStatistics, Levels, Statistics, Skills, Options, RoadMaps} from "./Keys";
-import {statisticValues} from "./Values";
+import {statisticValues, detectStatLevel, detectHPLevel} from "./Values";
 import {BaseActor} from "@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs";
 
 
@@ -157,12 +157,138 @@ export class MonsterMaker extends FormApplication {
         }
     }
 
+    // Detect current actor stats and return detected Options for each statistic
+    detectActorStats(): {[key: string]: Options} {
+        const detected: {[key: string]: Options} = {};
+        
+        // Get actor level
+        const actorLevel = String(foundry.utils.getProperty(this.actor, 'system.details.level.value') ?? 1);
+        const clampedLevel = Levels.includes(actorLevel) ? actorLevel : '1';
+        
+        // Detect ability scores
+        const abilityStats = [Statistics.str, Statistics.dex, Statistics.con, Statistics.int, Statistics.wis, Statistics.cha];
+        for (const stat of abilityStats) {
+            const path = actorFields[stat];
+            const value = foundry.utils.getProperty(this.actor, path);
+            if (value !== undefined && value !== null) {
+                detected[stat] = detectStatLevel(stat, clampedLevel, Number(value));
+            }
+        }
+        
+        // Detect HP
+        const hp = foundry.utils.getProperty(this.actor, 'system.attributes.hp.max');
+        if (hp !== undefined && hp !== null && Number(hp) > 0) {
+            detected[Statistics.hp] = detectHPLevel(clampedLevel, Number(hp));
+        }
+        
+        // Detect Perception
+        const perception = foundry.utils.getProperty(this.actor, 'system.perception.mod');
+        if (perception !== undefined && perception !== null) {
+            detected[Statistics.per] = detectStatLevel(Statistics.per, clampedLevel, Number(perception));
+        }
+        
+        // Detect AC
+        const ac = foundry.utils.getProperty(this.actor, 'system.attributes.ac.value');
+        if (ac !== undefined && ac !== null && Number(ac) > 0) {
+            detected[Statistics.ac] = detectStatLevel(Statistics.ac, clampedLevel, Number(ac));
+        }
+        
+        // Detect Saves
+        const saveStats = [
+            {stat: Statistics.fort, path: 'system.saves.fortitude.value'},
+            {stat: Statistics.ref, path: 'system.saves.reflex.value'},
+            {stat: Statistics.wil, path: 'system.saves.will.value'}
+        ];
+        for (const save of saveStats) {
+            const value = foundry.utils.getProperty(this.actor, save.path);
+            if (value !== undefined && value !== null) {
+                detected[save.stat] = detectStatLevel(Statistics.per, clampedLevel, Number(value)); // Uses same scale as perception
+            }
+        }
+        
+        // Detect Skills
+        for (const skillStat of Skills) {
+            const skillKey = skillStat.split('.')[1].toLowerCase();
+            const skillValue = foundry.utils.getProperty(this.actor, `system.skills.${skillKey}.base`) 
+                           ?? foundry.utils.getProperty(this.actor, `system.skills.${skillKey}.value`);
+            if (skillValue !== undefined && skillValue !== null && Number(skillValue) > 0) {
+                detected[skillStat] = detectStatLevel(skillStat, clampedLevel, Number(skillValue));
+            }
+        }
+        
+        // Detect Spellcasting (check if actor has any spellcasting entries)
+        const items = this.actor["items"];
+        if (items) {
+            for (const item of items) {
+                if (item.type === 'spellcastingEntry') {
+                    const spellDC = foundry.utils.getProperty(item, 'system.spelldc.dc') 
+                                ?? foundry.utils.getProperty(item, 'system.spelldc.value');
+                    if (spellDC) {
+                        // DC is typically attack + 8, so we check the attack value
+                        const attackValue = Number(spellDC) - 8;
+                        detected[Statistics.spellcasting] = detectStatLevel(Statistics.spellcasting, clampedLevel, attackValue);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return detected;
+    }
+    
+    // Detect existing traits on the actor
+    detectTraits(): string[] {
+        const traits = foundry.utils.getProperty(this.actor, 'system.traits.value');
+        if (Array.isArray(traits)) {
+            return traits;
+        }
+        return [];
+    }
+    
+    // Detect existing lore skills
+    detectLoreSkills(): {name: string, level: Options}[] {
+        const loreSkills: {name: string, level: Options}[] = [];
+        const skills = foundry.utils.getProperty(this.actor, 'system.skills');
+        const actorLevel = String(foundry.utils.getProperty(this.actor, 'system.details.level.value') ?? 1);
+        const clampedLevel = Levels.includes(actorLevel) ? actorLevel : '1';
+        
+        if (skills && typeof skills === 'object') {
+            for (const [key, value] of Object.entries(skills)) {
+                if (key.startsWith('lore-') && value) {
+                    const loreName = (value as any).label?.replace(' Lore', '') || key.replace('lore-', '').replace(/-/g, ' ');
+                    const baseValue = (value as any).base ?? (value as any).value ?? 0;
+                    if (baseValue > 0) {
+                        const level = detectStatLevel(Statistics.acrobatics, clampedLevel, Number(baseValue));
+                        loreSkills.push({ name: loreName, level });
+                    }
+                }
+            }
+        }
+        return loreSkills;
+    }
+
     // @ts-ignore
     getData() {
         Handlebars.registerHelper('json', function(context) {
             return JSON.stringify(context);
         });
-        return {"CreatureStatistics": JSON.parse(JSON.stringify(this.data)), "Levels": Levels, "RoadMaps": RoadMaps, "name": this.actor.name}
+        
+        // Detect current actor stats
+        const detectedStats = this.detectActorStats();
+        const detectedTraits = this.detectTraits();
+        const detectedLoreSkills = this.detectLoreSkills();
+        const actorLevel = String(foundry.utils.getProperty(this.actor, 'system.details.level.value') ?? 1);
+        
+        return {
+            "CreatureStatistics": JSON.parse(JSON.stringify(this.data)), 
+            "Levels": Levels, 
+            "RoadMaps": RoadMaps, 
+            "name": this.actor.name,
+            "detectedStats": detectedStats,
+            "detectedTraits": detectedTraits,
+            "detectedLoreSkills": detectedLoreSkills,
+            "actorLevel": actorLevel
+        }
     }
 
 }

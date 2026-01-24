@@ -71,6 +71,7 @@
         <button type="button" id="addLoreButton" class="monsterMakerAddButton">{{localize "PF2EMONSTERMAKER.addLore"}}</button>
     </div>
     <div class="buttons">
+        <button type="button" id="monsterMakerResetButton" class="monsterMakerResetButton">{{localize "PF2EMONSTERMAKER.resetDefaults"}}</button>
         <button type="submit" id="monsterMakerFormSubmit">Submit</button>
     </div>
 
@@ -78,6 +79,11 @@
 <script>
     monsterCreatureStatistics = {{{json CreatureStatistics}}}
     monsterCreatureRoadmaps = {{{json RoadMaps}}}
+    detectedStats = {{{json detectedStats}}}
+    detectedTraits = {{{json detectedTraits}}}
+    detectedLoreSkills = {{{json detectedLoreSkills}}}
+    actorLevel = "{{{actorLevel}}}"
+    
     function setDefaults() {
         for (const category of monsterCreatureStatistics) {
             for (const statistic of category.statisticEntries) {
@@ -88,10 +94,34 @@
             }
         }
     }
+    
+    function setDetectedStats() {
+        // First set defaults
+        setDefaults();
+        
+        // Set the actor's level
+        const levelSelect = document.getElementById('monsterMakerLevel');
+        if (levelSelect && actorLevel) {
+            levelSelect.value = actorLevel;
+        }
+        
+        // Then override with detected stats
+        if (detectedStats && Object.keys(detectedStats).length > 0) {
+            for (const [key, value] of Object.entries(detectedStats)) {
+                let select = document.getElementById("monsterMaker" + key);
+                if (select) {
+                    select.value = value;
+                }
+            }
+        }
+    }
+    
     function setRoadmap(selectedRoadmap) {
         let roadmapValue = selectedRoadmap.value;
-        setDefaults();
-        if(monsterCreatureRoadmaps[roadmapValue]) {
+        if (roadmapValue === 'Default') {
+            setDetectedStats();
+        } else if(monsterCreatureRoadmaps[roadmapValue]) {
+            setDefaults();
             let roadmap = monsterCreatureRoadmaps[roadmapValue]
             for (const [key, value] of Object.entries(roadmap)) {
                 let select = document.getElementById("monsterMaker" + key)
@@ -101,7 +131,9 @@
             }
         }
     }
-    setDefaults();
+    
+    // Initialize with detected stats instead of defaults
+    setDetectedStats();
 
     // Lore Skills functionality
     let loreCounter = 0;
@@ -202,5 +234,83 @@
             addTrait(this.value);
             this.value = '';
         }
+    });
+    
+    // Initialize detected traits
+    if (detectedTraits && detectedTraits.length > 0) {
+        for (const trait of detectedTraits) {
+            addTrait(trait);
+        }
+    }
+    
+    // Initialize detected lore skills
+    function addLoreSkillWithValues(name, level) {
+        const container = document.getElementById('loreSkillsContainer');
+        const loreId = loreCounter++;
+        
+        const loreDiv = document.createElement('div');
+        loreDiv.className = 'form-group setting lore-entry';
+        loreDiv.id = 'loreEntry' + loreId;
+        
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.name = 'loreName' + loreId;
+        nameInput.value = name;
+        nameInput.placeholder = '{{localize "PF2EMONSTERMAKER.loreName"}}';
+        nameInput.className = 'monsterMakerFormText lore-name-input';
+        
+        const levelSelect = document.createElement('select');
+        levelSelect.name = 'loreLevel' + loreId;
+        levelSelect.className = 'monsterMakerFormTextSmall';
+        
+        for (const option of loreOptions) {
+            const opt = document.createElement('option');
+            opt.value = option;
+            opt.textContent = game.i18n.localize(option);
+            if (option === level) {
+                opt.selected = true;
+            }
+            levelSelect.appendChild(opt);
+        }
+        
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.textContent = '✕';
+        removeButton.className = 'monsterMakerRemoveButton';
+        removeButton.onclick = function() {
+            container.removeChild(loreDiv);
+        };
+        
+        loreDiv.appendChild(nameInput);
+        loreDiv.appendChild(levelSelect);
+        loreDiv.appendChild(removeButton);
+        container.appendChild(loreDiv);
+    }
+    
+    if (detectedLoreSkills && detectedLoreSkills.length > 0) {
+        for (const lore of detectedLoreSkills) {
+            addLoreSkillWithValues(lore.name, lore.level);
+        }
+    }
+    
+    // Reset to Defaults button
+    document.getElementById('monsterMakerResetButton').addEventListener('click', function() {
+        // Reset stats to defaults
+        setDefaults();
+        
+        // Reset level to 1
+        document.getElementById('monsterMakerLevel').value = '1';
+        
+        // Reset roadmap selector
+        document.getElementById('monsterMakerRoadmap').value = 'Default';
+        
+        // Clear traits
+        traits.length = 0;
+        renderTraits();
+        updateTraitsHidden();
+        
+        // Clear lore skills
+        document.getElementById('loreSkillsContainer').innerHTML = '';
+        loreCounter = 0;
     });
 </script>
