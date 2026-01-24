@@ -77,12 +77,14 @@
 
 </form>
 <script>
-    monsterCreatureStatistics = {{{json CreatureStatistics}}}
-    monsterCreatureRoadmaps = {{{json RoadMaps}}}
-    detectedStats = {{{json detectedStats}}}
-    detectedTraits = {{{json detectedTraits}}}
-    detectedLoreSkills = {{{json detectedLoreSkills}}}
-    actorLevel = "{{{actorLevel}}}"
+    var monsterCreatureStatistics = {{{json CreatureStatistics}}};
+    var monsterCreatureRoadmaps = {{{json RoadMaps}}};
+    var detectedStats = {{{json detectedStats}}};
+    var detectedTraits = {{{json detectedTraits}}};
+    var detectedLoreSkills = {{{json detectedLoreSkills}}};
+    var actorLevel = String({{{json actorLevel}}});
+    
+    console.log("Monster Maker Init - actorLevel:", actorLevel, "detectedStats:", detectedStats);
     
     function setDefaults() {
         for (const category of monsterCreatureStatistics) {
@@ -96,23 +98,31 @@
     }
     
     function setDetectedStats() {
+        console.log("setDetectedStats called with level:", actorLevel, "stats:", detectedStats);
+        
         // First set defaults
         setDefaults();
         
         // Set the actor's level
         const levelSelect = document.getElementById('monsterMakerLevel');
-        if (levelSelect && actorLevel) {
-            levelSelect.value = actorLevel;
+        if (levelSelect && actorLevel && actorLevel !== "undefined" && actorLevel !== "null") {
+            console.log("Setting level to:", actorLevel);
+            levelSelect.value = String(actorLevel);
         }
         
         // Then override with detected stats
-        if (detectedStats && Object.keys(detectedStats).length > 0) {
+        if (detectedStats && typeof detectedStats === 'object' && Object.keys(detectedStats).length > 0) {
             for (const [key, value] of Object.entries(detectedStats)) {
                 let select = document.getElementById("monsterMaker" + key);
                 if (select) {
+                    console.log("Setting", key, "to", value);
                     select.value = value;
+                } else {
+                    console.log("Could not find select for:", key);
                 }
             }
+        } else {
+            console.log("No detected stats to apply");
         }
     }
     
@@ -133,7 +143,10 @@
     }
     
     // Initialize with detected stats instead of defaults
-    setDetectedStats();
+    // Use setTimeout to ensure DOM is ready
+    setTimeout(function() {
+        setDetectedStats();
+    }, 0);
 
     // Lore Skills functionality
     let loreCounter = 0;

@@ -247,20 +247,21 @@ export class MonsterMaker extends FormApplication {
         return [];
     }
     
-    // Detect existing lore skills
+    // Detect existing lore skills (stored as items in PF2e)
     detectLoreSkills(): {name: string, level: Options}[] {
         const loreSkills: {name: string, level: Options}[] = [];
-        const skills = foundry.utils.getProperty(this.actor, 'system.skills');
         const actorLevel = String(foundry.utils.getProperty(this.actor, 'system.details.level.value') ?? 1);
         const clampedLevel = Levels.includes(actorLevel) ? actorLevel : '1';
         
-        if (skills && typeof skills === 'object') {
-            for (const [key, value] of Object.entries(skills)) {
-                if (key.startsWith('lore-') && value) {
-                    const loreName = (value as any).label?.replace(' Lore', '') || key.replace('lore-', '').replace(/-/g, ' ');
-                    const baseValue = (value as any).base ?? (value as any).value ?? 0;
-                    if (baseValue > 0) {
-                        const level = detectStatLevel(Statistics.acrobatics, clampedLevel, Number(baseValue));
+        // In PF2e, Lore skills are stored as items with type "lore"
+        const items = this.actor["items"];
+        if (items) {
+            for (const item of items) {
+                if (item.type === 'lore') {
+                    const loreName = item.name?.replace(' Lore', '').replace(/ \(.*\)$/, '') || 'Unknown';
+                    const modValue = foundry.utils.getProperty(item, 'system.mod.value') ?? 0;
+                    if (modValue > 0) {
+                        const level = detectStatLevel(Statistics.acrobatics, clampedLevel, Number(modValue));
                         loreSkills.push({ name: loreName, level });
                     }
                 }
