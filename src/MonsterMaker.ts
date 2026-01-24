@@ -1,6 +1,6 @@
 import {actorFields, DefaultCreatureStatistics, Levels, Statistics, Skills, Options, RoadMaps} from "./Keys";
 import {statisticValues, detectStatLevel, detectHPLevel} from "./Values";
-import {BaseActor} from "@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs";
+import type {BaseActor} from "@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs";
 
 
 export class MonsterMaker extends FormApplication {
@@ -9,7 +9,7 @@ export class MonsterMaker extends FormApplication {
     level = "-1"
 
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return mergeObject(FormApplication.defaultOptions, {
             classes: ["form"],
             popOut: true,
             template: `modules/pf2e-monster-maker/dist/forms/monsterMakerForm.html`,
@@ -21,7 +21,7 @@ export class MonsterMaker extends FormApplication {
     }
 
     applyName(formData) {
-        let name = formData[Statistics.name] ? formData[Statistics.name] : this.actor.name
+        const name = formData[Statistics.name] ? formData[Statistics.name] : this.actor.name
         return {"name": name}
     }
 
@@ -35,22 +35,23 @@ export class MonsterMaker extends FormApplication {
     }
 
     applyLevel() {
-        return {"system.details.level.value": parseInt(this.level)}
+        return {"system.details.level.value": parseInt(this.level, 10)}
     }
 
     applyHitPoints(formData) {
-        let option = formData[Statistics.hp]
-        let hitPoints = parseInt(statisticValues[Statistics.hp][this.level][option])
+        const option = formData[Statistics.hp]
+        const hitPoints = parseInt(statisticValues[Statistics.hp][this.level][option], 10)
         return {"system.attributes.hp.value": hitPoints}
     }
 
     applyStrike(formData) {
         const strikeBonusOption = formData[Statistics.strikeBonus]
         const strikeDamageOption = formData[Statistics.strikeDamage]
-        const strikeBonus = parseInt(statisticValues[Statistics.strikeBonus][this.level][strikeBonusOption])
-        let strikeDamage = statisticValues[Statistics.strikeDamage][this.level][strikeDamageOption]
-        let strikeDamageID = randomID();
-        let strike = {
+        const strikeBonus = parseInt(statisticValues[Statistics.strikeBonus][this.level][strikeBonusOption], 10)
+        const strikeDamage = statisticValues[Statistics.strikeDamage][this.level][strikeDamageOption]
+        const _strikeDamageID = randomID();
+        const strike = {
+            // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
             name: game["i18n"].localize("PF2EMONSTERMAKER.strike"),
             type: 'melee',
             system: {
@@ -74,8 +75,9 @@ export class MonsterMaker extends FormApplication {
         if (spellcastingOption === Options.none) {
             return;
         }
-        const spellcastingBonus = parseInt(statisticValues[Statistics.spellcasting][this.level][spellcastingOption])
+        const spellcastingBonus = parseInt(statisticValues[Statistics.spellcasting][this.level][spellcastingOption], 10)
         const spellcasting = {
+            // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
             name: game["i18n"].localize("PF2EMONSTERMAKER.spellcasting"),
             type: "spellcastingEntry",
             system: {
@@ -99,8 +101,8 @@ export class MonsterMaker extends FormApplication {
         for(const skillName of Skills) {
             const option = formData[skillName]
             if (option !== Options.none) {
-                const value = parseInt(statisticValues[skillName][this.level][option])
-                const skill = 'system.skills.' + skillName.split('.')[1].toLowerCase();
+                const value = parseInt(statisticValues[skillName][this.level][option], 10)
+                const skill = `system.skills.${skillName.split('.')[1].toLowerCase()}`;
                 await this.actor.update(foundry.utils.flattenObject({[skill]: {base: value}}));
             }
         }
@@ -112,8 +114,8 @@ export class MonsterMaker extends FormApplication {
         for (const key of Object.keys(formData)) {
             if (key.startsWith('loreName')) {
                 const id = key.replace('loreName', '');
-                const name = formData['loreName' + id];
-                const levelOption = formData['loreLevel' + id];
+                const name = formData[`loreName${id}`];
+                const levelOption = formData[`loreLevel${id}`];
                 if (name && name.trim() !== '' && levelOption !== Options.none) {
                     loreSkills.push({ name: name.trim(), option: levelOption });
                 }
@@ -122,27 +124,27 @@ export class MonsterMaker extends FormApplication {
 
         // Apply each lore skill
         for (const lore of loreSkills) {
-            const value = parseInt(statisticValues[Statistics.acrobatics][this.level][lore.option]); // Use skills table
+            const value = parseInt(statisticValues[Statistics.acrobatics][this.level][lore.option], 10); // Use skills table
             const skillKey = lore.name.toLowerCase().replace(/\s+/g, '-');
-            const skill = 'system.skills.lore-' + skillKey;
+            const skill = `system.skills.lore-${skillKey}`;
             await this.actor.update(foundry.utils.flattenObject({
                 [skill]: {
                     base: value,
-                    label: lore.name + ' Lore'
+                    label: `${lore.name} Lore`
                 }
             }));
         }
     }
 
-    protected async _updateObject(event: Event, formData?: object) {
+    protected async _updateObject(_event: Event, formData?: object) {
         if(formData) {
-            let updateData = {}
+            const updateData = {}
             this.level = formData[Statistics.level]
             for(const key of Object.keys(formData)) {
                 if(actorFields[key]) {
-                    let actorField = actorFields[key]
-                    let option = formData[key]
-                    updateData[actorField] = parseInt(statisticValues[key][this.level][option])
+                    const actorField = actorFields[key]
+                    const option = formData[key]
+                    updateData[actorField] = parseInt(statisticValues[key][this.level][option], 10)
                 }
             }
             Object.assign(updateData, this.applyName(formData))
@@ -217,7 +219,7 @@ export class MonsterMaker extends FormApplication {
         }
         
         // Detect Spellcasting (check if actor has any spellcasting entries)
-        const items = this.actor["items"];
+        const items = this.actor.items;
         if (items) {
             for (const item of items) {
                 if (item.type === 'spellcastingEntry') {
@@ -267,11 +269,9 @@ export class MonsterMaker extends FormApplication {
         return loreSkills;
     }
 
-    // @ts-ignore
+    // @ts-expect-error
     getData() {
-        Handlebars.registerHelper('json', function(context) {
-            return JSON.stringify(context);
-        });
+        Handlebars.registerHelper('json', (context) => JSON.stringify(context));
         
         // Detect current actor stats
         const detectedStats = this.detectActorStats();

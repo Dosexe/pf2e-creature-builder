@@ -13,8 +13,8 @@ export function detectStatLevel(statisticType: Statistics, creatureLevel: string
     
     // Check each option and find the closest match
     for (const [option, tableValue] of Object.entries(levelTable)) {
-        const numValue = parseInt(tableValue as string);
-        if (isNaN(numValue)) continue;
+        const numValue = parseInt(tableValue as string, 10);
+        if (Number.isNaN(numValue)) continue;
         
         const diff = Math.abs(actualValue - numValue);
         if (diff < closestDiff) {
@@ -31,9 +31,9 @@ export function detectHPLevel(creatureLevel: string, actualHP: number): Options 
     const hpTable = statisticValues[Statistics.hp][creatureLevel];
     if (!hpTable) return Options.moderate;
     
-    const low = parseInt(hpTable[Options.low]);
-    const moderate = parseInt(hpTable[Options.moderate]);
-    const high = parseInt(hpTable[Options.high]);
+    const low = parseInt(hpTable[Options.low], 10);
+    const moderate = parseInt(hpTable[Options.moderate], 10);
+    const high = parseInt(hpTable[Options.high], 10);
     
     // Determine which bracket the HP falls into
     const lowMidpoint = (low + moderate) / 2;

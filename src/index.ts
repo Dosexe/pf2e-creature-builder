@@ -1,5 +1,6 @@
 import {MonsterMaker} from "./MonsterMaker"
-Hooks.on('init', async function () {
+Hooks.on('init', async () => {
+    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
     await game["settings"].register("foundryvtt-pf2e-monster-maker", "roadmaps", {
         scope: 'world',
         config: false,
@@ -7,9 +8,10 @@ Hooks.on('init', async function () {
         default: {}
     });
 
+    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
     await game["settings"].register("pf2e-monster-maker", "abbreviateName", {
         name:    "Abbreviate Monster Maker",
-        hint:    "Turn this on if you prefer to see “MM” instead of the full title “Monster Maker” in the monster sheet.",
+        hint:    "Turn this on if you prefer to see MM instead of the full title Monster Maker in the monster sheet.",
         scope:   "world",
         config:  true,
         type:    Boolean,
@@ -18,37 +20,39 @@ Hooks.on('init', async function () {
 })
 
 function getMonsterManualLabel () {
+    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
     return game["settings"].get(
         "pf2e-monster-maker",
         "abbreviateName"
     ) ? "MM" : "Monster Maker";
 }
 
-Hooks.on("renderActorSheet", async function (sheet, html) {
-    let actor = sheet.object
+Hooks.on("renderActorSheet", async (sheet, html) => {
+    const actor = sheet.object
     if (actor?.type !== "npc") {
         return;
     }
+    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
     if(!actor.canUserModify(game["user"], "update")) {
         return;
     }
-    let element = html.find(".window-header .window-title");
-    let label = getMonsterManualLabel()
-    let button = $(`<a class="popout" style><i style="padding: 0 4px;" class="fas fa-book"></i>${label}</a>`);
+    const element = html.find(".window-header .window-title");
+    const label = getMonsterManualLabel()
+    const button = $(`<a class="popout" style><i style="padding: 0 4px;" class="fas fa-book"></i>${label}</a>`);
     button.on("click", () => {
         new MonsterMaker(actor).render(true)
     })
     element.after(button);
 })
 
-Hooks.on("renderActorDirectory", function() {
-    let footer = $("#actors .directory-footer.action-buttons");
+Hooks.on("renderActorDirectory", () => {
+    const footer = $("#actors .directory-footer.action-buttons");
     if (footer.find("button:contains('Monster Maker')").length === 0) {
-        let monsterButton = $(`<button><i class="fas fa-book"></i>Monster Maker</button>`);
+        const monsterButton = $(`<button><i class="fas fa-book"></i>Monster Maker</button>`);
         footer.append(monsterButton);
 
-        monsterButton.on("click", function() {
-            let monsterData = {
+        monsterButton.on("click", () => {
+            const monsterData = {
                 name: "Monster",
                 type: "npc",
             };
