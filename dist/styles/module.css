@@ -66,54 +66,18 @@
     position: relative;
 }
 
-/* Autocomplete dropdown - floating overlay like Tagify */
+/* Traits dropdown - just hide by default, Foundry provides Tagify styles */
 #monsterMakerForm .traits-dropdown {
-    position: fixed;
-    background: #ffffff;
-    border: 1px solid #4a4a4a;
-    border-radius: 3px;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 9999;
     display: none;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 #monsterMakerForm .traits-dropdown.show {
     display: block;
 }
 
-/* Tagify dropdown wrapper for proper structure */
-#monsterMakerForm .traits-dropdown .tagify__dropdown__wrapper {
-    max-height: inherit;
-    overflow-y: auto;
-}
-
-#monsterMakerForm .traits-dropdown-item {
-    padding: 6px 10px;
-    cursor: pointer;
-    color: #1a1a1a;
-    font-size: 13px;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-#monsterMakerForm .traits-dropdown-item:last-child {
-    border-bottom: none;
-}
-
-#monsterMakerForm .traits-dropdown-item:hover,
-#monsterMakerForm .traits-dropdown-item.selected {
-    background: #522e2c;
-    color: #ffffff;
-}
-
-#monsterMakerForm .traits-dropdown-item.custom-entry {
+/* Custom entry styling for user-typed traits */
+#monsterMakerForm .traits-dropdown .tagify__dropdown__item.custom-entry {
     font-style: italic;
-    color: #666;
-}
-
-#monsterMakerForm .traits-dropdown-item.custom-entry:hover {
-    color: #ffffff;
 }
 
 /* Reset button styling */

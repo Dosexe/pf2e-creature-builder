@@ -36,16 +36,19 @@
             <tags class="tagify tags paizo-style" tabindex="-1" id="traitsTagify">
                 <span contenteditable="true" tabindex="0" data-placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}" class="tagify__input" role="textbox" aria-autocomplete="both" aria-multiline="false" id="monsterMakerTraitsInput"></span>
             </tags>
-            <div id="traitsDropdown" class="traits-dropdown tagify__dropdown" role="listbox" aria-labelledby="dropdown" placement="bottom"></div>
+            <div id="traitsDropdown" class="traits-dropdown tagify__dropdown" role="listbox" aria-labelledby="dropdown" placement="bottom" position="all">
+                <div data-selector="tagify-suggestions-wrapper" class="tagify__dropdown__wrapper">
+                    <header data-selector="tagify-suggestions-header" class="tagify__dropdown__header"></header>
+                </div>
+            </div>
         </div>
         <input type="hidden" name="PF2EMONSTERMAKER.traits" id="monsterMakerTraitsHidden" value="">
     </div>
     {{#each CreatureStatistics}}
-        <div class="collapsible-section" data-section-name="{{this.name}}" id="section-{{@index}}">
-            <h3 class="collapsible-header" onclick="toggleSection('section-{{@index}}')">
-                <span class="collapse-indicator">▶</span>
+        <details class="collapsible-section" data-section-name="{{this.name}}" open>
+            <summary class="collapsible-header">
                 {{localize this.name}}
-            </h3>
+            </summary>
             <div class="collapsible-content">
                 {{#each this.statisticEntries}}
                     <div class="form-group setting">
@@ -71,20 +74,19 @@
                     </div>
                 {{/each}}
             </div>
-        </div>
+        </details>
     {{/each}}
-    <div class="collapsible-section" id="section-lore">
-        <h3 class="collapsible-header" onclick="toggleSection('section-lore')">
-            <span class="collapse-indicator">▶</span>
+    <details class="collapsible-section" id="section-lore" open>
+        <summary class="collapsible-header">
             {{localize "PF2EMONSTERMAKER.loreSkills"}}
-        </h3>
+        </summary>
         <div class="collapsible-content">
             <div id="loreSkillsContainer"></div>
             <div class="form-group setting">
                 <button type="button" id="addLoreButton" class="monsterMakerAddButton">{{localize "PF2EMONSTERMAKER.addLore"}}</button>
             </div>
         </div>
-    </div>
+    </details>
     <div class="form-divider"></div>
     <div class="buttons">
         <button type="button" id="monsterMakerResetButton" class="monsterMakerResetButton">{{localize "PF2EMONSTERMAKER.resetDefaults"}}</button>
@@ -201,6 +203,7 @@
     var traitsTagify = document.getElementById('traitsTagify');
     var traitsHidden = document.getElementById('monsterMakerTraitsHidden');
     var traitsDropdown = document.getElementById('traitsDropdown');
+    var traitsDropdownWrapper = traitsDropdown.querySelector('.tagify__dropdown__wrapper');
     var selectedDropdownIndex = -1;
 
     function updateTraitsHidden() {
@@ -296,40 +299,54 @@
             return t.indexOf(filterLower) !== -1 && traits.indexOf(t) === -1;
         });
         
-        traitsDropdown.innerHTML = '';
+        // Clear existing items from wrapper (keep header)
+        var existingItems = traitsDropdownWrapper.querySelectorAll('.tagify__dropdown__item');
+        existingItems.forEach(function(item) { item.remove(); });
         selectedDropdownIndex = -1;
+        
+        var itemCount = 0;
         
         // If user typed something not in the list, offer to add it
         if (filterLower && pf2eTraits.indexOf(filterLower) === -1 && traits.indexOf(filterLower) === -1) {
             var customItem = document.createElement('div');
-            customItem.className = 'traits-dropdown-item tagify__dropdown__item custom-entry';
-            customItem.textContent = '(Add "' + filterLower + '")';
+            customItem.className = 'tagify__dropdown__item custom-entry';
+            customItem.id = 'custom-' + filterLower;
+            customItem.setAttribute('value', filterLower);
+            customItem.setAttribute('mappedvalue', filterLower);
             customItem.setAttribute('data-trait', filterLower);
             customItem.setAttribute('tabindex', '0');
             customItem.setAttribute('role', 'option');
+            customItem.textContent = '(Add "' + filterLower + '")';
             customItem.onclick = function() {
                 addTrait(this.getAttribute('data-trait'));
             };
-            traitsDropdown.appendChild(customItem);
+            traitsDropdownWrapper.appendChild(customItem);
+            itemCount++;
         }
         
         // Show matching traits (limit to 15 for performance)
         var shown = 0;
         for (var i = 0; i < filtered.length && shown < 15; i++) {
+            var traitName = filtered[i];
+            var displayName = capitalizeFirst(traitName);
             var item = document.createElement('div');
-            item.className = 'traits-dropdown-item tagify__dropdown__item';
-            item.textContent = capitalizeFirst(filtered[i]);
-            item.setAttribute('data-trait', filtered[i]);
+            item.className = 'tagify__dropdown__item';
+            item.id = traitName.replace(/\s+/g, '-');
+            item.setAttribute('value', displayName);
+            item.setAttribute('mappedvalue', displayName);
+            item.setAttribute('data-trait', traitName);
             item.setAttribute('tabindex', '0');
             item.setAttribute('role', 'option');
+            item.textContent = displayName;
             item.onclick = function() {
                 addTrait(this.getAttribute('data-trait'));
             };
-            traitsDropdown.appendChild(item);
+            traitsDropdownWrapper.appendChild(item);
             shown++;
+            itemCount++;
         }
         
-        if (traitsDropdown.children.length > 0) {
+        if (itemCount > 0) {
             // Position and show the dropdown
             positionDropdown();
             traitsDropdown.classList.add('show');
@@ -344,13 +361,13 @@
     }
 
     function updateDropdownSelection() {
-        var items = traitsDropdown.querySelectorAll('.traits-dropdown-item');
+        var items = traitsDropdownWrapper.querySelectorAll('.tagify__dropdown__item');
         for (var i = 0; i < items.length; i++) {
             if (i === selectedDropdownIndex) {
-                items[i].classList.add('selected');
+                items[i].classList.add('tagify__dropdown__item--active');
                 items[i].scrollIntoView({ block: 'nearest' });
             } else {
-                items[i].classList.remove('selected');
+                items[i].classList.remove('tagify__dropdown__item--active');
             }
         }
     }
@@ -368,7 +385,7 @@
     });
 
     traitsInput.addEventListener('keydown', function(e) {
-        var items = traitsDropdown.querySelectorAll('.traits-dropdown-item');
+        var items = traitsDropdownWrapper.querySelectorAll('.tagify__dropdown__item');
         var inputText = getInputText();
         
         if (e.key === 'ArrowDown') {
