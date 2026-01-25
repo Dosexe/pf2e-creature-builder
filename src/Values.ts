@@ -1,1365 +1,1372 @@
-import {Options, Statistics} from "./Keys";
+import { Options, Statistics } from './Keys'
 
 // Reverse lookup: given an actual value, find the closest matching Option
-export function detectStatLevel(statisticType: Statistics, creatureLevel: string, actualValue: number): Options {
-    const valueTable = statisticValues[statisticType];
+export function detectStatLevel(
+    statisticType: Statistics,
+    creatureLevel: string,
+    actualValue: number,
+): Options {
+    const valueTable = statisticValues[statisticType]
     if (!valueTable || !valueTable[creatureLevel]) {
-        return Options.moderate;
+        return Options.moderate
     }
-    
-    const levelTable = valueTable[creatureLevel];
-    let closestOption = Options.moderate;
-    let closestDiff = Infinity;
-    
+
+    const levelTable = valueTable[creatureLevel]
+    let closestOption = Options.moderate
+    let closestDiff = Infinity
+
     // Check each option and find the closest match
     for (const [option, tableValue] of Object.entries(levelTable)) {
-        const numValue = parseInt(tableValue as string, 10);
-        if (Number.isNaN(numValue)) continue;
-        
-        const diff = Math.abs(actualValue - numValue);
+        const numValue = parseInt(tableValue as string, 10)
+        if (Number.isNaN(numValue)) continue
+
+        const diff = Math.abs(actualValue - numValue)
         if (diff < closestDiff) {
-            closestDiff = diff;
-            closestOption = option as Options;
+            closestDiff = diff
+            closestOption = option as Options
         }
     }
-    
-    return closestOption;
+
+    return closestOption
 }
 
 // Special detection for HP which has different thresholds
-export function detectHPLevel(creatureLevel: string, actualHP: number): Options {
-    const hpTable = statisticValues[Statistics.hp][creatureLevel];
-    if (!hpTable) return Options.moderate;
-    
-    const low = parseInt(hpTable[Options.low], 10);
-    const moderate = parseInt(hpTable[Options.moderate], 10);
-    const high = parseInt(hpTable[Options.high], 10);
-    
+export function detectHPLevel(
+    creatureLevel: string,
+    actualHP: number,
+): Options {
+    const hpTable = statisticValues[Statistics.hp][creatureLevel]
+    if (!hpTable) return Options.moderate
+
+    const low = parseInt(hpTable[Options.low], 10)
+    const moderate = parseInt(hpTable[Options.moderate], 10)
+    const high = parseInt(hpTable[Options.high], 10)
+
     // Determine which bracket the HP falls into
-    const lowMidpoint = (low + moderate) / 2;
-    const highMidpoint = (moderate + high) / 2;
-    
-    if (actualHP <= lowMidpoint) return Options.low;
-    if (actualHP >= highMidpoint) return Options.high;
-    return Options.moderate;
+    const lowMidpoint = (low + moderate) / 2
+    const highMidpoint = (moderate + high) / 2
+
+    if (actualHP <= lowMidpoint) return Options.low
+    if (actualHP >= highMidpoint) return Options.high
+    return Options.moderate
 }
 
 const aliases = {
     abilityScores: {
-        "-1": {
-            [Options.extreme]: "4",
-            [Options.high]: "3",
-            [Options.moderate]: "2",
-            [Options.low]: "0",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '-1': {
+            [Options.extreme]: '4',
+            [Options.high]: '3',
+            [Options.moderate]: '2',
+            [Options.low]: '0',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "0": {
-            [Options.extreme]: "4",
-            [Options.high]: "3",
-            [Options.moderate]: "2",
-            [Options.low]: "0",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '0': {
+            [Options.extreme]: '4',
+            [Options.high]: '3',
+            [Options.moderate]: '2',
+            [Options.low]: '0',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "1": {
-            [Options.extreme]: "5",
-            [Options.high]: "4",
-            [Options.moderate]: "3",
-            [Options.low]: "1",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '1': {
+            [Options.extreme]: '5',
+            [Options.high]: '4',
+            [Options.moderate]: '3',
+            [Options.low]: '1',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "2": {
-            [Options.extreme]: "5",
-            [Options.high]: "4",
-            [Options.moderate]: "3",
-            [Options.low]: "1",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '2': {
+            [Options.extreme]: '5',
+            [Options.high]: '4',
+            [Options.moderate]: '3',
+            [Options.low]: '1',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "3": {
-            [Options.extreme]: "5",
-            [Options.high]: "4",
-            [Options.moderate]: "3",
-            [Options.low]: "1",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '3': {
+            [Options.extreme]: '5',
+            [Options.high]: '4',
+            [Options.moderate]: '3',
+            [Options.low]: '1',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "4": {
-            [Options.extreme]: "6",
-            [Options.high]: "5",
-            [Options.moderate]: "3",
-            [Options.low]: "2",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '4': {
+            [Options.extreme]: '6',
+            [Options.high]: '5',
+            [Options.moderate]: '3',
+            [Options.low]: '2',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "5": {
-            [Options.extreme]: "6",
-            [Options.high]: "5",
-            [Options.moderate]: "4",
-            [Options.low]: "2",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '5': {
+            [Options.extreme]: '6',
+            [Options.high]: '5',
+            [Options.moderate]: '4',
+            [Options.low]: '2',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "6": {
-            [Options.extreme]: "7",
-            [Options.high]: "5",
-            [Options.moderate]: "4",
-            [Options.low]: "2",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '6': {
+            [Options.extreme]: '7',
+            [Options.high]: '5',
+            [Options.moderate]: '4',
+            [Options.low]: '2',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "7": {
-            [Options.extreme]: "7",
-            [Options.high]: "6",
-            [Options.moderate]: "4",
-            [Options.low]: "2",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '7': {
+            [Options.extreme]: '7',
+            [Options.high]: '6',
+            [Options.moderate]: '4',
+            [Options.low]: '2',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "8": {
-            [Options.extreme]: "7",
-            [Options.high]: "6",
-            [Options.moderate]: "4",
-            [Options.low]: "3",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '8': {
+            [Options.extreme]: '7',
+            [Options.high]: '6',
+            [Options.moderate]: '4',
+            [Options.low]: '3',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "9": {
-            [Options.extreme]: "7",
-            [Options.high]: "6",
-            [Options.moderate]: "4",
-            [Options.low]: "3",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '9': {
+            [Options.extreme]: '7',
+            [Options.high]: '6',
+            [Options.moderate]: '4',
+            [Options.low]: '3',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "10": {
-            [Options.extreme]: "8",
-            [Options.high]: "7",
-            [Options.moderate]: "5",
-            [Options.low]: "3",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '10': {
+            [Options.extreme]: '8',
+            [Options.high]: '7',
+            [Options.moderate]: '5',
+            [Options.low]: '3',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "11": {
-            [Options.extreme]: "8",
-            [Options.high]: "7",
-            [Options.moderate]: "5",
-            [Options.low]: "3",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '11': {
+            [Options.extreme]: '8',
+            [Options.high]: '7',
+            [Options.moderate]: '5',
+            [Options.low]: '3',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "12": {
-            [Options.extreme]: "8",
-            [Options.high]: "7",
-            [Options.moderate]: "5",
-            [Options.low]: "4",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '12': {
+            [Options.extreme]: '8',
+            [Options.high]: '7',
+            [Options.moderate]: '5',
+            [Options.low]: '4',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "13": {
-            [Options.extreme]: "9",
-            [Options.high]: "8",
-            [Options.moderate]: "5",
-            [Options.low]: "4",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '13': {
+            [Options.extreme]: '9',
+            [Options.high]: '8',
+            [Options.moderate]: '5',
+            [Options.low]: '4',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "14": {
-            [Options.extreme]: "9",
-            [Options.high]: "8",
-            [Options.moderate]: "5",
-            [Options.low]: "4",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '14': {
+            [Options.extreme]: '9',
+            [Options.high]: '8',
+            [Options.moderate]: '5',
+            [Options.low]: '4',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "15": {
-            [Options.extreme]: "9",
-            [Options.high]: "8",
-            [Options.moderate]: "6",
-            [Options.low]: "4",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '15': {
+            [Options.extreme]: '9',
+            [Options.high]: '8',
+            [Options.moderate]: '6',
+            [Options.low]: '4',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "16": {
-            [Options.extreme]: "10",
-            [Options.high]: "9",
-            [Options.moderate]: "6",
-            [Options.low]: "5",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '16': {
+            [Options.extreme]: '10',
+            [Options.high]: '9',
+            [Options.moderate]: '6',
+            [Options.low]: '5',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "17": {
-            [Options.extreme]: "10",
-            [Options.high]: "9",
-            [Options.moderate]: "6",
-            [Options.low]: "4",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '17': {
+            [Options.extreme]: '10',
+            [Options.high]: '9',
+            [Options.moderate]: '6',
+            [Options.low]: '4',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "18": {
-            [Options.extreme]: "10",
-            [Options.high]: "9",
-            [Options.moderate]: "6",
-            [Options.low]: "5",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '18': {
+            [Options.extreme]: '10',
+            [Options.high]: '9',
+            [Options.moderate]: '6',
+            [Options.low]: '5',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "19": {
-            [Options.extreme]: "11",
-            [Options.high]: "10",
-            [Options.moderate]: "6",
-            [Options.low]: "5",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '19': {
+            [Options.extreme]: '11',
+            [Options.high]: '10',
+            [Options.moderate]: '6',
+            [Options.low]: '5',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "20": {
-            [Options.extreme]: "11",
-            [Options.high]: "10",
-            [Options.moderate]: "7",
-            [Options.low]: "6",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '20': {
+            [Options.extreme]: '11',
+            [Options.high]: '10',
+            [Options.moderate]: '7',
+            [Options.low]: '6',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "21": {
-            [Options.extreme]: "11",
-            [Options.high]: "10",
-            [Options.moderate]: "7",
-            [Options.low]: "6",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '21': {
+            [Options.extreme]: '11',
+            [Options.high]: '10',
+            [Options.moderate]: '7',
+            [Options.low]: '6',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "22": {
-            [Options.extreme]: "11",
-            [Options.high]: "10",
-            [Options.moderate]: "8",
-            [Options.low]: "6",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '22': {
+            [Options.extreme]: '11',
+            [Options.high]: '10',
+            [Options.moderate]: '8',
+            [Options.low]: '6',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "23": {
-            [Options.extreme]: "11",
-            [Options.high]: "10",
-            [Options.moderate]: "8",
-            [Options.low]: "6",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
+        '23': {
+            [Options.extreme]: '11',
+            [Options.high]: '10',
+            [Options.moderate]: '8',
+            [Options.low]: '6',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
         },
-        "24": {
-            [Options.extreme]: "13",
-            [Options.high]: "12",
-            [Options.moderate]: "9",
-            [Options.low]: "7",
-            [Options.terrible]: "-4",
-            [Options.abysmal]: "-5"
-        }
+        '24': {
+            [Options.extreme]: '13',
+            [Options.high]: '12',
+            [Options.moderate]: '9',
+            [Options.low]: '7',
+            [Options.terrible]: '-4',
+            [Options.abysmal]: '-5',
+        },
     },
     hitPoints: {
-        "-1": {
-            [Options.high]: "9",
-            [Options.moderate]: "7",
-            [Options.low]: "5"
+        '-1': {
+            [Options.high]: '9',
+            [Options.moderate]: '7',
+            [Options.low]: '5',
         },
-        "0": {
-            [Options.high]: "18",
-            [Options.moderate]: "15",
-            [Options.low]: "12"
+        '0': {
+            [Options.high]: '18',
+            [Options.moderate]: '15',
+            [Options.low]: '12',
         },
-        "1": {
-            [Options.high]: "25",
-            [Options.moderate]: "20",
-            [Options.low]: "15"
+        '1': {
+            [Options.high]: '25',
+            [Options.moderate]: '20',
+            [Options.low]: '15',
         },
-        "2": {
-            [Options.high]: "38",
-            [Options.moderate]: "30",
-            [Options.low]: "23"
+        '2': {
+            [Options.high]: '38',
+            [Options.moderate]: '30',
+            [Options.low]: '23',
         },
-        "3": {
-            [Options.high]: "56",
-            [Options.moderate]: "45",
-            [Options.low]: "34"
+        '3': {
+            [Options.high]: '56',
+            [Options.moderate]: '45',
+            [Options.low]: '34',
         },
-        "4": {
-            [Options.high]: "75",
-            [Options.moderate]: "60",
-            [Options.low]: "45"
+        '4': {
+            [Options.high]: '75',
+            [Options.moderate]: '60',
+            [Options.low]: '45',
         },
-        "5": {
-            [Options.high]: "94",
-            [Options.moderate]: "75",
-            [Options.low]: "56"
+        '5': {
+            [Options.high]: '94',
+            [Options.moderate]: '75',
+            [Options.low]: '56',
         },
-        "6": {
-            [Options.high]: "119",
-            [Options.moderate]: "95",
-            [Options.low]: "71"
+        '6': {
+            [Options.high]: '119',
+            [Options.moderate]: '95',
+            [Options.low]: '71',
         },
-        "7": {
-            [Options.high]: "144",
-            [Options.moderate]: "115",
-            [Options.low]: "86"
+        '7': {
+            [Options.high]: '144',
+            [Options.moderate]: '115',
+            [Options.low]: '86',
         },
-        "8": {
-            [Options.high]: "169",
-            [Options.moderate]: "135",
-            [Options.low]: "101"
+        '8': {
+            [Options.high]: '169',
+            [Options.moderate]: '135',
+            [Options.low]: '101',
         },
-        "9": {
-            [Options.high]: "194",
-            [Options.moderate]: "155",
-            [Options.low]: "116"
+        '9': {
+            [Options.high]: '194',
+            [Options.moderate]: '155',
+            [Options.low]: '116',
         },
-        "10": {
-            [Options.high]: "219",
-            [Options.moderate]: "175",
-            [Options.low]: "131"
+        '10': {
+            [Options.high]: '219',
+            [Options.moderate]: '175',
+            [Options.low]: '131',
         },
-        "11": {
-            [Options.high]: "244",
-            [Options.moderate]: "195",
-            [Options.low]: "146"
+        '11': {
+            [Options.high]: '244',
+            [Options.moderate]: '195',
+            [Options.low]: '146',
         },
-        "12": {
-            [Options.high]: "269",
-            [Options.moderate]: "215",
-            [Options.low]: "161"
+        '12': {
+            [Options.high]: '269',
+            [Options.moderate]: '215',
+            [Options.low]: '161',
         },
-        "13": {
-            [Options.high]: "294",
-            [Options.moderate]: "235",
-            [Options.low]: "176"
+        '13': {
+            [Options.high]: '294',
+            [Options.moderate]: '235',
+            [Options.low]: '176',
         },
-        "14": {
-            [Options.high]: "319",
-            [Options.moderate]: "255",
-            [Options.low]: "191"
+        '14': {
+            [Options.high]: '319',
+            [Options.moderate]: '255',
+            [Options.low]: '191',
         },
-        "15": {
-            [Options.high]: "344",
-            [Options.moderate]: "275",
-            [Options.low]: "206"
+        '15': {
+            [Options.high]: '344',
+            [Options.moderate]: '275',
+            [Options.low]: '206',
         },
-        "16": {
-            [Options.high]: "369",
-            [Options.moderate]: "295",
-            [Options.low]: "221"
+        '16': {
+            [Options.high]: '369',
+            [Options.moderate]: '295',
+            [Options.low]: '221',
         },
-        "17": {
-            [Options.high]: "394",
-            [Options.moderate]: "315",
-            [Options.low]: "236"
+        '17': {
+            [Options.high]: '394',
+            [Options.moderate]: '315',
+            [Options.low]: '236',
         },
-        "18": {
-            [Options.high]: "419",
-            [Options.moderate]: "335",
-            [Options.low]: "251"
+        '18': {
+            [Options.high]: '419',
+            [Options.moderate]: '335',
+            [Options.low]: '251',
         },
-        "19": {
-            [Options.high]: "444",
-            [Options.moderate]: "355",
-            [Options.low]: "266"
+        '19': {
+            [Options.high]: '444',
+            [Options.moderate]: '355',
+            [Options.low]: '266',
         },
-        "20": {
-            [Options.high]: "469",
-            [Options.moderate]: "375",
-            [Options.low]: "281"
+        '20': {
+            [Options.high]: '469',
+            [Options.moderate]: '375',
+            [Options.low]: '281',
         },
-        "21": {
-            [Options.high]: "500",
-            [Options.moderate]: "400",
-            [Options.low]: "300"
+        '21': {
+            [Options.high]: '500',
+            [Options.moderate]: '400',
+            [Options.low]: '300',
         },
-        "22": {
-            [Options.high]: "538",
-            [Options.moderate]: "430",
-            [Options.low]: "323"
+        '22': {
+            [Options.high]: '538',
+            [Options.moderate]: '430',
+            [Options.low]: '323',
         },
-        "23": {
-            [Options.high]: "575",
-            [Options.moderate]: "460",
-            [Options.low]: "345"
+        '23': {
+            [Options.high]: '575',
+            [Options.moderate]: '460',
+            [Options.low]: '345',
         },
-        "24": {
-            [Options.high]: "625",
-            [Options.moderate]: "500",
-            [Options.low]: "375"
-        }
+        '24': {
+            [Options.high]: '625',
+            [Options.moderate]: '500',
+            [Options.low]: '375',
+        },
     },
     perceptionSaves: {
-        "-1": {
-            [Options.extreme]: "9",
-            [Options.high]: "8",
-            [Options.moderate]: "5",
-            [Options.low]: "2",
-            [Options.terrible]: "0"
+        '-1': {
+            [Options.extreme]: '9',
+            [Options.high]: '8',
+            [Options.moderate]: '5',
+            [Options.low]: '2',
+            [Options.terrible]: '0',
         },
-        "0": {
-            [Options.extreme]: "10",
-            [Options.high]: "9",
-            [Options.moderate]: "6",
-            [Options.low]: "3",
-            [Options.terrible]: "1"
+        '0': {
+            [Options.extreme]: '10',
+            [Options.high]: '9',
+            [Options.moderate]: '6',
+            [Options.low]: '3',
+            [Options.terrible]: '1',
         },
-        "1": {
-            [Options.extreme]: "11",
-            [Options.high]: "10",
-            [Options.moderate]: "7",
-            [Options.low]: "4",
-            [Options.terrible]: "2"
+        '1': {
+            [Options.extreme]: '11',
+            [Options.high]: '10',
+            [Options.moderate]: '7',
+            [Options.low]: '4',
+            [Options.terrible]: '2',
         },
-        "2": {
-            [Options.extreme]: "12",
-            [Options.high]: "11",
-            [Options.moderate]: "8",
-            [Options.low]: "5",
-            [Options.terrible]: "3"
+        '2': {
+            [Options.extreme]: '12',
+            [Options.high]: '11',
+            [Options.moderate]: '8',
+            [Options.low]: '5',
+            [Options.terrible]: '3',
         },
-        "3": {
-            [Options.extreme]: "14",
-            [Options.high]: "12",
-            [Options.moderate]: "9",
-            [Options.low]: "6",
-            [Options.terrible]: "4"
+        '3': {
+            [Options.extreme]: '14',
+            [Options.high]: '12',
+            [Options.moderate]: '9',
+            [Options.low]: '6',
+            [Options.terrible]: '4',
         },
-        "4": {
-            [Options.extreme]: "15",
-            [Options.high]: "14",
-            [Options.moderate]: "11",
-            [Options.low]: "8",
-            [Options.terrible]: "6"
+        '4': {
+            [Options.extreme]: '15',
+            [Options.high]: '14',
+            [Options.moderate]: '11',
+            [Options.low]: '8',
+            [Options.terrible]: '6',
         },
-        "5": {
-            [Options.extreme]: "17",
-            [Options.high]: "15",
-            [Options.moderate]: "12",
-            [Options.low]: "9",
-            [Options.terrible]: "7"
+        '5': {
+            [Options.extreme]: '17',
+            [Options.high]: '15',
+            [Options.moderate]: '12',
+            [Options.low]: '9',
+            [Options.terrible]: '7',
         },
-        "6": {
-            [Options.extreme]: "18",
-            [Options.high]: "17",
-            [Options.moderate]: "14",
-            [Options.low]: "11",
-            [Options.terrible]: "8"
+        '6': {
+            [Options.extreme]: '18',
+            [Options.high]: '17',
+            [Options.moderate]: '14',
+            [Options.low]: '11',
+            [Options.terrible]: '8',
         },
-        "7": {
-            [Options.extreme]: "20",
-            [Options.high]: "18",
-            [Options.moderate]: "15",
-            [Options.low]: "12",
-            [Options.terrible]: "10"
+        '7': {
+            [Options.extreme]: '20',
+            [Options.high]: '18',
+            [Options.moderate]: '15',
+            [Options.low]: '12',
+            [Options.terrible]: '10',
         },
-        "8": {
-            [Options.extreme]: "21",
-            [Options.high]: "19",
-            [Options.moderate]: "16",
-            [Options.low]: "13",
-            [Options.terrible]: "11"
+        '8': {
+            [Options.extreme]: '21',
+            [Options.high]: '19',
+            [Options.moderate]: '16',
+            [Options.low]: '13',
+            [Options.terrible]: '11',
         },
-        "9": {
-            [Options.extreme]: "23",
-            [Options.high]: "21",
-            [Options.moderate]: "18",
-            [Options.low]: "15",
-            [Options.terrible]: "12"
+        '9': {
+            [Options.extreme]: '23',
+            [Options.high]: '21',
+            [Options.moderate]: '18',
+            [Options.low]: '15',
+            [Options.terrible]: '12',
         },
-        "10": {
-            [Options.extreme]: "24",
-            [Options.high]: "22",
-            [Options.moderate]: "19",
-            [Options.low]: "16",
-            [Options.terrible]: "14"
+        '10': {
+            [Options.extreme]: '24',
+            [Options.high]: '22',
+            [Options.moderate]: '19',
+            [Options.low]: '16',
+            [Options.terrible]: '14',
         },
-        "11": {
-            [Options.extreme]: "26",
-            [Options.high]: "24",
-            [Options.moderate]: "21",
-            [Options.low]: "18",
-            [Options.terrible]: "15"
+        '11': {
+            [Options.extreme]: '26',
+            [Options.high]: '24',
+            [Options.moderate]: '21',
+            [Options.low]: '18',
+            [Options.terrible]: '15',
         },
-        "12": {
-            [Options.extreme]: "27",
-            [Options.high]: "25",
-            [Options.moderate]: "22",
-            [Options.low]: "19",
-            [Options.terrible]: "16"
+        '12': {
+            [Options.extreme]: '27',
+            [Options.high]: '25',
+            [Options.moderate]: '22',
+            [Options.low]: '19',
+            [Options.terrible]: '16',
         },
-        "13": {
-            [Options.extreme]: "29",
-            [Options.high]: "26",
-            [Options.moderate]: "23",
-            [Options.low]: "20",
-            [Options.terrible]: "18"
+        '13': {
+            [Options.extreme]: '29',
+            [Options.high]: '26',
+            [Options.moderate]: '23',
+            [Options.low]: '20',
+            [Options.terrible]: '18',
         },
-        "14": {
-            [Options.extreme]: "30",
-            [Options.high]: "28",
-            [Options.moderate]: "25",
-            [Options.low]: "22",
-            [Options.terrible]: "19"
+        '14': {
+            [Options.extreme]: '30',
+            [Options.high]: '28',
+            [Options.moderate]: '25',
+            [Options.low]: '22',
+            [Options.terrible]: '19',
         },
-        "15": {
-            [Options.extreme]: "32",
-            [Options.high]: "29",
-            [Options.moderate]: "26",
-            [Options.low]: "23",
-            [Options.terrible]: "20"
+        '15': {
+            [Options.extreme]: '32',
+            [Options.high]: '29',
+            [Options.moderate]: '26',
+            [Options.low]: '23',
+            [Options.terrible]: '20',
         },
-        "16": {
-            [Options.extreme]: "33",
-            [Options.high]: "30",
-            [Options.moderate]: "28",
-            [Options.low]: "25",
-            [Options.terrible]: "22"
+        '16': {
+            [Options.extreme]: '33',
+            [Options.high]: '30',
+            [Options.moderate]: '28',
+            [Options.low]: '25',
+            [Options.terrible]: '22',
         },
-        "17": {
-            [Options.extreme]: "35",
-            [Options.high]: "32",
-            [Options.moderate]: "29",
-            [Options.low]: "26",
-            [Options.terrible]: "23"
+        '17': {
+            [Options.extreme]: '35',
+            [Options.high]: '32',
+            [Options.moderate]: '29',
+            [Options.low]: '26',
+            [Options.terrible]: '23',
         },
-        "18": {
-            [Options.extreme]: "36",
-            [Options.high]: "33",
-            [Options.moderate]: "30",
-            [Options.low]: "27",
-            [Options.terrible]: "24"
+        '18': {
+            [Options.extreme]: '36',
+            [Options.high]: '33',
+            [Options.moderate]: '30',
+            [Options.low]: '27',
+            [Options.terrible]: '24',
         },
-        "19": {
-            [Options.extreme]: "38",
-            [Options.high]: "35",
-            [Options.moderate]: "32",
-            [Options.low]: "29",
-            [Options.terrible]: "26"
+        '19': {
+            [Options.extreme]: '38',
+            [Options.high]: '35',
+            [Options.moderate]: '32',
+            [Options.low]: '29',
+            [Options.terrible]: '26',
         },
-        "20": {
-            [Options.extreme]: "39",
-            [Options.high]: "36",
-            [Options.moderate]: "33",
-            [Options.low]: "30",
-            [Options.terrible]: "27"
+        '20': {
+            [Options.extreme]: '39',
+            [Options.high]: '36',
+            [Options.moderate]: '33',
+            [Options.low]: '30',
+            [Options.terrible]: '27',
         },
-        "21": {
-            [Options.extreme]: "41",
-            [Options.high]: "38",
-            [Options.moderate]: "35",
-            [Options.low]: "32",
-            [Options.terrible]: "28"
+        '21': {
+            [Options.extreme]: '41',
+            [Options.high]: '38',
+            [Options.moderate]: '35',
+            [Options.low]: '32',
+            [Options.terrible]: '28',
         },
-        "22": {
-            [Options.extreme]: "43",
-            [Options.high]: "39",
-            [Options.moderate]: "36",
-            [Options.low]: "33",
-            [Options.terrible]: "30"
+        '22': {
+            [Options.extreme]: '43',
+            [Options.high]: '39',
+            [Options.moderate]: '36',
+            [Options.low]: '33',
+            [Options.terrible]: '30',
         },
-        "23": {
-            [Options.extreme]: "44",
-            [Options.high]: "40",
-            [Options.moderate]: "37",
-            [Options.low]: "34",
-            [Options.terrible]: "31"
+        '23': {
+            [Options.extreme]: '44',
+            [Options.high]: '40',
+            [Options.moderate]: '37',
+            [Options.low]: '34',
+            [Options.terrible]: '31',
         },
-        "24": {
-            [Options.extreme]: "46",
-            [Options.high]: "42",
-            [Options.moderate]: "38",
-            [Options.low]: "36",
-            [Options.terrible]: "32"
-        }
+        '24': {
+            [Options.extreme]: '46',
+            [Options.high]: '42',
+            [Options.moderate]: '38',
+            [Options.low]: '36',
+            [Options.terrible]: '32',
+        },
     },
     armorClass: {
-        "-1": {
-            [Options.extreme]: "18",
-            [Options.high]: "15",
-            [Options.moderate]: "14",
-            [Options.low]: "12"
+        '-1': {
+            [Options.extreme]: '18',
+            [Options.high]: '15',
+            [Options.moderate]: '14',
+            [Options.low]: '12',
         },
-        "0": {
-            [Options.extreme]: "19",
-            [Options.high]: "16",
-            [Options.moderate]: "15",
-            [Options.low]: "13"
+        '0': {
+            [Options.extreme]: '19',
+            [Options.high]: '16',
+            [Options.moderate]: '15',
+            [Options.low]: '13',
         },
-        "1": {
-            [Options.extreme]: "19",
-            [Options.high]: "16",
-            [Options.moderate]: "15",
-            [Options.low]: "13"
+        '1': {
+            [Options.extreme]: '19',
+            [Options.high]: '16',
+            [Options.moderate]: '15',
+            [Options.low]: '13',
         },
-        "2": {
-            [Options.extreme]: "21",
-            [Options.high]: "18",
-            [Options.moderate]: "17",
-            [Options.low]: "15"
+        '2': {
+            [Options.extreme]: '21',
+            [Options.high]: '18',
+            [Options.moderate]: '17',
+            [Options.low]: '15',
         },
-        "3": {
-            [Options.extreme]: "22",
-            [Options.high]: "19",
-            [Options.moderate]: "18",
-            [Options.low]: "16"
+        '3': {
+            [Options.extreme]: '22',
+            [Options.high]: '19',
+            [Options.moderate]: '18',
+            [Options.low]: '16',
         },
-        "4": {
-            [Options.extreme]: "24",
-            [Options.high]: "21",
-            [Options.moderate]: "20",
-            [Options.low]: "18"
+        '4': {
+            [Options.extreme]: '24',
+            [Options.high]: '21',
+            [Options.moderate]: '20',
+            [Options.low]: '18',
         },
-        "5": {
-            [Options.extreme]: "25",
-            [Options.high]: "22",
-            [Options.moderate]: "21",
-            [Options.low]: "19"
+        '5': {
+            [Options.extreme]: '25',
+            [Options.high]: '22',
+            [Options.moderate]: '21',
+            [Options.low]: '19',
         },
-        "6": {
-            [Options.extreme]: "27",
-            [Options.high]: "24",
-            [Options.moderate]: "23",
-            [Options.low]: "21"
+        '6': {
+            [Options.extreme]: '27',
+            [Options.high]: '24',
+            [Options.moderate]: '23',
+            [Options.low]: '21',
         },
-        "7": {
-            [Options.extreme]: "28",
-            [Options.high]: "25",
-            [Options.moderate]: "24",
-            [Options.low]: "22"
+        '7': {
+            [Options.extreme]: '28',
+            [Options.high]: '25',
+            [Options.moderate]: '24',
+            [Options.low]: '22',
         },
-        "8": {
-            [Options.extreme]: "30",
-            [Options.high]: "27",
-            [Options.moderate]: "26",
-            [Options.low]: "24"
+        '8': {
+            [Options.extreme]: '30',
+            [Options.high]: '27',
+            [Options.moderate]: '26',
+            [Options.low]: '24',
         },
-        "9": {
-            [Options.extreme]: "31",
-            [Options.high]: "28",
-            [Options.moderate]: "27",
-            [Options.low]: "25"
+        '9': {
+            [Options.extreme]: '31',
+            [Options.high]: '28',
+            [Options.moderate]: '27',
+            [Options.low]: '25',
         },
-        "10": {
-            [Options.extreme]: "33",
-            [Options.high]: "30",
-            [Options.moderate]: "29",
-            [Options.low]: "27"
+        '10': {
+            [Options.extreme]: '33',
+            [Options.high]: '30',
+            [Options.moderate]: '29',
+            [Options.low]: '27',
         },
-        "11": {
-            [Options.extreme]: "34",
-            [Options.high]: "31",
-            [Options.moderate]: "30",
-            [Options.low]: "28"
+        '11': {
+            [Options.extreme]: '34',
+            [Options.high]: '31',
+            [Options.moderate]: '30',
+            [Options.low]: '28',
         },
-        "12": {
-            [Options.extreme]: "36",
-            [Options.high]: "33",
-            [Options.moderate]: "32",
-            [Options.low]: "30"
+        '12': {
+            [Options.extreme]: '36',
+            [Options.high]: '33',
+            [Options.moderate]: '32',
+            [Options.low]: '30',
         },
-        "13": {
-            [Options.extreme]: "37",
-            [Options.high]: "34",
-            [Options.moderate]: "33",
-            [Options.low]: "31"
+        '13': {
+            [Options.extreme]: '37',
+            [Options.high]: '34',
+            [Options.moderate]: '33',
+            [Options.low]: '31',
         },
-        "14": {
-            [Options.extreme]: "39",
-            [Options.high]: "36",
-            [Options.moderate]: "35",
-            [Options.low]: "33"
+        '14': {
+            [Options.extreme]: '39',
+            [Options.high]: '36',
+            [Options.moderate]: '35',
+            [Options.low]: '33',
         },
-        "15": {
-            [Options.extreme]: "40",
-            [Options.high]: "37",
-            [Options.moderate]: "36",
-            [Options.low]: "34"
+        '15': {
+            [Options.extreme]: '40',
+            [Options.high]: '37',
+            [Options.moderate]: '36',
+            [Options.low]: '34',
         },
-        "16": {
-            [Options.extreme]: "42",
-            [Options.high]: "39",
-            [Options.moderate]: "38",
-            [Options.low]: "36"
+        '16': {
+            [Options.extreme]: '42',
+            [Options.high]: '39',
+            [Options.moderate]: '38',
+            [Options.low]: '36',
         },
-        "17": {
-            [Options.extreme]: "43",
-            [Options.high]: "40",
-            [Options.moderate]: "39",
-            [Options.low]: "37"
+        '17': {
+            [Options.extreme]: '43',
+            [Options.high]: '40',
+            [Options.moderate]: '39',
+            [Options.low]: '37',
         },
-        "18": {
-            [Options.extreme]: "45",
-            [Options.high]: "42",
-            [Options.moderate]: "41",
-            [Options.low]: "39"
+        '18': {
+            [Options.extreme]: '45',
+            [Options.high]: '42',
+            [Options.moderate]: '41',
+            [Options.low]: '39',
         },
-        "19": {
-            [Options.extreme]: "46",
-            [Options.high]: "43",
-            [Options.moderate]: "42",
-            [Options.low]: "40"
+        '19': {
+            [Options.extreme]: '46',
+            [Options.high]: '43',
+            [Options.moderate]: '42',
+            [Options.low]: '40',
         },
-        "20": {
-            [Options.extreme]: "48",
-            [Options.high]: "45",
-            [Options.moderate]: "44",
-            [Options.low]: "42"
+        '20': {
+            [Options.extreme]: '48',
+            [Options.high]: '45',
+            [Options.moderate]: '44',
+            [Options.low]: '42',
         },
-        "21": {
-            [Options.extreme]: "49",
-            [Options.high]: "46",
-            [Options.moderate]: "45",
-            [Options.low]: "43"
+        '21': {
+            [Options.extreme]: '49',
+            [Options.high]: '46',
+            [Options.moderate]: '45',
+            [Options.low]: '43',
         },
-        "22": {
-            [Options.extreme]: "51",
-            [Options.high]: "48",
-            [Options.moderate]: "47",
-            [Options.low]: "45"
+        '22': {
+            [Options.extreme]: '51',
+            [Options.high]: '48',
+            [Options.moderate]: '47',
+            [Options.low]: '45',
         },
-        "23": {
-            [Options.extreme]: "52",
-            [Options.high]: "49",
-            [Options.moderate]: "48",
-            [Options.low]: "46"
+        '23': {
+            [Options.extreme]: '52',
+            [Options.high]: '49',
+            [Options.moderate]: '48',
+            [Options.low]: '46',
         },
-        "24": {
-            [Options.extreme]: "54",
-            [Options.high]: "51",
-            [Options.moderate]: "50",
-            [Options.low]: "48"
-        }
+        '24': {
+            [Options.extreme]: '54',
+            [Options.high]: '51',
+            [Options.moderate]: '50',
+            [Options.low]: '48',
+        },
     },
     strikeBonus: {
-        "-1": {
-            [Options.extreme]: "10",
-            [Options.high]: "8",
-            [Options.moderate]: "6",
-            [Options.low]: "4"
+        '-1': {
+            [Options.extreme]: '10',
+            [Options.high]: '8',
+            [Options.moderate]: '6',
+            [Options.low]: '4',
         },
-        "0": {
-            [Options.extreme]: "10",
-            [Options.high]: "8",
-            [Options.moderate]: "6",
-            [Options.low]: "4"
+        '0': {
+            [Options.extreme]: '10',
+            [Options.high]: '8',
+            [Options.moderate]: '6',
+            [Options.low]: '4',
         },
-        "1": {
-            [Options.extreme]: "11",
-            [Options.high]: "9",
-            [Options.moderate]: "7",
-            [Options.low]: "5"
+        '1': {
+            [Options.extreme]: '11',
+            [Options.high]: '9',
+            [Options.moderate]: '7',
+            [Options.low]: '5',
         },
-        "2": {
-            [Options.extreme]: "13",
-            [Options.high]: "11",
-            [Options.moderate]: "9",
-            [Options.low]: "7"
+        '2': {
+            [Options.extreme]: '13',
+            [Options.high]: '11',
+            [Options.moderate]: '9',
+            [Options.low]: '7',
         },
-        "3": {
-            [Options.extreme]: "14",
-            [Options.high]: "12",
-            [Options.moderate]: "10",
-            [Options.low]: "8"
+        '3': {
+            [Options.extreme]: '14',
+            [Options.high]: '12',
+            [Options.moderate]: '10',
+            [Options.low]: '8',
         },
-        "4": {
-            [Options.extreme]: "16",
-            [Options.high]: "14",
-            [Options.moderate]: "12",
-            [Options.low]: "9"
+        '4': {
+            [Options.extreme]: '16',
+            [Options.high]: '14',
+            [Options.moderate]: '12',
+            [Options.low]: '9',
         },
-        "5": {
-            [Options.extreme]: "17",
-            [Options.high]: "15",
-            [Options.moderate]: "13",
-            [Options.low]: "11"
+        '5': {
+            [Options.extreme]: '17',
+            [Options.high]: '15',
+            [Options.moderate]: '13',
+            [Options.low]: '11',
         },
-        "6": {
-            [Options.extreme]: "19",
-            [Options.high]: "17",
-            [Options.moderate]: "15",
-            [Options.low]: "12"
+        '6': {
+            [Options.extreme]: '19',
+            [Options.high]: '17',
+            [Options.moderate]: '15',
+            [Options.low]: '12',
         },
-        "7": {
-            [Options.extreme]: "20",
-            [Options.high]: "18",
-            [Options.moderate]: "16",
-            [Options.low]: "13"
+        '7': {
+            [Options.extreme]: '20',
+            [Options.high]: '18',
+            [Options.moderate]: '16',
+            [Options.low]: '13',
         },
-        "8": {
-            [Options.extreme]: "22",
-            [Options.high]: "20",
-            [Options.moderate]: "18",
-            [Options.low]: "15"
+        '8': {
+            [Options.extreme]: '22',
+            [Options.high]: '20',
+            [Options.moderate]: '18',
+            [Options.low]: '15',
         },
-        "9": {
-            [Options.extreme]: "23",
-            [Options.high]: "21",
-            [Options.moderate]: "19",
-            [Options.low]: "16"
+        '9': {
+            [Options.extreme]: '23',
+            [Options.high]: '21',
+            [Options.moderate]: '19',
+            [Options.low]: '16',
         },
-        "10": {
-            [Options.extreme]: "25",
-            [Options.high]: "23",
-            [Options.moderate]: "21",
-            [Options.low]: "17"
+        '10': {
+            [Options.extreme]: '25',
+            [Options.high]: '23',
+            [Options.moderate]: '21',
+            [Options.low]: '17',
         },
-        "11": {
-            [Options.extreme]: "27",
-            [Options.high]: "24",
-            [Options.moderate]: "22",
-            [Options.low]: "19"
+        '11': {
+            [Options.extreme]: '27',
+            [Options.high]: '24',
+            [Options.moderate]: '22',
+            [Options.low]: '19',
         },
-        "12": {
-            [Options.extreme]: "28",
-            [Options.high]: "26",
-            [Options.moderate]: "24",
-            [Options.low]: "20"
+        '12': {
+            [Options.extreme]: '28',
+            [Options.high]: '26',
+            [Options.moderate]: '24',
+            [Options.low]: '20',
         },
-        "13": {
-            [Options.extreme]: "29",
-            [Options.high]: "27",
-            [Options.moderate]: "25",
-            [Options.low]: "21"
+        '13': {
+            [Options.extreme]: '29',
+            [Options.high]: '27',
+            [Options.moderate]: '25',
+            [Options.low]: '21',
         },
-        "14": {
-            [Options.extreme]: "31",
-            [Options.high]: "29",
-            [Options.moderate]: "27",
-            [Options.low]: "23"
+        '14': {
+            [Options.extreme]: '31',
+            [Options.high]: '29',
+            [Options.moderate]: '27',
+            [Options.low]: '23',
         },
-        "15": {
-            [Options.extreme]: "32",
-            [Options.high]: "30",
-            [Options.moderate]: "28",
-            [Options.low]: "24"
+        '15': {
+            [Options.extreme]: '32',
+            [Options.high]: '30',
+            [Options.moderate]: '28',
+            [Options.low]: '24',
         },
-        "16": {
-            [Options.extreme]: "34",
-            [Options.high]: "32",
-            [Options.moderate]: "30",
-            [Options.low]: "25"
+        '16': {
+            [Options.extreme]: '34',
+            [Options.high]: '32',
+            [Options.moderate]: '30',
+            [Options.low]: '25',
         },
-        "17": {
-            [Options.extreme]: "35",
-            [Options.high]: "33",
-            [Options.moderate]: "31",
-            [Options.low]: "27"
+        '17': {
+            [Options.extreme]: '35',
+            [Options.high]: '33',
+            [Options.moderate]: '31',
+            [Options.low]: '27',
         },
-        "18": {
-            [Options.extreme]: "37",
-            [Options.high]: "35",
-            [Options.moderate]: "33",
-            [Options.low]: "28"
+        '18': {
+            [Options.extreme]: '37',
+            [Options.high]: '35',
+            [Options.moderate]: '33',
+            [Options.low]: '28',
         },
-        "19": {
-            [Options.extreme]: "38",
-            [Options.high]: "36",
-            [Options.moderate]: "34",
-            [Options.low]: "29"
+        '19': {
+            [Options.extreme]: '38',
+            [Options.high]: '36',
+            [Options.moderate]: '34',
+            [Options.low]: '29',
         },
-        "20": {
-            [Options.extreme]: "40",
-            [Options.high]: "38",
-            [Options.moderate]: "36",
-            [Options.low]: "31"
+        '20': {
+            [Options.extreme]: '40',
+            [Options.high]: '38',
+            [Options.moderate]: '36',
+            [Options.low]: '31',
         },
-        "21": {
-            [Options.extreme]: "41",
-            [Options.high]: "39",
-            [Options.moderate]: "37",
-            [Options.low]: "32"
+        '21': {
+            [Options.extreme]: '41',
+            [Options.high]: '39',
+            [Options.moderate]: '37',
+            [Options.low]: '32',
         },
-        "22": {
-            [Options.extreme]: "43",
-            [Options.high]: "41",
-            [Options.moderate]: "39",
-            [Options.low]: "33"
+        '22': {
+            [Options.extreme]: '43',
+            [Options.high]: '41',
+            [Options.moderate]: '39',
+            [Options.low]: '33',
         },
-        "23": {
-            [Options.extreme]: "44",
-            [Options.high]: "42",
-            [Options.moderate]: "40",
-            [Options.low]: "35"
+        '23': {
+            [Options.extreme]: '44',
+            [Options.high]: '42',
+            [Options.moderate]: '40',
+            [Options.low]: '35',
         },
-        "24": {
-            [Options.extreme]: "46",
-            [Options.high]: "44",
-            [Options.moderate]: "42",
-            [Options.low]: "36"
-        }
+        '24': {
+            [Options.extreme]: '46',
+            [Options.high]: '44',
+            [Options.moderate]: '42',
+            [Options.low]: '36',
+        },
     },
     strikeDamage: {
-        "-1": {
-            [Options.extreme]: "1d6+1",
-            [Options.high]: "1d4+1",
-            [Options.moderate]: "1d4",
-            [Options.low]: "1d4"
+        '-1': {
+            [Options.extreme]: '1d6+1',
+            [Options.high]: '1d4+1',
+            [Options.moderate]: '1d4',
+            [Options.low]: '1d4',
         },
-        "0": {
-            [Options.extreme]: "1d6+3",
-            [Options.high]: "1d6+2",
-            [Options.moderate]: "1d4+2",
-            [Options.low]: "1d4+1"
+        '0': {
+            [Options.extreme]: '1d6+3',
+            [Options.high]: '1d6+2',
+            [Options.moderate]: '1d4+2',
+            [Options.low]: '1d4+1',
         },
-        "1": {
-            [Options.extreme]: "1d8+4",
-            [Options.high]: "1d6+3",
-            [Options.moderate]: "1d6+2",
-            [Options.low]: "1d4+2"
+        '1': {
+            [Options.extreme]: '1d8+4',
+            [Options.high]: '1d6+3',
+            [Options.moderate]: '1d6+2',
+            [Options.low]: '1d4+2',
         },
-        "2": {
-            [Options.extreme]: "1d12+4",
-            [Options.high]: "1d10+4",
-            [Options.moderate]: "1d8+4",
-            [Options.low]: "1d6+3"
+        '2': {
+            [Options.extreme]: '1d12+4',
+            [Options.high]: '1d10+4',
+            [Options.moderate]: '1d8+4',
+            [Options.low]: '1d6+3',
         },
-        "3": {
-            [Options.extreme]: "1d12+8",
-            [Options.high]: "1d10+6",
-            [Options.moderate]: "1d8+6",
-            [Options.low]: "1d6+5"
+        '3': {
+            [Options.extreme]: '1d12+8',
+            [Options.high]: '1d10+6',
+            [Options.moderate]: '1d8+6',
+            [Options.low]: '1d6+5',
         },
-        "4": {
-            [Options.extreme]: "2d10+7",
-            [Options.high]: "2d8+5",
-            [Options.moderate]: "2d6+5",
-            [Options.low]: "2d4+4"
+        '4': {
+            [Options.extreme]: '2d10+7',
+            [Options.high]: '2d8+5',
+            [Options.moderate]: '2d6+5',
+            [Options.low]: '2d4+4',
         },
-        "5": {
-            [Options.extreme]: "2d12+7",
-            [Options.high]: "2d8+7",
-            [Options.moderate]: "2d6+6",
-            [Options.low]: "2d4+6"
+        '5': {
+            [Options.extreme]: '2d12+7',
+            [Options.high]: '2d8+7',
+            [Options.moderate]: '2d6+6',
+            [Options.low]: '2d4+6',
         },
-        "6": {
-            [Options.extreme]: "2d12+10",
-            [Options.high]: "2d8+9",
-            [Options.moderate]: "2d6+8",
-            [Options.low]: "2d4+7"
+        '6': {
+            [Options.extreme]: '2d12+10',
+            [Options.high]: '2d8+9',
+            [Options.moderate]: '2d6+8',
+            [Options.low]: '2d4+7',
         },
-        "7": {
-            [Options.extreme]: "2d12+12",
-            [Options.high]: "2d10+9",
-            [Options.moderate]: "2d8+8",
-            [Options.low]: "2d6+6"
+        '7': {
+            [Options.extreme]: '2d12+12',
+            [Options.high]: '2d10+9',
+            [Options.moderate]: '2d8+8',
+            [Options.low]: '2d6+6',
         },
-        "8": {
-            [Options.extreme]: "2d12+15",
-            [Options.high]: "2d10+11",
-            [Options.moderate]: "2d8+9",
-            [Options.low]: "2d6+8"
+        '8': {
+            [Options.extreme]: '2d12+15',
+            [Options.high]: '2d10+11',
+            [Options.moderate]: '2d8+9',
+            [Options.low]: '2d6+8',
         },
-        "9": {
-            [Options.extreme]: "2d12+17",
-            [Options.high]: "2d10+13",
-            [Options.moderate]: "2d8+11",
-            [Options.low]: "2d6+9"
+        '9': {
+            [Options.extreme]: '2d12+17',
+            [Options.high]: '2d10+13',
+            [Options.moderate]: '2d8+11',
+            [Options.low]: '2d6+9',
         },
-        "10": {
-            [Options.extreme]: "2d12+20",
-            [Options.high]: "2d12+13",
-            [Options.moderate]: "2d10+11",
-            [Options.low]: "2d6+10"
+        '10': {
+            [Options.extreme]: '2d12+20',
+            [Options.high]: '2d12+13',
+            [Options.moderate]: '2d10+11',
+            [Options.low]: '2d6+10',
         },
-        "11": {
-            [Options.extreme]: "2d12+22",
-            [Options.high]: "2d12+15",
-            [Options.moderate]: "2d10+12",
-            [Options.low]: "2d8+10"
+        '11': {
+            [Options.extreme]: '2d12+22',
+            [Options.high]: '2d12+15',
+            [Options.moderate]: '2d10+12',
+            [Options.low]: '2d8+10',
         },
-        "12": {
-            [Options.extreme]: "3d12+19",
-            [Options.high]: "3d10+14",
-            [Options.moderate]: "3d8+12",
-            [Options.low]: "3d6+10"
+        '12': {
+            [Options.extreme]: '3d12+19',
+            [Options.high]: '3d10+14',
+            [Options.moderate]: '3d8+12',
+            [Options.low]: '3d6+10',
         },
-        "13": {
-            [Options.extreme]: "3d12+21",
-            [Options.high]: "3d10+16",
-            [Options.moderate]: "3d8+14",
-            [Options.low]: "3d6+11"
+        '13': {
+            [Options.extreme]: '3d12+21',
+            [Options.high]: '3d10+16',
+            [Options.moderate]: '3d8+14',
+            [Options.low]: '3d6+11',
         },
-        "14": {
-            [Options.extreme]: "3d12+24",
-            [Options.high]: "3d10+18",
-            [Options.moderate]: "3d8+15",
-            [Options.low]: "3d6+13"
+        '14': {
+            [Options.extreme]: '3d12+24',
+            [Options.high]: '3d10+18',
+            [Options.moderate]: '3d8+15',
+            [Options.low]: '3d6+13',
         },
-        "15": {
-            [Options.extreme]: "3d12+26",
-            [Options.high]: "3d12+17",
-            [Options.moderate]: "3d10+14",
-            [Options.low]: "3d6+14"
+        '15': {
+            [Options.extreme]: '3d12+26',
+            [Options.high]: '3d12+17',
+            [Options.moderate]: '3d10+14',
+            [Options.low]: '3d6+14',
         },
-        "16": {
-            [Options.extreme]: "3d12+29",
-            [Options.high]: "3d12+18",
-            [Options.moderate]: "3d10+15",
-            [Options.low]: "3d6+15"
+        '16': {
+            [Options.extreme]: '3d12+29',
+            [Options.high]: '3d12+18',
+            [Options.moderate]: '3d10+15',
+            [Options.low]: '3d6+15',
         },
-        "17": {
-            [Options.extreme]: "3d12+31",
-            [Options.high]: "3d12+19",
-            [Options.moderate]: "3d10+16",
-            [Options.low]: "3d6+16"
+        '17': {
+            [Options.extreme]: '3d12+31',
+            [Options.high]: '3d12+19',
+            [Options.moderate]: '3d10+16',
+            [Options.low]: '3d6+16',
         },
-        "18": {
-            [Options.extreme]: "3d12+34",
-            [Options.high]: "3d12+20",
-            [Options.moderate]: "3d10+17",
-            [Options.low]: "3d6+17"
+        '18': {
+            [Options.extreme]: '3d12+34',
+            [Options.high]: '3d12+20',
+            [Options.moderate]: '3d10+17',
+            [Options.low]: '3d6+17',
         },
-        "19": {
-            [Options.extreme]: "4d12+29",
-            [Options.high]: "4d10+20",
-            [Options.moderate]: "4d8+17",
-            [Options.low]: "4d6+14"
+        '19': {
+            [Options.extreme]: '4d12+29',
+            [Options.high]: '4d10+20',
+            [Options.moderate]: '4d8+17',
+            [Options.low]: '4d6+14',
         },
-        "20": {
-            [Options.extreme]: "4d12+32",
-            [Options.high]: "4d10+22",
-            [Options.moderate]: "4d8+19",
-            [Options.low]: "4d6+15"
+        '20': {
+            [Options.extreme]: '4d12+32',
+            [Options.high]: '4d10+22',
+            [Options.moderate]: '4d8+19',
+            [Options.low]: '4d6+15',
         },
-        "21": {
-            [Options.extreme]: "4d12+34",
-            [Options.high]: "4d10+24",
-            [Options.moderate]: "4d8+20",
-            [Options.low]: "4d6+17"
+        '21': {
+            [Options.extreme]: '4d12+34',
+            [Options.high]: '4d10+24',
+            [Options.moderate]: '4d8+20',
+            [Options.low]: '4d6+17',
         },
-        "22": {
-            [Options.extreme]: "4d12+37",
-            [Options.high]: "4d10+26",
-            [Options.moderate]: "4d8+22",
-            [Options.low]: "4d6+18"
+        '22': {
+            [Options.extreme]: '4d12+37',
+            [Options.high]: '4d10+26',
+            [Options.moderate]: '4d8+22',
+            [Options.low]: '4d6+18',
         },
-        "23": {
-            [Options.extreme]: "4d12+39",
-            [Options.high]: "4d12+24",
-            [Options.moderate]: "4d10+20",
-            [Options.low]: "4d6+19"
+        '23': {
+            [Options.extreme]: '4d12+39',
+            [Options.high]: '4d12+24',
+            [Options.moderate]: '4d10+20',
+            [Options.low]: '4d6+19',
         },
-        "24": {
-            [Options.extreme]: "4d12+42",
-            [Options.high]: "4d12+26",
-            [Options.moderate]: "4d10+22",
-            [Options.low]: "4d6+21"
-        }
+        '24': {
+            [Options.extreme]: '4d12+42',
+            [Options.high]: '4d12+26',
+            [Options.moderate]: '4d10+22',
+            [Options.low]: '4d6+21',
+        },
     },
     spellcasting: {
-        "-1": {
-            [Options.extreme]: "11",
-            [Options.high]: "8",
-            [Options.moderate]: "5",
+        '-1': {
+            [Options.extreme]: '11',
+            [Options.high]: '8',
+            [Options.moderate]: '5',
         },
-        "0": {
-            [Options.extreme]: "11",
-            [Options.high]: "8",
-            [Options.moderate]: "5",
+        '0': {
+            [Options.extreme]: '11',
+            [Options.high]: '8',
+            [Options.moderate]: '5',
         },
-        "1": {
-            [Options.extreme]: "12",
-            [Options.high]: "9",
-            [Options.moderate]: "6",
+        '1': {
+            [Options.extreme]: '12',
+            [Options.high]: '9',
+            [Options.moderate]: '6',
         },
-        "2": {
-            [Options.extreme]: "14",
-            [Options.high]: "10",
-            [Options.moderate]: "7",
+        '2': {
+            [Options.extreme]: '14',
+            [Options.high]: '10',
+            [Options.moderate]: '7',
         },
-        "3": {
-            [Options.extreme]: "15",
-            [Options.high]: "12",
-            [Options.moderate]: "9",
+        '3': {
+            [Options.extreme]: '15',
+            [Options.high]: '12',
+            [Options.moderate]: '9',
         },
-        "4": {
-            [Options.extreme]: "17",
-            [Options.high]: "13",
-            [Options.moderate]: "10",
+        '4': {
+            [Options.extreme]: '17',
+            [Options.high]: '13',
+            [Options.moderate]: '10',
         },
-        "5": {
-            [Options.extreme]: "18",
-            [Options.high]: "14",
-            [Options.moderate]: "11",
+        '5': {
+            [Options.extreme]: '18',
+            [Options.high]: '14',
+            [Options.moderate]: '11',
         },
-        "6": {
-            [Options.extreme]: "19",
-            [Options.high]: "16",
-            [Options.moderate]: "13",
+        '6': {
+            [Options.extreme]: '19',
+            [Options.high]: '16',
+            [Options.moderate]: '13',
         },
-        "7": {
-            [Options.extreme]: "21",
-            [Options.high]: "17",
-            [Options.moderate]: "14",
+        '7': {
+            [Options.extreme]: '21',
+            [Options.high]: '17',
+            [Options.moderate]: '14',
         },
-        "8": {
-            [Options.extreme]: "22",
-            [Options.high]: "18",
-            [Options.moderate]: "15",
+        '8': {
+            [Options.extreme]: '22',
+            [Options.high]: '18',
+            [Options.moderate]: '15',
         },
-        "9": {
-            [Options.extreme]: "24",
-            [Options.high]: "20",
-            [Options.moderate]: "17",
+        '9': {
+            [Options.extreme]: '24',
+            [Options.high]: '20',
+            [Options.moderate]: '17',
         },
-        "10": {
-            [Options.extreme]: "25",
-            [Options.high]: "21",
-            [Options.moderate]: "18",
+        '10': {
+            [Options.extreme]: '25',
+            [Options.high]: '21',
+            [Options.moderate]: '18',
         },
-        "11": {
-            [Options.extreme]: "26",
-            [Options.high]: "22",
-            [Options.moderate]: "19",
+        '11': {
+            [Options.extreme]: '26',
+            [Options.high]: '22',
+            [Options.moderate]: '19',
         },
-        "12": {
-            [Options.extreme]: "28",
-            [Options.high]: "24",
-            [Options.moderate]: "21",
+        '12': {
+            [Options.extreme]: '28',
+            [Options.high]: '24',
+            [Options.moderate]: '21',
         },
-        "13": {
-            [Options.extreme]: "29",
-            [Options.high]: "25",
-            [Options.moderate]: "22",
+        '13': {
+            [Options.extreme]: '29',
+            [Options.high]: '25',
+            [Options.moderate]: '22',
         },
-        "14": {
-            [Options.extreme]: "31",
-            [Options.high]: "26",
-            [Options.moderate]: "23",
+        '14': {
+            [Options.extreme]: '31',
+            [Options.high]: '26',
+            [Options.moderate]: '23',
         },
-        "15": {
-            [Options.extreme]: "32",
-            [Options.high]: "28",
-            [Options.moderate]: "25",
+        '15': {
+            [Options.extreme]: '32',
+            [Options.high]: '28',
+            [Options.moderate]: '25',
         },
-        "16": {
-            [Options.extreme]: "33",
-            [Options.high]: "29",
-            [Options.moderate]: "26",
+        '16': {
+            [Options.extreme]: '33',
+            [Options.high]: '29',
+            [Options.moderate]: '26',
         },
-        "17": {
-            [Options.extreme]: "35",
-            [Options.high]: "30",
-            [Options.moderate]: "27",
+        '17': {
+            [Options.extreme]: '35',
+            [Options.high]: '30',
+            [Options.moderate]: '27',
         },
-        "18": {
-            [Options.extreme]: "36",
-            [Options.high]: "32",
-            [Options.moderate]: "29",
+        '18': {
+            [Options.extreme]: '36',
+            [Options.high]: '32',
+            [Options.moderate]: '29',
         },
-        "19": {
-            [Options.extreme]: "38",
-            [Options.high]: "33",
-            [Options.moderate]: "30",
+        '19': {
+            [Options.extreme]: '38',
+            [Options.high]: '33',
+            [Options.moderate]: '30',
         },
-        "20": {
-            [Options.extreme]: "39",
-            [Options.high]: "34",
-            [Options.moderate]: "31",
+        '20': {
+            [Options.extreme]: '39',
+            [Options.high]: '34',
+            [Options.moderate]: '31',
         },
-        "21": {
-            [Options.extreme]: "40",
-            [Options.high]: "36",
-            [Options.moderate]: "33",
+        '21': {
+            [Options.extreme]: '40',
+            [Options.high]: '36',
+            [Options.moderate]: '33',
         },
-        "22": {
-            [Options.extreme]: "42",
-            [Options.high]: "37",
-            [Options.moderate]: "34",
+        '22': {
+            [Options.extreme]: '42',
+            [Options.high]: '37',
+            [Options.moderate]: '34',
         },
-        "23": {
-            [Options.extreme]: "43",
-            [Options.high]: "38",
-            [Options.moderate]: "35",
+        '23': {
+            [Options.extreme]: '43',
+            [Options.high]: '38',
+            [Options.moderate]: '35',
         },
-        "24": {
-            [Options.extreme]: "44",
-            [Options.high]: "40",
-            [Options.moderate]: "37",
-        }
+        '24': {
+            [Options.extreme]: '44',
+            [Options.high]: '40',
+            [Options.moderate]: '37',
+        },
     },
     skills: {
-        "-1": {
-            [Options.extreme]: "8",
-            [Options.high]: "5",
-            [Options.moderate]: "4",
-            [Options.low]: "2",
-            [Options.terrible]: "1"
+        '-1': {
+            [Options.extreme]: '8',
+            [Options.high]: '5',
+            [Options.moderate]: '4',
+            [Options.low]: '2',
+            [Options.terrible]: '1',
         },
-        "0": {
-            [Options.extreme]: "9",
-            [Options.high]: "6",
-            [Options.moderate]: "5",
-            [Options.low]: "3",
-            [Options.terrible]: "2"
+        '0': {
+            [Options.extreme]: '9',
+            [Options.high]: '6',
+            [Options.moderate]: '5',
+            [Options.low]: '3',
+            [Options.terrible]: '2',
         },
-        "1": {
-            [Options.extreme]: "10",
-            [Options.high]: "7",
-            [Options.moderate]: "6",
-            [Options.low]: "4",
-            [Options.terrible]: "3"
+        '1': {
+            [Options.extreme]: '10',
+            [Options.high]: '7',
+            [Options.moderate]: '6',
+            [Options.low]: '4',
+            [Options.terrible]: '3',
         },
-        "2": {
-            [Options.extreme]: "11",
-            [Options.high]: "8",
-            [Options.moderate]: "7",
-            [Options.low]: "5",
-            [Options.terrible]: "4"
+        '2': {
+            [Options.extreme]: '11',
+            [Options.high]: '8',
+            [Options.moderate]: '7',
+            [Options.low]: '5',
+            [Options.terrible]: '4',
         },
-        "3": {
-            [Options.extreme]: "13",
-            [Options.high]: "10",
-            [Options.moderate]: "9",
-            [Options.low]: "7",
-            [Options.terrible]: "5"
+        '3': {
+            [Options.extreme]: '13',
+            [Options.high]: '10',
+            [Options.moderate]: '9',
+            [Options.low]: '7',
+            [Options.terrible]: '5',
         },
-        "4": {
-            [Options.extreme]: "15",
-            [Options.high]: "12",
-            [Options.moderate]: "10",
-            [Options.low]: "8",
-            [Options.terrible]: "7"
+        '4': {
+            [Options.extreme]: '15',
+            [Options.high]: '12',
+            [Options.moderate]: '10',
+            [Options.low]: '8',
+            [Options.terrible]: '7',
         },
-        "5": {
-            [Options.extreme]: "16",
-            [Options.high]: "13",
-            [Options.moderate]: "12",
-            [Options.low]: "10",
-            [Options.terrible]: "8"
+        '5': {
+            [Options.extreme]: '16',
+            [Options.high]: '13',
+            [Options.moderate]: '12',
+            [Options.low]: '10',
+            [Options.terrible]: '8',
         },
-        "6": {
-            [Options.extreme]: "18",
-            [Options.high]: "15",
-            [Options.moderate]: "13",
-            [Options.low]: "11",
-            [Options.terrible]: "9"
+        '6': {
+            [Options.extreme]: '18',
+            [Options.high]: '15',
+            [Options.moderate]: '13',
+            [Options.low]: '11',
+            [Options.terrible]: '9',
         },
-        "7": {
-            [Options.extreme]: "20",
-            [Options.high]: "17",
-            [Options.moderate]: "15",
-            [Options.low]: "13",
-            [Options.terrible]: "11"
+        '7': {
+            [Options.extreme]: '20',
+            [Options.high]: '17',
+            [Options.moderate]: '15',
+            [Options.low]: '13',
+            [Options.terrible]: '11',
         },
-        "8": {
-            [Options.extreme]: "21",
-            [Options.high]: "18",
-            [Options.moderate]: "16",
-            [Options.low]: "14",
-            [Options.terrible]: "12"
+        '8': {
+            [Options.extreme]: '21',
+            [Options.high]: '18',
+            [Options.moderate]: '16',
+            [Options.low]: '14',
+            [Options.terrible]: '12',
         },
-        "9": {
-            [Options.extreme]: "23",
-            [Options.high]: "20",
-            [Options.moderate]: "18",
-            [Options.low]: "16",
-            [Options.terrible]: "13"
+        '9': {
+            [Options.extreme]: '23',
+            [Options.high]: '20',
+            [Options.moderate]: '18',
+            [Options.low]: '16',
+            [Options.terrible]: '13',
         },
-        "10": {
-            [Options.extreme]: "25",
-            [Options.high]: "22",
-            [Options.moderate]: "19",
-            [Options.low]: "17",
-            [Options.terrible]: "15"
+        '10': {
+            [Options.extreme]: '25',
+            [Options.high]: '22',
+            [Options.moderate]: '19',
+            [Options.low]: '17',
+            [Options.terrible]: '15',
         },
-        "11": {
-            [Options.extreme]: "26",
-            [Options.high]: "23",
-            [Options.moderate]: "21",
-            [Options.low]: "19",
-            [Options.terrible]: "16"
+        '11': {
+            [Options.extreme]: '26',
+            [Options.high]: '23',
+            [Options.moderate]: '21',
+            [Options.low]: '19',
+            [Options.terrible]: '16',
         },
-        "12": {
-            [Options.extreme]: "28",
-            [Options.high]: "25",
-            [Options.moderate]: "22",
-            [Options.low]: "20",
-            [Options.terrible]: "17"
+        '12': {
+            [Options.extreme]: '28',
+            [Options.high]: '25',
+            [Options.moderate]: '22',
+            [Options.low]: '20',
+            [Options.terrible]: '17',
         },
-        "13": {
-            [Options.extreme]: "30",
-            [Options.high]: "27",
-            [Options.moderate]: "24",
-            [Options.low]: "22",
-            [Options.terrible]: "19"
+        '13': {
+            [Options.extreme]: '30',
+            [Options.high]: '27',
+            [Options.moderate]: '24',
+            [Options.low]: '22',
+            [Options.terrible]: '19',
         },
-        "14": {
-            [Options.extreme]: "31",
-            [Options.high]: "28",
-            [Options.moderate]: "25",
-            [Options.low]: "23",
-            [Options.terrible]: "20"
+        '14': {
+            [Options.extreme]: '31',
+            [Options.high]: '28',
+            [Options.moderate]: '25',
+            [Options.low]: '23',
+            [Options.terrible]: '20',
         },
-        "15": {
-            [Options.extreme]: "33",
-            [Options.high]: "30",
-            [Options.moderate]: "27",
-            [Options.low]: "25",
-            [Options.terrible]: "21"
+        '15': {
+            [Options.extreme]: '33',
+            [Options.high]: '30',
+            [Options.moderate]: '27',
+            [Options.low]: '25',
+            [Options.terrible]: '21',
         },
-        "16": {
-            [Options.extreme]: "35",
-            [Options.high]: "32",
-            [Options.moderate]: "28",
-            [Options.low]: "26",
-            [Options.terrible]: "23"
+        '16': {
+            [Options.extreme]: '35',
+            [Options.high]: '32',
+            [Options.moderate]: '28',
+            [Options.low]: '26',
+            [Options.terrible]: '23',
         },
-        "17": {
-            [Options.extreme]: "36",
-            [Options.high]: "33",
-            [Options.moderate]: "30",
-            [Options.low]: "28",
-            [Options.terrible]: "24"
+        '17': {
+            [Options.extreme]: '36',
+            [Options.high]: '33',
+            [Options.moderate]: '30',
+            [Options.low]: '28',
+            [Options.terrible]: '24',
         },
-        "18": {
-            [Options.extreme]: "38",
-            [Options.high]: "35",
-            [Options.moderate]: "31",
-            [Options.low]: "29",
-            [Options.terrible]: "25"
+        '18': {
+            [Options.extreme]: '38',
+            [Options.high]: '35',
+            [Options.moderate]: '31',
+            [Options.low]: '29',
+            [Options.terrible]: '25',
         },
-        "19": {
-            [Options.extreme]: "40",
-            [Options.high]: "37",
-            [Options.moderate]: "33",
-            [Options.low]: "31",
-            [Options.terrible]: "27"
+        '19': {
+            [Options.extreme]: '40',
+            [Options.high]: '37',
+            [Options.moderate]: '33',
+            [Options.low]: '31',
+            [Options.terrible]: '27',
         },
-        "20": {
-            [Options.extreme]: "41",
-            [Options.high]: "38",
-            [Options.moderate]: "34",
-            [Options.low]: "32",
-            [Options.terrible]: "28"
+        '20': {
+            [Options.extreme]: '41',
+            [Options.high]: '38',
+            [Options.moderate]: '34',
+            [Options.low]: '32',
+            [Options.terrible]: '28',
         },
-        "21": {
-            [Options.extreme]: "43",
-            [Options.high]: "40",
-            [Options.moderate]: "36",
-            [Options.low]: "34",
-            [Options.terrible]: "29"
+        '21': {
+            [Options.extreme]: '43',
+            [Options.high]: '40',
+            [Options.moderate]: '36',
+            [Options.low]: '34',
+            [Options.terrible]: '29',
         },
-        "22": {
-            [Options.extreme]: "45",
-            [Options.high]: "42",
-            [Options.moderate]: "37",
-            [Options.low]: "35",
-            [Options.terrible]: "31"
+        '22': {
+            [Options.extreme]: '45',
+            [Options.high]: '42',
+            [Options.moderate]: '37',
+            [Options.low]: '35',
+            [Options.terrible]: '31',
         },
-        "23": {
-            [Options.extreme]: "46",
-            [Options.high]: "43",
-            [Options.moderate]: "38",
-            [Options.low]: "36",
-            [Options.terrible]: "32"
+        '23': {
+            [Options.extreme]: '46',
+            [Options.high]: '43',
+            [Options.moderate]: '38',
+            [Options.low]: '36',
+            [Options.terrible]: '32',
         },
-        "24": {
-            [Options.extreme]: "48",
-            [Options.high]: "45",
-            [Options.moderate]: "40",
-            [Options.low]: "38",
-            [Options.terrible]: "33"
-        }
+        '24': {
+            [Options.extreme]: '48',
+            [Options.high]: '45',
+            [Options.moderate]: '40',
+            [Options.low]: '38',
+            [Options.terrible]: '33',
+        },
     },
 }
 

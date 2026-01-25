@@ -1,5 +1,31 @@
-export const Levels: string[] = ['-1', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14',
-    '15', '16', '17', '18', '19', '20', '21', '22', '23', '24']
+export const Levels: string[] = [
+    '-1',
+    '0',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    '10',
+    '11',
+    '12',
+    '13',
+    '14',
+    '15',
+    '16',
+    '17',
+    '18',
+    '19',
+    '20',
+    '21',
+    '22',
+    '23',
+    '24',
+]
 
 export enum Statistics {
     name = 'PF2EMONSTERMAKER.name',
@@ -47,10 +73,24 @@ export enum Statistics {
     thievery = 'PF2EMONSTERMAKER.thievery',
 }
 
-export const Skills: Statistics[] = [Statistics.acrobatics, Statistics.arcana, Statistics.athletics, Statistics.crafting,
-    Statistics.deception, Statistics.diplomacy, Statistics.intimidation, Statistics.medicine, Statistics.nature,
-    Statistics.occultism, Statistics.performance, Statistics.religion, Statistics.society, Statistics.stealth,
-    Statistics.survival, Statistics.thievery]
+export const Skills: Statistics[] = [
+    Statistics.acrobatics,
+    Statistics.arcana,
+    Statistics.athletics,
+    Statistics.crafting,
+    Statistics.deception,
+    Statistics.diplomacy,
+    Statistics.intimidation,
+    Statistics.medicine,
+    Statistics.nature,
+    Statistics.occultism,
+    Statistics.performance,
+    Statistics.religion,
+    Statistics.society,
+    Statistics.stealth,
+    Statistics.survival,
+    Statistics.thievery,
+]
 
 export const actorFields = {
     // Ability Scores
@@ -73,41 +113,61 @@ export const actorFields = {
     [Statistics.wil]: 'system.saves.will.value',
 }
 
-
 export enum Options {
     extreme = 'PF2EMONSTERMAKER.extreme',
     high = 'PF2EMONSTERMAKER.high',
     moderate = 'PF2EMONSTERMAKER.moderate',
     low = 'PF2EMONSTERMAKER.low',
     terrible = 'PF2EMONSTERMAKER.terrible',
-    abysmal = "PF2EMONSTERMAKER.abysmal",
+    abysmal = 'PF2EMONSTERMAKER.abysmal',
     none = 'PF2EMONSTERMAKER.none',
 }
 
 export const RoadMaps = {
     // Monster Roadmaps
-    "PF2EMONSTERMAKER.brute": {
-        [Statistics.per]: Options.low, [Statistics.str]: Options.extreme, [Statistics.con]: Options.high,
-        [Statistics.dex]: Options.low, [Statistics.int]: Options.low, [Statistics.wis]: Options.low,
-        [Statistics.cha]: Options.low, [Statistics.ac]: Options.low, [Statistics.fort]: Options.high,
-        [Statistics.ref]: Options.low, [Statistics.wil]: Options.low, [Statistics.hp]: Options.high,
-        [Statistics.strikeBonus]: Options.moderate, [Statistics.strikeDamage]: Options.extreme
+    'PF2EMONSTERMAKER.brute': {
+        [Statistics.per]: Options.low,
+        [Statistics.str]: Options.extreme,
+        [Statistics.con]: Options.high,
+        [Statistics.dex]: Options.low,
+        [Statistics.int]: Options.low,
+        [Statistics.wis]: Options.low,
+        [Statistics.cha]: Options.low,
+        [Statistics.ac]: Options.low,
+        [Statistics.fort]: Options.high,
+        [Statistics.ref]: Options.low,
+        [Statistics.wil]: Options.low,
+        [Statistics.hp]: Options.high,
+        [Statistics.strikeBonus]: Options.moderate,
+        [Statistics.strikeDamage]: Options.extreme,
     },
-    "PF2EMONSTERMAKER.magicalStriker": {
-        [Statistics.strikeBonus]: Options.high, [Statistics.strikeDamage]: Options.high,
-        [Statistics.spellcasting]: Options.high
+    'PF2EMONSTERMAKER.magicalStriker': {
+        [Statistics.strikeBonus]: Options.high,
+        [Statistics.strikeDamage]: Options.high,
+        [Statistics.spellcasting]: Options.high,
     },
-    "PF2EMONSTERMAKER.skirmisher": {[Statistics.dex]: Options.high, [Statistics.fort]: Options.low, [Statistics.ref]: Options.high},
-    "PF2EMONSTERMAKER.sniper": {
-        [Statistics.per]: Options.high, [Statistics.dex]: Options.high, [Statistics.fort]: Options.low,
-        [Statistics.ref]: Options.high, [Statistics.hp]: Options.low, [Statistics.strikeBonus]: Options.high,
-        [Statistics.strikeDamage]: Options.high
+    'PF2EMONSTERMAKER.skirmisher': {
+        [Statistics.dex]: Options.high,
+        [Statistics.fort]: Options.low,
+        [Statistics.ref]: Options.high,
     },
-    "PF2EMONSTERMAKER.soldier": {
-        [Statistics.str]: Options.high, [Statistics.ac]: Options.high, [Statistics.fort]: Options.high,
-        [Statistics.strikeBonus]: Options.high, [Statistics.strikeDamage]: Options.high
+    'PF2EMONSTERMAKER.sniper': {
+        [Statistics.per]: Options.high,
+        [Statistics.dex]: Options.high,
+        [Statistics.fort]: Options.low,
+        [Statistics.ref]: Options.high,
+        [Statistics.hp]: Options.low,
+        [Statistics.strikeBonus]: Options.high,
+        [Statistics.strikeDamage]: Options.high,
     },
-    "PF2EMONSTERMAKER.spellcaster": {
+    'PF2EMONSTERMAKER.soldier': {
+        [Statistics.str]: Options.high,
+        [Statistics.ac]: Options.high,
+        [Statistics.fort]: Options.high,
+        [Statistics.strikeBonus]: Options.high,
+        [Statistics.strikeDamage]: Options.high,
+    },
+    'PF2EMONSTERMAKER.spellcaster': {
         [Statistics.int]: Options.high,
         [Statistics.wis]: Options.high,
         [Statistics.cha]: Options.high,
@@ -116,10 +176,10 @@ export const RoadMaps = {
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
-        [Statistics.spellcasting]: Options.high
+        [Statistics.spellcasting]: Options.high,
     },
     // Special Roadmaps
-    "PF2EMONSTERMAKER.skilledNPC": {
+    'PF2EMONSTERMAKER.skilledNPC': {
         [Statistics.per]: Options.moderate,
         [Statistics.str]: Options.low,
         [Statistics.dex]: Options.low,
@@ -136,19 +196,19 @@ export const RoadMaps = {
         [Statistics.strikeDamage]: Options.low,
         [Statistics.society]: Options.high,
         [Statistics.diplomacy]: Options.moderate,
-        [Statistics.deception]: Options.moderate
+        [Statistics.deception]: Options.moderate,
     },
     // Class Roadmaps
-    "PF2EMONSTERMAKER.alchemist": {
+    'PF2EMONSTERMAKER.alchemist': {
         [Statistics.per]: Options.low,
         [Statistics.crafting]: Options.high,
         [Statistics.int]: Options.high,
         [Statistics.dex]: Options.moderate,
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.moderate,
-        [Statistics.strikeDamage]: Options.moderate
+        [Statistics.strikeDamage]: Options.moderate,
     },
-    "PF2EMONSTERMAKER.barbarian": {
+    'PF2EMONSTERMAKER.barbarian': {
         [Statistics.athletics]: Options.high,
         [Statistics.str]: Options.high,
         [Statistics.con]: Options.high,
@@ -156,9 +216,9 @@ export const RoadMaps = {
         [Statistics.fort]: Options.high,
         [Statistics.hp]: Options.high,
         [Statistics.strikeBonus]: Options.moderate,
-        [Statistics.strikeDamage]: Options.extreme
+        [Statistics.strikeDamage]: Options.extreme,
     },
-    "PF2EMONSTERMAKER.bard": {
+    'PF2EMONSTERMAKER.bard': {
         [Statistics.occultism]: Options.moderate,
         [Statistics.performance]: Options.high,
         [Statistics.cha]: Options.high,
@@ -167,9 +227,9 @@ export const RoadMaps = {
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
-        [Statistics.spellcasting]: Options.high
+        [Statistics.spellcasting]: Options.high,
     },
-    "PF2EMONSTERMAKER.champion": {
+    'PF2EMONSTERMAKER.champion': {
         [Statistics.per]: Options.low,
         [Statistics.religion]: Options.moderate,
         [Statistics.str]: Options.high,
@@ -177,9 +237,9 @@ export const RoadMaps = {
         [Statistics.ac]: Options.extreme,
         [Statistics.ref]: Options.low,
         [Statistics.strikeBonus]: Options.moderate,
-        [Statistics.strikeDamage]: Options.high
+        [Statistics.strikeDamage]: Options.high,
     },
-    "PF2EMONSTERMAKER.clericCloistered": {
+    'PF2EMONSTERMAKER.clericCloistered': {
         [Statistics.per]: Options.high,
         [Statistics.religion]: Options.high,
         [Statistics.ac]: Options.low,
@@ -189,18 +249,18 @@ export const RoadMaps = {
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
-        [Statistics.spellcasting]: Options.high
+        [Statistics.spellcasting]: Options.high,
     },
-    "PF2EMONSTERMAKER.clericWarpriest": {
+    'PF2EMONSTERMAKER.clericWarpriest': {
         [Statistics.religion]: Options.moderate,
         [Statistics.str]: Options.high,
         [Statistics.wis]: Options.moderate,
         [Statistics.ac]: Options.high,
         [Statistics.ref]: Options.low,
         [Statistics.wil]: Options.high,
-        [Statistics.spellcasting]: Options.high
+        [Statistics.spellcasting]: Options.high,
     },
-    "PF2EMONSTERMAKER.druid": {
+    'PF2EMONSTERMAKER.druid': {
         [Statistics.per]: Options.high,
         [Statistics.nature]: Options.high,
         [Statistics.wis]: Options.high,
@@ -208,17 +268,17 @@ export const RoadMaps = {
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
-        [Statistics.spellcasting]: Options.high
+        [Statistics.spellcasting]: Options.high,
     },
-    "PF2EMONSTERMAKER.fighter": {
+    'PF2EMONSTERMAKER.fighter': {
         [Statistics.athletics]: Options.high,
         [Statistics.str]: Options.high,
         [Statistics.ac]: Options.high,
         [Statistics.wil]: Options.low,
         [Statistics.strikeBonus]: Options.high,
-        [Statistics.strikeDamage]: Options.high
+        [Statistics.strikeDamage]: Options.high,
     },
-    "PF2EMONSTERMAKER.investigator": {
+    'PF2EMONSTERMAKER.investigator': {
         [Statistics.per]: Options.high,
         [Statistics.society]: Options.high,
         [Statistics.int]: Options.high,
@@ -226,18 +286,18 @@ export const RoadMaps = {
         [Statistics.wil]: Options.high,
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.moderate,
-        [Statistics.strikeDamage]: Options.high
+        [Statistics.strikeDamage]: Options.high,
     },
-    "PF2EMONSTERMAKER.monk": {
+    'PF2EMONSTERMAKER.monk': {
         [Statistics.acrobatics]: Options.high,
         [Statistics.athletics]: Options.high,
         [Statistics.dex]: Options.high,
         [Statistics.wis]: Options.moderate,
         [Statistics.ac]: Options.high,
         [Statistics.strikeBonus]: Options.moderate,
-        [Statistics.strikeDamage]: Options.high
+        [Statistics.strikeDamage]: Options.high,
     },
-    "PF2EMONSTERMAKER.oracle": {
+    'PF2EMONSTERMAKER.oracle': {
         [Statistics.religion]: Options.high,
         [Statistics.cha]: Options.high,
         [Statistics.ac]: Options.low,
@@ -246,18 +306,18 @@ export const RoadMaps = {
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
-        [Statistics.spellcasting]: Options.high
+        [Statistics.spellcasting]: Options.high,
     },
-    "PF2EMONSTERMAKER.ranger": {
+    'PF2EMONSTERMAKER.ranger': {
         [Statistics.per]: Options.high,
         [Statistics.nature]: Options.moderate,
         [Statistics.survival]: Options.high,
         [Statistics.str]: Options.high,
         [Statistics.ac]: Options.high,
         [Statistics.strikeBonus]: Options.high,
-        [Statistics.strikeDamage]: Options.high
+        [Statistics.strikeDamage]: Options.high,
     },
-    "PF2EMONSTERMAKER.rogue": {
+    'PF2EMONSTERMAKER.rogue': {
         [Statistics.per]: Options.high,
         [Statistics.stealth]: Options.high,
         [Statistics.thievery]: Options.high,
@@ -267,9 +327,9 @@ export const RoadMaps = {
         [Statistics.ref]: Options.high,
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.moderate,
-        [Statistics.strikeDamage]: Options.high
+        [Statistics.strikeDamage]: Options.high,
     },
-    "PF2EMONSTERMAKER.sorcerer": {
+    'PF2EMONSTERMAKER.sorcerer': {
         [Statistics.per]: Options.low,
         [Statistics.cha]: Options.high,
         [Statistics.ac]: Options.low,
@@ -277,9 +337,9 @@ export const RoadMaps = {
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
-        [Statistics.spellcasting]: Options.high
+        [Statistics.spellcasting]: Options.high,
     },
-    "PF2EMONSTERMAKER.swashbuckler": {
+    'PF2EMONSTERMAKER.swashbuckler': {
         [Statistics.per]: Options.high,
         [Statistics.acrobatics]: Options.high,
         [Statistics.dex]: Options.high,
@@ -287,9 +347,9 @@ export const RoadMaps = {
         [Statistics.fort]: Options.low,
         [Statistics.ref]: Options.high,
         [Statistics.strikeBonus]: Options.moderate,
-        [Statistics.strikeDamage]: Options.high
+        [Statistics.strikeDamage]: Options.high,
     },
-    "PF2EMONSTERMAKER.witch": {
+    'PF2EMONSTERMAKER.witch': {
         [Statistics.per]: Options.low,
         [Statistics.int]: Options.high,
         [Statistics.ac]: Options.low,
@@ -297,9 +357,9 @@ export const RoadMaps = {
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
-        [Statistics.spellcasting]: Options.high
+        [Statistics.spellcasting]: Options.high,
     },
-    "PF2EMONSTERMAKER.wizard": {
+    'PF2EMONSTERMAKER.wizard': {
         [Statistics.per]: Options.low,
         [Statistics.arcana]: Options.high,
         [Statistics.int]: Options.high,
@@ -308,26 +368,33 @@ export const RoadMaps = {
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
-        [Statistics.spellcasting]: Options.high
-    }
+        [Statistics.spellcasting]: Options.high,
+    },
 }
 
 export class CreatureStatistic {
-    name: string;
-    availableOptions?: Options[];
+    name: string
+    availableOptions?: Options[]
 }
 
 export class CreatureStatisticCategory {
-    name: string;
-    availableOptions: Options[];
-    defaultValue: Options;
-    statisticEntries: CreatureStatistic[];
+    name: string
+    availableOptions: Options[]
+    defaultValue: Options
+    statisticEntries: CreatureStatistic[]
 }
 
 export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
     {
         name: 'PF2EMONSTERMAKER.abilityScores',
-        availableOptions: [Options.abysmal, Options.terrible, Options.low, Options.moderate, Options.high, Options.extreme],
+        availableOptions: [
+            Options.abysmal,
+            Options.terrible,
+            Options.low,
+            Options.moderate,
+            Options.high,
+            Options.extreme,
+        ],
         defaultValue: Options.moderate,
         statisticEntries: [
             {
@@ -347,24 +414,35 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
             },
             {
                 name: Statistics.cha,
-            }
-        ]
+            },
+        ],
     },
     {
-        name: "Defence + Perception",
-        availableOptions: [Options.terrible, Options.low, Options.moderate, Options.high, Options.extreme],
+        name: 'Defence + Perception',
+        availableOptions: [
+            Options.terrible,
+            Options.low,
+            Options.moderate,
+            Options.high,
+            Options.extreme,
+        ],
         defaultValue: Options.moderate,
         statisticEntries: [
             {
                 name: Statistics.hp,
-                availableOptions: [Options.low, Options.moderate, Options.high]
+                availableOptions: [Options.low, Options.moderate, Options.high],
             },
             {
                 name: Statistics.per,
             },
             {
                 name: Statistics.ac,
-                availableOptions: [Options.low, Options.moderate, Options.high, Options.extreme],
+                availableOptions: [
+                    Options.low,
+                    Options.moderate,
+                    Options.high,
+                    Options.extreme,
+                ],
             },
             {
                 name: Statistics.fort,
@@ -374,12 +452,17 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
             },
             {
                 name: Statistics.wil,
-            }
-        ]
+            },
+        ],
     },
     {
         name: 'PF2EMONSTERMAKER.strikes',
-        availableOptions: [Options.low, Options.moderate, Options.high, Options.extreme],
+        availableOptions: [
+            Options.low,
+            Options.moderate,
+            Options.high,
+            Options.extreme,
+        ],
         defaultValue: Options.moderate,
         statisticEntries: [
             {
@@ -387,22 +470,35 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
             },
             {
                 name: Statistics.strikeDamage,
-            }]
+            },
+        ],
     },
     {
         name: Statistics.spellcasting,
         defaultValue: Options.none,
-        availableOptions: [Options.none, Options.moderate, Options.high, Options.extreme],
+        availableOptions: [
+            Options.none,
+            Options.moderate,
+            Options.high,
+            Options.extreme,
+        ],
         statisticEntries: [
             {
                 name: Statistics.spellcasting,
             },
-        ]
+        ],
     },
     {
         name: 'PF2EMONSTERMAKER.skills',
         defaultValue: Options.none,
-        availableOptions: [Options.none, Options.terrible, Options.low, Options.moderate, Options.high, Options.extreme],
+        availableOptions: [
+            Options.none,
+            Options.terrible,
+            Options.low,
+            Options.moderate,
+            Options.high,
+            Options.extreme,
+        ],
         statisticEntries: [
             {
                 name: Statistics.acrobatics,
@@ -451,6 +547,7 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
             },
             {
                 name: Statistics.thievery,
-            }]
+            },
+        ],
     },
 ]
