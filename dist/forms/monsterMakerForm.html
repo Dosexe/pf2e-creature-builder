@@ -36,7 +36,7 @@
             <tags class="tagify tags paizo-style" tabindex="-1" id="traitsTagify">
                 <span contenteditable="true" tabindex="0" data-placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}" class="tagify__input" role="textbox" aria-autocomplete="both" aria-multiline="false" id="monsterMakerTraitsInput"></span>
             </tags>
-            <div id="traitsDropdown" class="traits-dropdown"></div>
+            <div id="traitsDropdown" class="traits-dropdown tagify__dropdown" role="listbox" aria-labelledby="dropdown" placement="bottom"></div>
         </div>
         <input type="hidden" name="PF2EMONSTERMAKER.traits" id="monsterMakerTraitsHidden" value="">
     </div>
@@ -302,9 +302,11 @@
         // If user typed something not in the list, offer to add it
         if (filterLower && pf2eTraits.indexOf(filterLower) === -1 && traits.indexOf(filterLower) === -1) {
             var customItem = document.createElement('div');
-            customItem.className = 'traits-dropdown-item custom-entry';
+            customItem.className = 'traits-dropdown-item tagify__dropdown__item custom-entry';
             customItem.textContent = '(Add "' + filterLower + '")';
             customItem.setAttribute('data-trait', filterLower);
+            customItem.setAttribute('tabindex', '0');
+            customItem.setAttribute('role', 'option');
             customItem.onclick = function() {
                 addTrait(this.getAttribute('data-trait'));
             };
@@ -315,9 +317,11 @@
         var shown = 0;
         for (var i = 0; i < filtered.length && shown < 15; i++) {
             var item = document.createElement('div');
-            item.className = 'traits-dropdown-item';
+            item.className = 'traits-dropdown-item tagify__dropdown__item';
             item.textContent = capitalizeFirst(filtered[i]);
             item.setAttribute('data-trait', filtered[i]);
+            item.setAttribute('tabindex', '0');
+            item.setAttribute('role', 'option');
             item.onclick = function() {
                 addTrait(this.getAttribute('data-trait'));
             };
