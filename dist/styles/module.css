@@ -109,6 +109,11 @@
     padding: 0;
 }
 
+/* Remove native marker across browsers */
+#monsterMakerForm summary.collapsible-header::marker {
+    content: "";
+}
+
 #monsterMakerForm summary.collapsible-header::-webkit-details-marker {
     display: none;
 }
@@ -118,7 +123,9 @@
 }
 
 #monsterMakerForm summary.collapsible-header h3 {
-    display: inline;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     margin: 0;
 }
 
