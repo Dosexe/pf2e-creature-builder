@@ -33,8 +33,11 @@
             {{localize "PF2EMONSTERMAKER.traits"}}
         </label>
         <div class="traits-container">
-            <div id="traitsTagsContainer" class="traits-tags"></div>
-            <input type="text" id="monsterMakerTraitsInput" class="monsterMakerFormText traits-input" placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}">
+            <div class="traits-input-wrapper" id="traitsInputWrapper">
+                <div id="traitsTagsContainer" class="traits-tags"></div>
+                <input type="text" id="monsterMakerTraitsInput" class="traits-input" placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}" autocomplete="off">
+            </div>
+            <div id="traitsDropdown" class="traits-dropdown"></div>
         </div>
         <input type="hidden" name="PF2EMONSTERMAKER.traits" id="monsterMakerTraitsHidden" value="">
     </div>
@@ -151,10 +154,42 @@
         }
     };
     
+    // PF2e Traits list for autocomplete
+    var pf2eTraits = [
+        'aberration', 'acid', 'aeon', 'aesir', 'agathion', 'air', 'aiuvarin', 'alchemical',
+        'amphibious', 'anadi', 'android', 'angel', 'animal', 'anugobu', 'aphorite', 'aquatic',
+        'archon', 'arcane', 'ardande', 'astral', 'automaton', 'azarketi', 'azata',
+        'beast', 'beastkin', 'boggard',
+        'caligni', 'catfolk', 'celestial', 'changeling', 'chaotic', 'clockwork', 'cold', 'construct',
+        'daemon', 'darvakka', 'demon', 'dero', 'devil', 'dhampir', 'dinosaur', 'divine', 'dragon', 'dream', 'drow', 'duergar', 'duskwalker', 'dwarf',
+        'earth', 'eidolon', 'electricity', 'elemental', 'elf', 'ethereal', 'evil',
+        'fetchling', 'fey', 'fiend', 'fire', 'fleshwarp', 'flumph', 'force', 'fungus',
+        'ganzi', 'genie', 'ghoran', 'ghost', 'ghoul', 'giant', 'gnoll', 'gnome', 'goblin', 'golem', 'good', 'goloma', 'gremlin', 'grioth', 'grippli',
+        'hag', 'half-elf', 'half-orc', 'halfling', 'hobgoblin', 'human', 'humanoid',
+        'ifrit', 'illusion', 'incorporeal', 'inevitable', 'kami', 'kashrishi', 'kitsune', 'kobold',
+        'lawful', 'leshy', 'light', 'linnorm', 'lizardfolk', 'locathah',
+        'mental', 'merfolk', 'mindless', 'minion', 'monitor', 'morlock', 'mortic', 'mummy', 'munavri', 'mutant',
+        'nagaji', 'negative', 'neutral', 'nightmare', 'nightshade', 'nymph',
+        'occult', 'ooze', 'orc', 'oread',
+        'petitioner', 'phantom', 'plant', 'poison', 'positive', 'primal', 'protean', 'psychic', 'psychopomp', 'poppet',
+        'qlippoth',
+        'rakshasa', 'rare', 'ratfolk', 'reflection', 'robot',
+        'sahkil', 'salamander', 'sea devil', 'serpentfolk', 'shadow', 'shisk', 'shoony', 'skelm', 'skeleton', 'skulk', 'sonic', 'soulbound', 'spirit', 'spriggan', 'sprite', 'strix', 'summoned', 'swarm', 'sylph',
+        'talos', 'tanuki', 'tengu', 'time', 'titan', 'troll', 'troop',
+        'uncommon', 'undead', 'undine', 'unique', 'urdefhan',
+        'vampire', 'vanara', 'velstrac', 'vishkanya', 'vitality', 'void',
+        'water', 'werecreature', 'wild hunt', 'witch', 'wyrwood', 'wyvern',
+        'xulgath',
+        'yaksha', 'yeti', 'zombie'
+    ];
+    
     // Traits functionality
     var traitsInput = document.getElementById('monsterMakerTraitsInput');
     var traitsContainer = document.getElementById('traitsTagsContainer');
     var traitsHidden = document.getElementById('monsterMakerTraitsHidden');
+    var traitsDropdown = document.getElementById('traitsDropdown');
+    var traitsInputWrapper = document.getElementById('traitsInputWrapper');
+    var selectedDropdownIndex = -1;
 
     function updateTraitsHidden() {
         traitsHidden.value = traits.join(',');
@@ -167,6 +202,7 @@
             renderTraits();
             updateTraitsHidden();
         }
+        hideDropdown();
     }
 
     function renderTraits() {
@@ -180,9 +216,10 @@
             var removeBtn = document.createElement('button');
             removeBtn.type = 'button';
             removeBtn.className = 'trait-remove';
-            removeBtn.textContent = '✕';
+            removeBtn.textContent = '×';
             removeBtn.setAttribute('data-trait', trait);
-            removeBtn.onclick = function() {
+            removeBtn.onclick = function(e) {
+                e.stopPropagation();
                 var traitToRemove = this.getAttribute('data-trait');
                 var index = traits.indexOf(traitToRemove);
                 if (index > -1) {
@@ -197,18 +234,124 @@
         }
     }
 
+    function showDropdown(filter) {
+        var filterLower = (filter || '').toLowerCase();
+        var filtered = pf2eTraits.filter(function(t) {
+            return t.indexOf(filterLower) !== -1 && traits.indexOf(t) === -1;
+        });
+        
+        traitsDropdown.innerHTML = '';
+        selectedDropdownIndex = -1;
+        
+        // If user typed something not in the list, offer to add it
+        if (filterLower && pf2eTraits.indexOf(filterLower) === -1 && traits.indexOf(filterLower) === -1) {
+            var customItem = document.createElement('div');
+            customItem.className = 'traits-dropdown-item custom-entry';
+            customItem.textContent = '(Add "' + filterLower + '")';
+            customItem.setAttribute('data-trait', filterLower);
+            customItem.onclick = function() {
+                addTrait(this.getAttribute('data-trait'));
+                traitsInput.value = '';
+                traitsInput.focus();
+            };
+            traitsDropdown.appendChild(customItem);
+        }
+        
+        // Show matching traits (limit to 15 for performance)
+        var shown = 0;
+        for (var i = 0; i < filtered.length && shown < 15; i++) {
+            var item = document.createElement('div');
+            item.className = 'traits-dropdown-item';
+            item.textContent = filtered[i].charAt(0).toUpperCase() + filtered[i].slice(1);
+            item.setAttribute('data-trait', filtered[i]);
+            item.onclick = function() {
+                addTrait(this.getAttribute('data-trait'));
+                traitsInput.value = '';
+                traitsInput.focus();
+            };
+            traitsDropdown.appendChild(item);
+            shown++;
+        }
+        
+        if (traitsDropdown.children.length > 0) {
+            traitsDropdown.classList.add('show');
+        } else {
+            hideDropdown();
+        }
+    }
+
+    function hideDropdown() {
+        traitsDropdown.classList.remove('show');
+        selectedDropdownIndex = -1;
+    }
+
+    function updateDropdownSelection() {
+        var items = traitsDropdown.querySelectorAll('.traits-dropdown-item');
+        for (var i = 0; i < items.length; i++) {
+            if (i === selectedDropdownIndex) {
+                items[i].classList.add('selected');
+                items[i].scrollIntoView({ block: 'nearest' });
+            } else {
+                items[i].classList.remove('selected');
+            }
+        }
+    }
+
+    traitsInput.addEventListener('input', function() {
+        showDropdown(this.value);
+    });
+
+    traitsInput.addEventListener('focus', function() {
+        showDropdown(this.value);
+    });
+
     traitsInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ',') {
+        var items = traitsDropdown.querySelectorAll('.traits-dropdown-item');
+        
+        if (e.key === 'ArrowDown') {
             e.preventDefault();
-            addTrait(this.value);
-            this.value = '';
+            if (traitsDropdown.classList.contains('show')) {
+                selectedDropdownIndex = Math.min(selectedDropdownIndex + 1, items.length - 1);
+                updateDropdownSelection();
+            } else {
+                showDropdown(this.value);
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (traitsDropdown.classList.contains('show')) {
+                selectedDropdownIndex = Math.max(selectedDropdownIndex - 1, 0);
+                updateDropdownSelection();
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedDropdownIndex >= 0 && items[selectedDropdownIndex]) {
+                addTrait(items[selectedDropdownIndex].getAttribute('data-trait'));
+                this.value = '';
+            } else if (this.value.trim()) {
+                addTrait(this.value);
+                this.value = '';
+            }
+        } else if (e.key === 'Escape') {
+            hideDropdown();
+        } else if (e.key === 'Backspace' && this.value === '' && traits.length > 0) {
+            // Remove last trait when backspace is pressed on empty input
+            traits.pop();
+            renderTraits();
+            updateTraitsHidden();
         }
     });
 
-    traitsInput.addEventListener('blur', function() {
-        if (this.value.trim()) {
-            addTrait(this.value);
-            this.value = '';
+    // Click on wrapper focuses input
+    traitsInputWrapper.addEventListener('click', function(e) {
+        if (e.target === traitsInputWrapper || e.target === traitsContainer) {
+            traitsInput.focus();
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!traitsInputWrapper.contains(e.target) && !traitsDropdown.contains(e.target)) {
+            hideDropdown();
         }
     });
 

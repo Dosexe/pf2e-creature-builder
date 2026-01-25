@@ -58,48 +58,132 @@
     margin-bottom: 10px;
 }
 
-/* Traits styling */
+/* Traits styling - PF2e style */
 #monsterMakerForm .traits-container {
     display: flex;
     flex-direction: column;
-    gap: 5px;
     flex: 1;
+    position: relative;
+}
+
+#monsterMakerForm .traits-input-wrapper {
+    background: linear-gradient(to bottom, #3a3a3a, #1a1a1a);
+    border: 1px solid #4a4a4a;
+    border-radius: 3px;
+    padding: 4px 6px;
+    min-height: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    cursor: text;
+}
+
+#monsterMakerForm .traits-input-wrapper:focus-within {
+    border-color: #7a7a7a;
+    box-shadow: 0 0 3px rgba(255, 255, 255, 0.2);
 }
 
 #monsterMakerForm .traits-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    min-height: 20px;
+    display: contents;
 }
 
 #monsterMakerForm .trait-tag {
-    background-color: #5e0000;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: 12px;
+    background: linear-gradient(to bottom, #5e0000, #3d0000);
+    color: #f0e6c0;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
+    border: 1px solid #7a0000;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
 }
 
 #monsterMakerForm .trait-remove {
     background: none;
     border: none;
-    color: white;
+    color: #f0e6c0;
     cursor: pointer;
     padding: 0;
-    font-size: 10px;
+    font-size: 9px;
     line-height: 1;
+    opacity: 0.8;
+    margin-left: 2px;
 }
 
 #monsterMakerForm .trait-remove:hover {
-    color: #ffcccc;
+    opacity: 1;
+    color: #ffffff;
 }
 
 #monsterMakerForm .traits-input {
     flex: 1;
+    min-width: 80px;
+    border: none;
+    background: transparent;
+    color: #f0e6c0;
+    font-size: 12px;
+    padding: 2px;
+    outline: none;
+}
+
+#monsterMakerForm .traits-input::placeholder {
+    color: #888;
+    font-style: italic;
+}
+
+/* Autocomplete dropdown */
+#monsterMakerForm .traits-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #4a4a4a;
+    border-top: none;
+    border-radius: 0 0 3px 3px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+#monsterMakerForm .traits-dropdown.show {
+    display: block;
+}
+
+#monsterMakerForm .traits-dropdown-item {
+    padding: 6px 10px;
+    cursor: pointer;
+    color: #1a1a1a;
+    font-size: 13px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+#monsterMakerForm .traits-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+#monsterMakerForm .traits-dropdown-item:hover,
+#monsterMakerForm .traits-dropdown-item.selected {
+    background: #522e2c;
+    color: #ffffff;
+}
+
+#monsterMakerForm .traits-dropdown-item.custom-entry {
+    font-style: italic;
+    color: #666;
+}
+
+#monsterMakerForm .traits-dropdown-item.custom-entry:hover {
+    color: #ffffff;
 }
 
 /* Reset button styling */
