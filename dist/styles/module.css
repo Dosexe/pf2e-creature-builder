@@ -66,25 +66,27 @@
     position: relative;
 }
 
-/* Autocomplete dropdown */
+/* Autocomplete dropdown - floating overlay like Tagify */
 #monsterMakerForm .traits-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
+    position: fixed;
     background: #ffffff;
     border: 1px solid #4a4a4a;
-    border-top: none;
-    border-radius: 0 0 3px 3px;
+    border-radius: 3px;
     max-height: 200px;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 9999;
     display: none;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 #monsterMakerForm .traits-dropdown.show {
     display: block;
+}
+
+/* Tagify dropdown wrapper for proper structure */
+#monsterMakerForm .traits-dropdown .tagify__dropdown__wrapper {
+    max-height: inherit;
+    overflow-y: auto;
 }
 
 #monsterMakerForm .traits-dropdown-item {

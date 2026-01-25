@@ -280,6 +280,16 @@
         });
     }
 
+    function positionDropdown() {
+        // Get the bounding rectangle of the tagify container
+        var rect = traitsTagify.getBoundingClientRect();
+        
+        // Position the dropdown below the input, matching its width
+        traitsDropdown.style.left = rect.left + 'px';
+        traitsDropdown.style.top = rect.bottom + 'px';
+        traitsDropdown.style.width = rect.width + 'px';
+    }
+    
     function showDropdown(filter) {
         var filterLower = (filter || '').toLowerCase().trim();
         var filtered = pf2eTraits.filter(function(t) {
@@ -316,6 +326,8 @@
         }
         
         if (traitsDropdown.children.length > 0) {
+            // Position and show the dropdown
+            positionDropdown();
             traitsDropdown.classList.add('show');
         } else {
             hideDropdown();
@@ -398,6 +410,19 @@
     document.addEventListener('click', function(e) {
         if (!traitsTagify.contains(e.target) && !traitsDropdown.contains(e.target)) {
             hideDropdown();
+        }
+    });
+    
+    // Reposition dropdown on scroll/resize to keep it attached to input
+    window.addEventListener('scroll', function() {
+        if (traitsDropdown.classList.contains('show')) {
+            positionDropdown();
+        }
+    }, true);
+    
+    window.addEventListener('resize', function() {
+        if (traitsDropdown.classList.contains('show')) {
+            positionDropdown();
         }
     });
 
