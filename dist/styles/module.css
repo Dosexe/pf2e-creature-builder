@@ -66,13 +66,14 @@
     position: relative;
 }
 
-/* Traits dropdown - just hide by default, Foundry provides Tagify styles */
-#monsterMakerForm .traits-dropdown {
-    display: none;
+/* Traits dropdown - hide by default, show when .show class is added */
+/* Use !important to override Foundry's tagify__dropdown default visibility */
+#monsterMakerForm .tagify__dropdown.traits-dropdown {
+    display: none !important;
 }
 
-#monsterMakerForm .traits-dropdown.show {
-    display: block;
+#monsterMakerForm .tagify__dropdown.traits-dropdown.show {
+    display: block !important;
 }
 
 /* Custom entry styling for user-typed traits */
@@ -103,13 +104,12 @@
 #monsterMakerForm summary.collapsible-header {
     cursor: pointer;
     user-select: none;
-    font-size: 1.1em;
-    font-weight: bold;
-    padding: 5px 0;
     list-style: none;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
+    margin: 0;
+    padding: 0;
 }
 
 #monsterMakerForm summary.collapsible-header::-webkit-details-marker {
@@ -120,8 +120,7 @@
     content: "▶";
     font-size: 10px;
     transition: transform 0.2s ease;
-    display: inline-block;
-    width: 12px;
+    flex-shrink: 0;
 }
 
 #monsterMakerForm details[open] summary.collapsible-header::before {
@@ -130,6 +129,11 @@
 
 #monsterMakerForm summary.collapsible-header:hover {
     opacity: 0.8;
+}
+
+#monsterMakerForm summary.collapsible-header h3 {
+    display: inline;
+    margin: 0;
 }
 
 #monsterMakerForm .collapsible-content {
