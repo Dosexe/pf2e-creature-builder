@@ -105,26 +105,12 @@
     cursor: pointer;
     user-select: none;
     list-style: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
     margin: 0;
     padding: 0;
 }
 
 #monsterMakerForm summary.collapsible-header::-webkit-details-marker {
     display: none;
-}
-
-#monsterMakerForm summary.collapsible-header::before {
-    content: "▶";
-    font-size: 10px;
-    transition: transform 0.2s ease;
-    flex-shrink: 0;
-}
-
-#monsterMakerForm details[open] summary.collapsible-header::before {
-    transform: rotate(90deg);
 }
 
 #monsterMakerForm summary.collapsible-header:hover {
@@ -134,6 +120,16 @@
 #monsterMakerForm summary.collapsible-header h3 {
     display: inline;
     margin: 0;
+}
+
+#monsterMakerForm summary.collapsible-header h3::before {
+    content: "▶ ";
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+#monsterMakerForm details[open] summary.collapsible-header h3::before {
+    content: "▼ ";
 }
 
 #monsterMakerForm .collapsible-content {

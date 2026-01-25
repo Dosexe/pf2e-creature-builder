@@ -214,7 +214,7 @@
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
-    function addTrait(traitName) {
+    function addTrait(traitName, skipFocus) {
         var trimmed = traitName.trim().toLowerCase();
         if (trimmed && traits.indexOf(trimmed) === -1) {
             traits.push(trimmed);
@@ -223,7 +223,10 @@
         }
         hideDropdown();
         traitsInput.textContent = '';
-        traitsInput.focus();
+        // Only focus if not skipped (e.g., during initialization)
+        if (!skipFocus) {
+            traitsInput.focus();
+        }
     }
 
     function removeTrait(traitToRemove) {
@@ -380,9 +383,7 @@
         showDropdown(getInputText());
     });
 
-    traitsInput.addEventListener('focus', function() {
-        showDropdown(getInputText());
-    });
+    // Focus alone doesn't show dropdown - only click or typing does
 
     traitsInput.addEventListener('keydown', function(e) {
         var items = traitsDropdownWrapper.querySelectorAll('.tagify__dropdown__item');
@@ -511,10 +512,10 @@
         loreCounter = 0;
     });
     
-    // Initialize detected traits
+    // Initialize detected traits (skip focus to prevent dropdown from showing)
     if (detectedTraits && detectedTraits.length > 0) {
         for (var i = 0; i < detectedTraits.length; i++) {
-            addTrait(detectedTraits[i]);
+            addTrait(detectedTraits[i], true);
         }
     }
     
@@ -530,11 +531,12 @@
         setDetectedStats();
     }, 0);
     
-    // Collapse Skills section by default on init
+    // Collapse Skills and Lore Skills sections by default on init
     function initCollapsibleSections() {
         var sections = document.querySelectorAll('details.collapsible-section');
         sections.forEach(function(section) {
             var sectionName = section.getAttribute('data-section-name');
+            var sectionId = section.getAttribute('id');
             
             // Collapse Skills section by default (remove 'open' attribute)
             var isSkillsSection = sectionName && (
@@ -542,7 +544,10 @@
                 sectionName === 'PF2EMONSTERMAKER.skills'
             );
             
-            if (isSkillsSection) {
+            // Also collapse Lore Skills section
+            var isLoreSection = sectionId === 'section-lore';
+            
+            if (isSkillsSection || isLoreSection) {
                 section.removeAttribute('open');
             }
         });
