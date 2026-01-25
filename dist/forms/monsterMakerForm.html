@@ -33,40 +33,45 @@
             {{localize "PF2EMONSTERMAKER.traits"}}
         </label>
         <div class="traits-container">
-            <div class="traits-input-wrapper" id="traitsInputWrapper">
-                <div id="traitsTagsContainer" class="traits-tags"></div>
-                <input type="text" id="monsterMakerTraitsInput" class="traits-input" placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}" autocomplete="off">
-            </div>
+            <tags class="tagify tags paizo-style" tabindex="-1" id="traitsTagify">
+                <span contenteditable="true" tabindex="0" data-placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}" class="tagify__input" role="textbox" aria-autocomplete="both" aria-multiline="false" id="monsterMakerTraitsInput"></span>
+            </tags>
             <div id="traitsDropdown" class="traits-dropdown"></div>
         </div>
         <input type="hidden" name="PF2EMONSTERMAKER.traits" id="monsterMakerTraitsHidden" value="">
     </div>
     {{#each CreatureStatistics}}
-        <h3>{{localize this.name}}</h3>
-        {{#each this.statisticEntries}}
-            <div class="form-group setting">
-                <label for="{{concat 'monsterMaker' this.name}}" class="monsterMakerFormText">
-                    {{localize this.name}}
-                </label>
-                <select id="{{concat 'monsterMaker' this.name}}" name="{{this.name}}" class="monsterMakerFormTextSmall">
-                    {{#if this.availableOptions}}
-                        {{#each this.availableOptions}}
-                            <option value="{{this}}">
-                                {{localize this}}
-                            </option>
-                        {{/each}}
-                    {{/if}}
-                    {{#unless this.availableOptions}}
-                        {{#each ../this.availableOptions}}
-                            <option value="{{this}}">
-                                {{localize this}}
-                            </option>
-                        {{/each}}
-                    {{/unless}}
-                </select>
+        <div class="collapsible-section" data-section-name="{{this.name}}">
+            <h3 class="collapsible-header">
+                <span class="collapse-indicator">▶</span>
+                {{localize this.name}}
+            </h3>
+            <div class="collapsible-content">
+                {{#each this.statisticEntries}}
+                    <div class="form-group setting">
+                        <label for="{{concat 'monsterMaker' this.name}}" class="monsterMakerFormText">
+                            {{localize this.name}}
+                        </label>
+                        <select id="{{concat 'monsterMaker' this.name}}" name="{{this.name}}" class="monsterMakerFormTextSmall">
+                            {{#if this.availableOptions}}
+                                {{#each this.availableOptions}}
+                                    <option value="{{this}}">
+                                        {{localize this}}
+                                    </option>
+                                {{/each}}
+                            {{/if}}
+                            {{#unless this.availableOptions}}
+                                {{#each ../this.availableOptions}}
+                                    <option value="{{this}}">
+                                        {{localize this}}
+                                    </option>
+                                {{/each}}
+                            {{/unless}}
+                        </select>
+                    </div>
+                {{/each}}
             </div>
-        {{/each}}
-
+        </div>
     {{/each}}
     <h3>{{localize "PF2EMONSTERMAKER.loreSkills"}}</h3>
     <div id="loreSkillsContainer"></div>
@@ -183,16 +188,19 @@
         'yaksha', 'yeti', 'zombie'
     ];
     
-    // Traits functionality
+    // Traits functionality using Foundry's tagify classes
     var traitsInput = document.getElementById('monsterMakerTraitsInput');
-    var traitsContainer = document.getElementById('traitsTagsContainer');
+    var traitsTagify = document.getElementById('traitsTagify');
     var traitsHidden = document.getElementById('monsterMakerTraitsHidden');
     var traitsDropdown = document.getElementById('traitsDropdown');
-    var traitsInputWrapper = document.getElementById('traitsInputWrapper');
     var selectedDropdownIndex = -1;
 
     function updateTraitsHidden() {
         traitsHidden.value = traits.join(',');
+    }
+
+    function capitalizeFirst(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
     function addTrait(traitName) {
@@ -203,39 +211,69 @@
             updateTraitsHidden();
         }
         hideDropdown();
+        traitsInput.textContent = '';
+        traitsInput.focus();
     }
 
-    function renderTraits() {
-        traitsContainer.innerHTML = '';
-        for (var i = 0; i < traits.length; i++) {
-            var trait = traits[i];
-            var tag = document.createElement('span');
-            tag.className = 'trait-tag';
-            tag.textContent = trait;
-            
-            var removeBtn = document.createElement('button');
-            removeBtn.type = 'button';
-            removeBtn.className = 'trait-remove';
-            removeBtn.textContent = '×';
-            removeBtn.setAttribute('data-trait', trait);
-            removeBtn.onclick = function(e) {
-                e.stopPropagation();
-                var traitToRemove = this.getAttribute('data-trait');
-                var index = traits.indexOf(traitToRemove);
-                if (index > -1) {
-                    traits.splice(index, 1);
-                    renderTraits();
-                    updateTraitsHidden();
-                }
-            };
-            
-            tag.appendChild(removeBtn);
-            traitsContainer.appendChild(tag);
+    function removeTrait(traitToRemove) {
+        var index = traits.indexOf(traitToRemove);
+        if (index > -1) {
+            traits.splice(index, 1);
+            renderTraits();
+            updateTraitsHidden();
         }
     }
 
+    function renderTraits() {
+        // Remove existing tags (but keep the input span)
+        var existingTags = traitsTagify.querySelectorAll('tag');
+        existingTags.forEach(function(tag) {
+            tag.remove();
+        });
+        
+        // Add tags before the input
+        for (var i = 0; i < traits.length; i++) {
+            var trait = traits[i];
+            var tag = document.createElement('tag');
+            tag.className = 'tagify__tag tagify--noAnim';
+            tag.setAttribute('contenteditable', 'false');
+            tag.setAttribute('spellcheck', 'false');
+            tag.setAttribute('tabindex', '-1');
+            tag.setAttribute('value', capitalizeFirst(trait));
+            tag.setAttribute('data-trait', trait);
+            
+            var removeBtn = document.createElement('x');
+            removeBtn.className = 'tagify__tag__removeBtn';
+            removeBtn.setAttribute('role', 'button');
+            removeBtn.setAttribute('aria-label', 'remove tag');
+            
+            var textDiv = document.createElement('div');
+            var textSpan = document.createElement('span');
+            textSpan.className = 'tagify__tag-text';
+            textSpan.textContent = capitalizeFirst(trait);
+            textDiv.appendChild(textSpan);
+            
+            tag.appendChild(removeBtn);
+            tag.appendChild(textDiv);
+            
+            // Insert before the input span
+            traitsTagify.insertBefore(tag, traitsInput);
+        }
+        
+        // Add click handlers for remove buttons
+        var removeBtns = traitsTagify.querySelectorAll('.tagify__tag__removeBtn');
+        removeBtns.forEach(function(btn) {
+            btn.onclick = function(e) {
+                e.stopPropagation();
+                var tag = this.parentElement;
+                var traitToRemove = tag.getAttribute('data-trait');
+                removeTrait(traitToRemove);
+            };
+        });
+    }
+
     function showDropdown(filter) {
-        var filterLower = (filter || '').toLowerCase();
+        var filterLower = (filter || '').toLowerCase().trim();
         var filtered = pf2eTraits.filter(function(t) {
             return t.indexOf(filterLower) !== -1 && traits.indexOf(t) === -1;
         });
@@ -251,8 +289,6 @@
             customItem.setAttribute('data-trait', filterLower);
             customItem.onclick = function() {
                 addTrait(this.getAttribute('data-trait'));
-                traitsInput.value = '';
-                traitsInput.focus();
             };
             traitsDropdown.appendChild(customItem);
         }
@@ -262,12 +298,10 @@
         for (var i = 0; i < filtered.length && shown < 15; i++) {
             var item = document.createElement('div');
             item.className = 'traits-dropdown-item';
-            item.textContent = filtered[i].charAt(0).toUpperCase() + filtered[i].slice(1);
+            item.textContent = capitalizeFirst(filtered[i]);
             item.setAttribute('data-trait', filtered[i]);
             item.onclick = function() {
                 addTrait(this.getAttribute('data-trait'));
-                traitsInput.value = '';
-                traitsInput.focus();
             };
             traitsDropdown.appendChild(item);
             shown++;
@@ -297,16 +331,21 @@
         }
     }
 
+    function getInputText() {
+        return traitsInput.textContent || '';
+    }
+
     traitsInput.addEventListener('input', function() {
-        showDropdown(this.value);
+        showDropdown(getInputText());
     });
 
     traitsInput.addEventListener('focus', function() {
-        showDropdown(this.value);
+        showDropdown(getInputText());
     });
 
     traitsInput.addEventListener('keydown', function(e) {
         var items = traitsDropdown.querySelectorAll('.traits-dropdown-item');
+        var inputText = getInputText();
         
         if (e.key === 'ArrowDown') {
             e.preventDefault();
@@ -314,7 +353,7 @@
                 selectedDropdownIndex = Math.min(selectedDropdownIndex + 1, items.length - 1);
                 updateDropdownSelection();
             } else {
-                showDropdown(this.value);
+                showDropdown(inputText);
             }
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
@@ -326,31 +365,30 @@
             e.preventDefault();
             if (selectedDropdownIndex >= 0 && items[selectedDropdownIndex]) {
                 addTrait(items[selectedDropdownIndex].getAttribute('data-trait'));
-                this.value = '';
-            } else if (this.value.trim()) {
-                addTrait(this.value);
-                this.value = '';
+            } else if (inputText.trim()) {
+                addTrait(inputText);
             }
         } else if (e.key === 'Escape') {
             hideDropdown();
-        } else if (e.key === 'Backspace' && this.value === '' && traits.length > 0) {
+        } else if (e.key === 'Backspace' && inputText === '' && traits.length > 0) {
             // Remove last trait when backspace is pressed on empty input
+            e.preventDefault();
             traits.pop();
             renderTraits();
             updateTraitsHidden();
         }
     });
 
-    // Click on wrapper focuses input
-    traitsInputWrapper.addEventListener('click', function(e) {
-        if (e.target === traitsInputWrapper || e.target === traitsContainer) {
+    // Click on tagify container focuses input
+    traitsTagify.addEventListener('click', function(e) {
+        if (e.target === traitsTagify || e.target.classList.contains('tagify__input')) {
             traitsInput.focus();
         }
     });
 
     // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
-        if (!traitsInputWrapper.contains(e.target) && !traitsDropdown.contains(e.target)) {
+        if (!traitsTagify.contains(e.target) && !traitsDropdown.contains(e.target)) {
             hideDropdown();
         }
     });
@@ -434,5 +472,32 @@
     setTimeout(function() {
         setDetectedStats();
     }, 0);
+    
+    // Collapsible sections functionality
+    function initCollapsibleSections() {
+        var sections = document.querySelectorAll('.collapsible-section');
+        sections.forEach(function(section) {
+            var header = section.querySelector('.collapsible-header');
+            var content = section.querySelector('.collapsible-content');
+            var indicator = section.querySelector('.collapse-indicator');
+            var sectionName = section.getAttribute('data-section-name');
+            
+            // Collapse Skills section by default (check for common skill-related names)
+            var isSkillsSection = sectionName && (
+                sectionName.toLowerCase().indexOf('skill') !== -1 ||
+                sectionName === 'PF2EMONSTERMAKER.skills'
+            );
+            
+            if (isSkillsSection) {
+                section.classList.add('collapsed');
+            }
+            
+            header.addEventListener('click', function() {
+                section.classList.toggle('collapsed');
+            });
+        });
+    }
+    
+    initCollapsibleSections();
 })();
 </script>

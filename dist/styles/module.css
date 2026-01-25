@@ -58,84 +58,12 @@
     margin-bottom: 10px;
 }
 
-/* Traits styling - PF2e style */
+/* Traits styling - uses Foundry's tagify/paizo-style classes */
 #monsterMakerForm .traits-container {
     display: flex;
     flex-direction: column;
     flex: 1;
     position: relative;
-}
-
-#monsterMakerForm .traits-input-wrapper {
-    background: linear-gradient(to bottom, #3a3a3a, #1a1a1a);
-    border: 1px solid #4a4a4a;
-    border-radius: 3px;
-    padding: 4px 6px;
-    min-height: 28px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px;
-    cursor: text;
-}
-
-#monsterMakerForm .traits-input-wrapper:focus-within {
-    border-color: #7a7a7a;
-    box-shadow: 0 0 3px rgba(255, 255, 255, 0.2);
-}
-
-#monsterMakerForm .traits-tags {
-    display: contents;
-}
-
-#monsterMakerForm .trait-tag {
-    background: linear-gradient(to bottom, #5e0000, #3d0000);
-    color: #f0e6c0;
-    padding: 2px 6px;
-    border-radius: 2px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    border: 1px solid #7a0000;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    white-space: nowrap;
-}
-
-#monsterMakerForm .trait-remove {
-    background: none;
-    border: none;
-    color: #f0e6c0;
-    cursor: pointer;
-    padding: 0;
-    font-size: 9px;
-    line-height: 1;
-    opacity: 0.8;
-    margin-left: 2px;
-}
-
-#monsterMakerForm .trait-remove:hover {
-    opacity: 1;
-    color: #ffffff;
-}
-
-#monsterMakerForm .traits-input {
-    flex: 1;
-    min-width: 80px;
-    border: none;
-    background: transparent;
-    color: #f0e6c0;
-    font-size: 12px;
-    padding: 2px;
-    outline: none;
-}
-
-#monsterMakerForm .traits-input::placeholder {
-    color: #888;
-    font-style: italic;
 }
 
 /* Autocomplete dropdown */
@@ -199,5 +127,49 @@
 
 #monsterMakerForm .monsterMakerResetButton:hover {
     background-color: #555;
+}
+
+/* Collapsible sections */
+#monsterMakerForm .collapsible-section {
+    margin-bottom: 5px;
+}
+
+#monsterMakerForm .collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    margin: 0;
+}
+
+#monsterMakerForm .collapsible-header:hover {
+    opacity: 0.8;
+}
+
+#monsterMakerForm .collapse-indicator {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+    display: inline-block;
+    width: 12px;
+}
+
+#monsterMakerForm .collapsible-section:not(.collapsed) .collapse-indicator {
+    transform: rotate(90deg);
+}
+
+#monsterMakerForm .collapsible-content {
+    overflow: hidden;
+    max-height: 1000px;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    opacity: 1;
+}
+
+#monsterMakerForm .collapsible-section.collapsed .collapsible-content {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0;
 }
 
