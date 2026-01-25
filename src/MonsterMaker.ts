@@ -6,7 +6,7 @@ import type {BaseActor} from "@league-of-foundry-developers/foundry-vtt-types/sr
 export class MonsterMaker extends FormApplication {
     data = DefaultCreatureStatistics
     level = "-1"
-    private _uniqueId: string
+    private readonly _uniqueId: string
 
     constructor(object: any, options?: any) {
         super(object, options);
@@ -28,7 +28,7 @@ export class MonsterMaker extends FormApplication {
         return foundry.utils.mergeObject(FormApplication.defaultOptions, {
             classes: ["form"],
             popOut: true,
-            template: `modules/pf2e-monster-maker/dist/forms/monsterMakerForm.html`,
+            template: `modules/mycustom-module/dist/forms/monsterMakerForm.html`,
             id: "monsterMakerForm",
             title: "Monster Maker Form",
             height: 833,
@@ -41,12 +41,12 @@ export class MonsterMaker extends FormApplication {
         return this._uniqueId;
     }
 
-    applyName(formData) {
+    applyName(formData: object) {
         const name = formData[Statistics.name] ? formData[Statistics.name] : this.actor.name
         return {"name": name}
     }
 
-    applyTraits(formData) {
+    applyTraits(formData: object) {
         const traitsString = formData["PF2EMONSTERMAKER.traits"];
         if (traitsString && traitsString.trim() !== '') {
             const traits = traitsString.split(',').map((t: string) => t.trim().toLowerCase()).filter((t: string) => t !== '');
@@ -59,18 +59,17 @@ export class MonsterMaker extends FormApplication {
         return {"system.details.level.value": parseInt(this.level, 10)}
     }
 
-    applyHitPoints(formData) {
+    applyHitPoints(formData: object) {
         const option = formData[Statistics.hp]
         const hitPoints = parseInt(statisticValues[Statistics.hp][this.level][option], 10)
         return {"system.attributes.hp.value": hitPoints}
     }
 
-    applyStrike(formData) {
+    applyStrike(formData: object) {
         const strikeBonusOption = formData[Statistics.strikeBonus]
         const strikeDamageOption = formData[Statistics.strikeDamage]
         const strikeBonus = parseInt(statisticValues[Statistics.strikeBonus][this.level][strikeBonusOption], 10)
         const strikeDamage = statisticValues[Statistics.strikeDamage][this.level][strikeDamageOption]
-        const _strikeDamageID = randomID();
         const strike = {
             // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
             name: game["i18n"].localize("PF2EMONSTERMAKER.strike"),
@@ -91,7 +90,7 @@ export class MonsterMaker extends FormApplication {
         return Item.create(strike, {parent: this.actor})
     }
 
-    applySpellcasting(formData) {
+    applySpellcasting(formData: object) {
         const spellcastingOption = formData[Statistics.spellcasting]
         if (spellcastingOption === Options.none) {
             return;
@@ -118,7 +117,7 @@ export class MonsterMaker extends FormApplication {
         return Item.create(spellcasting, {parent: this.actor})
     }
 
-    async applySkills(formData) {
+    async applySkills(formData: object) {
         for(const skillName of Skills) {
             const option = formData[skillName]
             if (option !== Options.none) {
@@ -129,7 +128,7 @@ export class MonsterMaker extends FormApplication {
         }
     }
 
-    async applyLoreSkills(formData) {
+    async applyLoreSkills(formData: object) {
         // Find all lore skills in the form data
         const loreSkills: {name: string, option: string}[] = [];
         for (const key of Object.keys(formData)) {
@@ -161,98 +160,24 @@ export class MonsterMaker extends FormApplication {
 
     // Detect senses from the source actor
     // Senses structure: { acuity, emphasizeLabel, label, range, source, type }
-    detectSenses(): Array<{acuity: string, range: number | null, type: string, source?: string | null}> {
-        const senses = foundry.utils.getProperty(this.actor, 'system.perception.senses');
-        if (Array.isArray(senses)) {
-            return senses.map((sense: any) => ({
-                acuity: sense.acuity || 'precise',
-                // Handle Infinity range - convert to null for JSON serialization
-                range: (sense.range === Infinity || sense.range === 'Infinity') ? null : sense.range,
-                type: sense.type || '',
-                source: sense.source || null
-            })).filter((s: any) => s.type);
-        }
-        return [];
+    detectSenses(): Array<object> {
+        return  foundry.utils.getProperty(this.actor, 'system.perception.senses');
     }
 
-    // Apply senses to the new actor
-    applySenses(senses: Array<{acuity: string, range: number | null, type: string, source?: string | null}>) {
+    applySenses(senses: Array<object>) {
         if (!senses || senses.length === 0) {
             return {};
         }
-        // Format senses for PF2e system - preserve all relevant fields
-        const formattedSenses = senses.map(sense => ({
-            acuity: sense.acuity,
-            range: sense.range,
-            type: sense.type,
-            source: sense.source || null
-        }));
-        return { "system.perception.senses": formattedSenses };
+
+        return { "system.perception.senses": senses };
     }
 
-    // Detect speeds from the source actor
-    detectSpeeds(): {[key: string]: number} {
-        const detectedSpeeds: {[key: string]: number} = {};
-        
-        // Try the system.attributes.speed path (standard PF2e structure)
-        const attributeSpeed = foundry.utils.getProperty(this.actor, 'system.attributes.speed');
-        if (attributeSpeed) {
-            // Land speed (base speed)
-            if (attributeSpeed.value !== undefined && attributeSpeed.value !== null && Number(attributeSpeed.value) > 0) {
-                detectedSpeeds['land'] = Number(attributeSpeed.value);
-            }
-            
-            // Other movement types are in otherSpeeds array in PF2e
-            if (Array.isArray(attributeSpeed.otherSpeeds)) {
-                for (const otherSpeed of attributeSpeed.otherSpeeds) {
-                    if (otherSpeed.type && otherSpeed.value !== undefined && Number(otherSpeed.value) > 0) {
-                        detectedSpeeds[otherSpeed.type] = Number(otherSpeed.value);
-                    }
-                }
-            }
-        }
-        
-        // Also try system.movement.speeds path (alternative structure)
-        const movementSpeeds = foundry.utils.getProperty(this.actor, 'system.movement.speeds');
-        if (movementSpeeds && typeof movementSpeeds === 'object') {
-            const speedTypes = ['burrow', 'climb', 'fly', 'land', 'swim', 'travel'];
-            for (const speedType of speedTypes) {
-                const speedValue = movementSpeeds[speedType];
-                if (speedValue !== undefined && speedValue !== null && Number(speedValue) > 0) {
-                    detectedSpeeds[speedType] = Number(speedValue);
-                }
-            }
-        }
-        
-        return detectedSpeeds;
-    }
-
-    // Apply speeds to the new actor
-    applySpeeds(speeds: {[key: string]: number}) {
-        if (!speeds || Object.keys(speeds).length === 0) {
+    applyMovement(movement: object) {
+        if (!movement || Object.keys(movement).length === 0) {
             return {};
         }
         
-        const updateData: {[key: string]: any} = {};
-        
-        // Land speed is the base speed value
-        if (speeds['land']) {
-            updateData["system.attributes.speed.value"] = speeds['land'];
-        }
-        
-        // Other speeds go into otherSpeeds array
-        const otherSpeeds: Array<{type: string, value: number}> = [];
-        for (const [type, value] of Object.entries(speeds)) {
-            if (type !== 'land' && value > 0) {
-                otherSpeeds.push({ type, value });
-            }
-        }
-        
-        if (otherSpeeds.length > 0) {
-            updateData["system.attributes.speed.otherSpeeds"] = otherSpeeds;
-        }
-        
-        return updateData;
+        return movement;
     }
 
     protected async _updateObject(_event: Event, formData?: object) {
@@ -261,12 +186,6 @@ export class MonsterMaker extends FormApplication {
             const formLevel = String(formData[Statistics.level]);
             this.level = Levels.includes(formLevel) ? formLevel : '1';
             console.log("Monster Maker Submit - Level:", this.level, "Form data:", formData);
-            
-            // Detect senses and speeds from the original actor BEFORE creating the new one
-            const detectedSenses = this.detectSenses();
-            const detectedSpeeds = this.detectSpeeds();
-            console.log("Monster Maker - Detected senses:", detectedSenses);
-            console.log("Monster Maker - Detected speeds:", detectedSpeeds);
             
             // Always create a new actor - Monster Maker creates new creatures
             const newActorData = {
@@ -293,8 +212,8 @@ export class MonsterMaker extends FormApplication {
             Object.assign(updateData, this.applyLevel())
             Object.assign(updateData, this.applyTraits(formData))
             // Apply senses and speeds from original actor
-            Object.assign(updateData, this.applySenses(detectedSenses))
-            Object.assign(updateData, this.applySpeeds(detectedSpeeds))
+            Object.assign(updateData, this.applySenses(foundry.utils.getProperty(this.actor, 'system.perception.senses')))
+            Object.assign(updateData, this.applyMovement(foundry.utils.getProperty(this.actor, 'system.attributes.movement')))
             await newActor.update(updateData);
             
             // Store original actor reference and use new actor for item creation

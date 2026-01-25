@@ -1,6 +1,6 @@
 {
-    "id": "pf2e-monster-maker",
-    "name": "pf2e-monster-maker",
+    "id": "mycustom-module",
+    "name": "mycustom-module",
     "title": "PF2E Monster Maker",
     "description": "A module that allows you to make an NPC/Monster from scratch using Creature Building Rules. To use create a new NPC sheet and use the Monster Maker button located in top-right corner of the sheet.",
     "version": "REPLACED AUTOMATICALLY",
@@ -50,7 +50,7 @@
             "manifest": "https://github.com/foundryvtt/pf2e/releases/latest/download/system.json"
         }]
     },
-    "url": "https://github.com/dosexe/foundryvtt-pf2e-monster-maker",
-    "manifest": "https://github.com/dosexe/foundryvtt-pf2e-monster-maker/releases/latest/download/module.json",
-    "download": "https://github.com/dosexe/foundryvtt-pf2e-monster-maker/releases/latest/download/module.zip"
+    "url": "https://github.com/dosexe/foundryvtt-mycustom-module",
+    "manifest": "https://github.com/dosexe/foundryvtt-mycustom-module/releases/latest/download/module.json",
+    "download": "https://github.com/dosexe/foundryvtt-mycustom-module/releases/latest/download/module.zip"
 }

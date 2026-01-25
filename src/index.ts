@@ -1,7 +1,7 @@
 import {MonsterMaker} from "./MonsterMaker"
 Hooks.on('init', async () => {
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    await game["settings"].register("foundryvtt-pf2e-monster-maker", "roadmaps", {
+    await game["settings"].register("foundryvtt-mycustom-module", "roadmaps", {
         scope: 'world',
         config: false,
         type: Object,
@@ -9,7 +9,7 @@ Hooks.on('init', async () => {
     });
 
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    await game["settings"].register("pf2e-monster-maker", "abbreviateName", {
+    await game["settings"].register("mycustom-module", "abbreviateName", {
         name:    "Abbreviate Monster Maker",
         hint:    "Turn this on if you prefer to see MM instead of the full title Monster Maker in the monster sheet.",
         scope:   "world",
@@ -22,7 +22,7 @@ Hooks.on('init', async () => {
 function getMonsterManualLabel () {
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
     return game["settings"].get(
-        "pf2e-monster-maker",
+        "mycustom-module",
         "abbreviateName"
     ) ? "MM" : "Monster Maker";
 }

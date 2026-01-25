@@ -1,5 +1,5 @@
 # fvtt-module-pf2e-MonsterMaker
-The download link: https://github.com/miki4920/foundryvtt-pf2e-monster-maker/releases/latest/download/module.json
+The download link: https://github.com/miki4920/foundryvtt-mycustom-module/releases/latest/download/module.json
 
 A Foundry VTT module designed for Pathfinder 2E System, that allows you to create combat NPCs from scratch, using values from the Pathfinder 2e Building Creatures Guide: https://2e.aonprd.com/Rules.aspx?ID=995
 

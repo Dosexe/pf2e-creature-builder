@@ -1,5 +1,5 @@
 {
-  "name": "foundryvtt-pf2e-monster-maker",
+  "name": "foundryvtt-mycustom-module",
   "version": "1.0.0",
   "description": "A module that allows you to make an NPC/Monster from scratch using Creature Building Rules.",
   "main": "webpack.config.js",
