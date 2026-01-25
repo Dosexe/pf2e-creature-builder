@@ -67,17 +67,17 @@
 }
 
 /* Traits dropdown - hide by default, show when .show class is added */
-/* Use !important to override Foundry's tagify__dropdown default visibility */
-#monsterMakerForm .tagify__dropdown.traits-dropdown {
+/* Use ID selector since dropdown may be moved to document.body */
+#traitsDropdown {
     display: none !important;
 }
 
-#monsterMakerForm .tagify__dropdown.traits-dropdown.show {
+#traitsDropdown.show {
     display: block !important;
 }
 
 /* Custom entry styling for user-typed traits */
-#monsterMakerForm .traits-dropdown .tagify__dropdown__item.custom-entry {
+#traitsDropdown .tagify__dropdown__item.custom-entry {
     font-style: italic;
 }
 
@@ -122,13 +122,12 @@
     margin: 0;
 }
 
-#monsterMakerForm summary.collapsible-header h3::before {
+#monsterMakerForm summary.collapsible-header .collapse-arrow::before {
     content: "▶ ";
     font-size: 10px;
-    transition: transform 0.2s ease;
 }
 
-#monsterMakerForm details[open] summary.collapsible-header h3::before {
+#monsterMakerForm details[open] summary.collapsible-header .collapse-arrow::before {
     content: "▼ ";
 }
 
