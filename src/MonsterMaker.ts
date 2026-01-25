@@ -25,7 +25,7 @@ export class MonsterMaker extends FormApplication {
     }
 
     static get defaultOptions() {
-        return mergeObject(FormApplication.defaultOptions, {
+        return foundry.utils.mergeObject(FormApplication.defaultOptions, {
             classes: ["form"],
             popOut: true,
             template: `modules/pf2e-monster-maker/dist/forms/monsterMakerForm.html`,
