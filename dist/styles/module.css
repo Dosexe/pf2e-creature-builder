@@ -95,48 +95,45 @@
     background-color: #555;
 }
 
-/* Collapsible sections */
-#monsterMakerForm .collapsible-section {
-    margin-bottom: 5px;
+/* Collapsible sections using native details/summary */
+#monsterMakerForm details.collapsible-section {
+    margin-bottom: 10px;
 }
 
-#monsterMakerForm .collapsible-header {
+#monsterMakerForm summary.collapsible-header {
     cursor: pointer;
     user-select: none;
+    font-size: 1.1em;
+    font-weight: bold;
+    padding: 5px 0;
+    list-style: none;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 0;
-    margin: 0;
 }
 
-#monsterMakerForm .collapsible-header:hover {
-    opacity: 0.8;
+#monsterMakerForm summary.collapsible-header::-webkit-details-marker {
+    display: none;
 }
 
-#monsterMakerForm .collapse-indicator {
+#monsterMakerForm summary.collapsible-header::before {
+    content: "▶";
     font-size: 10px;
     transition: transform 0.2s ease;
     display: inline-block;
     width: 12px;
 }
 
-#monsterMakerForm .collapsible-section:not(.collapsed) .collapse-indicator {
+#monsterMakerForm details[open] summary.collapsible-header::before {
     transform: rotate(90deg);
 }
 
-#monsterMakerForm .collapsible-content {
-    overflow: hidden;
-    max-height: 1000px;
-    transition: max-height 0.3s ease, opacity 0.3s ease;
-    opacity: 1;
+#monsterMakerForm summary.collapsible-header:hover {
+    opacity: 0.8;
 }
 
-#monsterMakerForm .collapsible-section.collapsed .collapsible-content {
-    max-height: 0;
-    opacity: 0;
-    margin: 0;
-    padding: 0;
+#monsterMakerForm .collapsible-content {
+    padding-left: 5px;
 }
 
 /* Form divider before buttons */

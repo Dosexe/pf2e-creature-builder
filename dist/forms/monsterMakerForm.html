@@ -527,28 +527,20 @@
         setDetectedStats();
     }, 0);
     
-    // Expose toggleSection to global scope for onclick handlers
-    window.toggleSection = function(sectionId) {
-        var section = document.getElementById(sectionId);
-        if (section) {
-            section.classList.toggle('collapsed');
-        }
-    };
-    
     // Collapse Skills section by default on init
     function initCollapsibleSections() {
-        var sections = document.querySelectorAll('.collapsible-section');
+        var sections = document.querySelectorAll('details.collapsible-section');
         sections.forEach(function(section) {
             var sectionName = section.getAttribute('data-section-name');
             
-            // Collapse Skills section by default
+            // Collapse Skills section by default (remove 'open' attribute)
             var isSkillsSection = sectionName && (
                 sectionName.toLowerCase().indexOf('skill') !== -1 ||
                 sectionName === 'PF2EMONSTERMAKER.skills'
             );
             
             if (isSkillsSection) {
-                section.classList.add('collapsed');
+                section.removeAttribute('open');
             }
         });
     }
