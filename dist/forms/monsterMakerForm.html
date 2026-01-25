@@ -41,8 +41,8 @@
         <input type="hidden" name="PF2EMONSTERMAKER.traits" id="monsterMakerTraitsHidden" value="">
     </div>
     {{#each CreatureStatistics}}
-        <div class="collapsible-section" data-section-name="{{this.name}}">
-            <h3 class="collapsible-header">
+        <div class="collapsible-section" data-section-name="{{this.name}}" id="section-{{@index}}">
+            <h3 class="collapsible-header" onclick="toggleSection('section-{{@index}}')">
                 <span class="collapse-indicator">▶</span>
                 {{localize this.name}}
             </h3>
@@ -73,11 +73,19 @@
             </div>
         </div>
     {{/each}}
-    <h3>{{localize "PF2EMONSTERMAKER.loreSkills"}}</h3>
-    <div id="loreSkillsContainer"></div>
-    <div class="form-group setting">
-        <button type="button" id="addLoreButton" class="monsterMakerAddButton">{{localize "PF2EMONSTERMAKER.addLore"}}</button>
+    <div class="collapsible-section" id="section-lore">
+        <h3 class="collapsible-header" onclick="toggleSection('section-lore')">
+            <span class="collapse-indicator">▶</span>
+            {{localize "PF2EMONSTERMAKER.loreSkills"}}
+        </h3>
+        <div class="collapsible-content">
+            <div id="loreSkillsContainer"></div>
+            <div class="form-group setting">
+                <button type="button" id="addLoreButton" class="monsterMakerAddButton">{{localize "PF2EMONSTERMAKER.addLore"}}</button>
+            </div>
+        </div>
     </div>
+    <div class="form-divider"></div>
     <div class="buttons">
         <button type="button" id="monsterMakerResetButton" class="monsterMakerResetButton">{{localize "PF2EMONSTERMAKER.resetDefaults"}}</button>
         <button type="submit" id="monsterMakerFormSubmit">Submit</button>
@@ -473,16 +481,21 @@
         setDetectedStats();
     }, 0);
     
-    // Collapsible sections functionality
+    // Expose toggleSection to global scope for onclick handlers
+    window.toggleSection = function(sectionId) {
+        var section = document.getElementById(sectionId);
+        if (section) {
+            section.classList.toggle('collapsed');
+        }
+    };
+    
+    // Collapse Skills section by default on init
     function initCollapsibleSections() {
         var sections = document.querySelectorAll('.collapsible-section');
         sections.forEach(function(section) {
-            var header = section.querySelector('.collapsible-header');
-            var content = section.querySelector('.collapsible-content');
-            var indicator = section.querySelector('.collapse-indicator');
             var sectionName = section.getAttribute('data-section-name');
             
-            // Collapse Skills section by default (check for common skill-related names)
+            // Collapse Skills section by default
             var isSkillsSection = sectionName && (
                 sectionName.toLowerCase().indexOf('skill') !== -1 ||
                 sectionName === 'PF2EMONSTERMAKER.skills'
@@ -491,10 +504,6 @@
             if (isSkillsSection) {
                 section.classList.add('collapsed');
             }
-            
-            header.addEventListener('click', function() {
-                section.classList.toggle('collapsed');
-            });
         });
     }
     

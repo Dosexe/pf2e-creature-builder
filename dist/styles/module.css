@@ -173,3 +173,9 @@
     padding: 0;
 }
 
+/* Form divider before buttons */
+#monsterMakerForm .form-divider {
+    border-top: 2px solid #4a4a4a;
+    margin: 20px 0 15px 0;
+}
+
