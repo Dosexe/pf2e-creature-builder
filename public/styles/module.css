@@ -112,13 +112,18 @@
     text-align: left;
 }
 
+/* TODO add mod ref + class
 /* Remove native marker across browsers */
-#monsterMakerForm summary.collapsible-header::marker {
-    content: "" !important;
+summary.collapsible-header {
+    list-style: none; /* remove bullet/marker in Firefox */
 }
 
-#monsterMakerForm summary.collapsible-header::-webkit-details-marker {
-    display: none !important;
+summary.collapsible-header::-webkit-details-marker {
+    display: none; /* Chrome, Safari, Edge */
+}
+
+summary.collapsible-header::marker {
+    content: none; /* Firefox */
 }
 
 #monsterMakerForm summary.collapsible-header:hover {
@@ -149,4 +154,3 @@
     border-top: 2px solid #4a4a4a;
     margin: 20px 0 15px 0;
 }
-

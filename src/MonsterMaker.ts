@@ -17,8 +17,8 @@ export class MonsterMaker extends FormApplication {
 
     constructor(object: any, options?: any) {
         super(object, options)
-        // Generate unique ID at construction time to prevent form caching
-        this._uniqueId = `monsterMakerForm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+
+        this._uniqueId = `creatureBuilderForm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
         console.log(
             'MonsterMaker constructor - object:',
             object,
@@ -27,7 +27,6 @@ export class MonsterMaker extends FormApplication {
         )
     }
 
-    // Getter to always get fresh actor reference from this.object
     get actor(): BaseActor {
         return this.object as BaseActor
     }
@@ -40,15 +39,15 @@ export class MonsterMaker extends FormApplication {
         return foundry.utils.mergeObject(FormApplication.defaultOptions, {
             classes: ['form'],
             popOut: true,
-            template: `modules/mycustom-module/dist/forms/monsterMakerForm.html`,
-            id: 'monsterMakerForm',
+            template: `modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html`,
+            id: 'creatureBuilderForm',
             title: 'Monster Maker Form',
             height: 833,
             width: 400,
         })
     }
 
-    // Override to make the form ID unique - prevents caching
+
     get id() {
         return this._uniqueId
     }
@@ -167,7 +166,7 @@ export class MonsterMaker extends FormApplication {
     }
 
     async applyLoreSkills(formData: object) {
-        // Find all lore skills in the form data
+
         const loreSkills: { name: string; option: string }[] = []
         for (const key of Object.keys(formData)) {
             if (key.startsWith('loreName')) {
@@ -221,7 +220,7 @@ export class MonsterMaker extends FormApplication {
 
     protected async _updateObject(_event: Event, formData?: object) {
         if (formData) {
-            // Validate and set level
+
             const formLevel = String(formData[Statistics.level])
             this.level = Levels.includes(formLevel) ? formLevel : '1'
             console.log(
@@ -231,7 +230,7 @@ export class MonsterMaker extends FormApplication {
                 formData,
             )
 
-            // Always create a new actor - Monster Maker creates new creatures
+
             const newActorData = {
                 name: formData[Statistics.name] || 'New Monster',
                 type: 'npc',
@@ -261,7 +260,7 @@ export class MonsterMaker extends FormApplication {
             Object.assign(updateData, this.applyName(formData))
             Object.assign(updateData, this.applyLevel())
             Object.assign(updateData, this.applyTraits(formData))
-            // Apply senses and speeds from original actor
+
             Object.assign(
                 updateData,
                 this.applySenses(
@@ -276,32 +275,32 @@ export class MonsterMaker extends FormApplication {
                 this.applyMovement(
                     foundry.utils.getProperty(
                         this.actor,
-                        'system.attributes.movement',
+                        'system.movement',
                     ),
                 ),
             )
             await newActor.update(updateData)
 
-            // Store original actor reference and use new actor for item creation
+
             const originalActor = this.actor
             this.actor = newActor
-            await this.actor.update(this.applyHitPoints(formData))
-            await this.applyStrike(formData)
-            await this.applySpellcasting(formData)
-            await this.applySkills(formData)
-            await this.applyLoreSkills(formData)
+            await Promise.all([
+                this.actor.update(this.applyHitPoints(formData)),
+                this.applyStrike(formData),
+                this.applySpellcasting(formData),
+                this.applySkills(formData),
+                this.applyLoreSkills(formData)
+            ])
             this.actor = originalActor
 
-            // Open the new actor's sheet
             newActor.sheet?.render(true)
         }
     }
 
-    // Detect current actor stats and return detected Options for each statistic
+
     detectActorStats(): { [key: string]: Options } {
         const detected: { [key: string]: Options } = {}
 
-        // Get actor level
         const actorLevel = String(
             foundry.utils.getProperty(
                 this.actor,
@@ -310,7 +309,6 @@ export class MonsterMaker extends FormApplication {
         )
         const clampedLevel = Levels.includes(actorLevel) ? actorLevel : '1'
 
-        // Detect ability scores
         const abilityStats = [
             Statistics.str,
             Statistics.dex,
@@ -331,7 +329,6 @@ export class MonsterMaker extends FormApplication {
             }
         }
 
-        // Detect HP
         const hp = foundry.utils.getProperty(
             this.actor,
             'system.attributes.hp.max',
@@ -340,7 +337,6 @@ export class MonsterMaker extends FormApplication {
             detected[Statistics.hp] = detectHPLevel(clampedLevel, Number(hp))
         }
 
-        // Detect Perception
         const perception = foundry.utils.getProperty(
             this.actor,
             'system.perception.mod',
@@ -353,7 +349,6 @@ export class MonsterMaker extends FormApplication {
             )
         }
 
-        // Detect AC
         const ac = foundry.utils.getProperty(
             this.actor,
             'system.attributes.ac.value',
@@ -366,7 +361,6 @@ export class MonsterMaker extends FormApplication {
             )
         }
 
-        // Detect Saves
         const saveStats = [
             { stat: Statistics.fort, path: 'system.saves.fortitude.value' },
             { stat: Statistics.ref, path: 'system.saves.reflex.value' },
@@ -383,7 +377,6 @@ export class MonsterMaker extends FormApplication {
             }
         }
 
-        // Detect Skills
         for (const skillStat of Skills) {
             const skillKey = skillStat.split('.')[1].toLowerCase()
             const skillValue =
@@ -433,7 +426,6 @@ export class MonsterMaker extends FormApplication {
         return detected
     }
 
-    // Detect existing traits on the actor
     detectTraits(): string[] {
         const traits = foundry.utils.getProperty(
             this.actor,
