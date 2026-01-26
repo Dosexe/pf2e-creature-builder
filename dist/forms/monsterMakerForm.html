@@ -45,11 +45,11 @@
         <input type="hidden" name="PF2EMONSTERMAKER.traits" id="monsterMakerTraitsHidden" value="">
     </div>
     {{#each CreatureStatistics}}
-        <section class="collapsible-section is-open" data-section-name="{{this.name}}">
-            <button type="button" class="collapsible-header" aria-expanded="true">
-                <span class="collapse-arrow" aria-hidden="true"></span>
+        <details class="collapsible-section" data-section-name="{{this.name}}" open>
+            <summary class="collapsible-header">
+                <span class="collapse-arrow" aria-hidden="true">▶</span>
                 <h3>{{localize this.name}}</h3>
-            </button>
+            </summary>
             <div class="collapsible-content">
                 {{#each this.statisticEntries}}
                     <div class="form-group setting">
@@ -75,20 +75,20 @@
                     </div>
                 {{/each}}
             </div>
-        </section>
+        </details>
     {{/each}}
-    <section class="collapsible-section is-open" id="section-lore">
-        <button type="button" class="collapsible-header" aria-expanded="true">
-            <span class="collapse-arrow" aria-hidden="true"></span>
+    <details class="collapsible-section" id="section-lore" open>
+        <summary class="collapsible-header">
+            <span class="collapse-arrow" aria-hidden="true">▶</span>
             <h3>{{localize "PF2EMONSTERMAKER.loreSkills"}}</h3>
-        </button>
+        </summary>
         <div class="collapsible-content">
             <div id="loreSkillsContainer"></div>
             <div class="form-group setting">
                 <button type="button" id="addLoreButton" class="monsterMakerAddButton">{{localize "PF2EMONSTERMAKER.addLore"}}</button>
             </div>
         </div>
-    </section>
+    </details>
     <div class="form-divider"></div>
     <div class="buttons">
         <button type="button" id="monsterMakerResetButton" class="monsterMakerResetButton">{{localize "PF2EMONSTERMAKER.resetDefaults"}}</button>
@@ -539,16 +539,9 @@
         setDetectedStats();
     }, 0);
     
-    function setSectionOpen(section, isOpen) {
-        section.classList.toggle('is-open', isOpen);
-        var header = section.querySelector('.collapsible-header');
-        if (header) {
-            header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        }
-    }
-
+    // Collapse Skills and Lore Skills sections by default on init
     function initCollapsibleSections() {
-        var sections = document.querySelectorAll('.collapsible-section');
+        var sections = document.querySelectorAll('details.collapsible-section');
         sections.forEach(function(section) {
             var sectionName = section.getAttribute('data-section-name');
             var sectionId = section.getAttribute('id');
@@ -560,17 +553,7 @@
             var isLoreSection = sectionId === 'section-lore';
 
             if (isSkillsSection || isLoreSection) {
-                setSectionOpen(section, false);
-            } else {
-                setSectionOpen(section, true);
-            }
-
-            var header = section.querySelector('.collapsible-header');
-            if (header) {
-                header.addEventListener('click', function() {
-                    var isOpen = section.classList.contains('is-open');
-                    setSectionOpen(section, !isOpen);
-                });
+                section.removeAttribute('open');
             }
         });
     }
