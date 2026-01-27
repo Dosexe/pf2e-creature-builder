@@ -1,26 +1,30 @@
+import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
+import CreatureBuilderFormUI, {
+    type CreatureBuilderFormConfig,
+} from './CreatureBuilderFormUI'
 import {
     actorFields,
     DefaultCreatureStatistics,
     Levels,
-    Statistics,
-    Skills,
     Options,
     RoadMaps,
+    Skills,
+    Statistics,
 } from './Keys'
-import { statisticValues, detectStatLevel, detectHPLevel } from './Values'
-import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
+import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 
-export class MonsterMaker extends FormApplication {
+export class CreatureBuilderForm extends FormApplication {
     data = DefaultCreatureStatistics
     level = '-1'
     private readonly _uniqueId: string
+    private formUI: CreatureBuilderFormUI | null = null
 
     constructor(object: any, options?: any) {
         super(object, options)
 
         this._uniqueId = `creatureBuilderForm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
         console.log(
-            'MonsterMaker constructor - object:',
+            'CreatureBuilderForm constructor - object:',
             object,
             'this.object:',
             this.object,
@@ -41,15 +45,54 @@ export class MonsterMaker extends FormApplication {
             popOut: true,
             template: `modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html`,
             id: 'creatureBuilderForm',
-            title: 'Monster Maker Form',
+            title: 'Creature Builder Form',
             height: 833,
             width: 400,
         })
     }
 
-
     get id() {
         return this._uniqueId
+    }
+
+    /**
+     * Called after the form is rendered to initialize client-side UI behavior
+     */
+    activateListeners(html: JQuery) {
+        console.log('=== CreatureBuilderForm.activateListeners called ===')
+        console.log('HTML element:', html)
+        console.log('HTML length:', html.length)
+
+        super.activateListeners(html)
+
+        // Initialize the UI controller after DOM is ready
+        const config: CreatureBuilderFormConfig = {
+            creatureStatistics: JSON.parse(JSON.stringify(this.data)),
+            creatureRoadmaps: RoadMaps,
+            detectedStats: this.detectActorStats(),
+            detectedTraits: this.detectTraits(),
+            detectedLoreSkills: this.detectLoreSkills(),
+            actorLevel: String(
+                foundry.utils.getProperty(
+                    this.actor,
+                    'system.details.level.value',
+                ) ?? 1,
+            ),
+        }
+
+        console.log('Creating CreatureBuilderFormUI with config:', config)
+        this.formUI = new CreatureBuilderFormUI(config)
+        console.log('Initializing CreatureBuilderFormUI...')
+        this.formUI.initialize()
+        console.log('=== CreatureBuilderForm.activateListeners complete ===')
+    }
+
+    /**
+     * Clean up when the form is closed
+     */
+    async close(options?: FormApplication.CloseOptions) {
+        this.formUI = null
+        return super.close(options)
     }
 
     applyName(formData: object) {
@@ -166,7 +209,6 @@ export class MonsterMaker extends FormApplication {
     }
 
     async applyLoreSkills(formData: object) {
-
         const loreSkills: { name: string; option: string }[] = []
         for (const key of Object.keys(formData)) {
             if (key.startsWith('loreName')) {
@@ -219,17 +261,19 @@ export class MonsterMaker extends FormApplication {
     }
 
     protected async _updateObject(_event: Event, formData?: object) {
-        if (formData) {
+        console.log('=== _updateObject called ===')
+        console.log('Event:', _event)
+        console.log('Form data:', formData)
 
+        if (formData) {
             const formLevel = String(formData[Statistics.level])
             this.level = Levels.includes(formLevel) ? formLevel : '1'
             console.log(
-                'Monster Maker Submit - Level:',
+                'Creature Builder Submit - Level:',
                 this.level,
                 'Form data:',
                 formData,
             )
-
 
             const newActorData = {
                 name: formData[Statistics.name] || 'New Monster',
@@ -273,14 +317,10 @@ export class MonsterMaker extends FormApplication {
             Object.assign(
                 updateData,
                 this.applyMovement(
-                    foundry.utils.getProperty(
-                        this.actor,
-                        'system.movement',
-                    ),
+                    foundry.utils.getProperty(this.actor, 'system.movement'),
                 ),
             )
             await newActor.update(updateData)
-
 
             const originalActor = this.actor
             this.actor = newActor
@@ -289,14 +329,13 @@ export class MonsterMaker extends FormApplication {
                 this.applyStrike(formData),
                 this.applySpellcasting(formData),
                 this.applySkills(formData),
-                this.applyLoreSkills(formData)
+                this.applyLoreSkills(formData),
             ])
             this.actor = originalActor
 
             newActor.sheet?.render(true)
         }
     }
-
 
     detectActorStats(): { [key: string]: Options } {
         const detected: { [key: string]: Options } = {}
@@ -472,10 +511,9 @@ export class MonsterMaker extends FormApplication {
         return loreSkills
     }
 
-    // debug
-    // @ts-expect-error
+    // @ts-expect-error - Overriding parent method
     getData() {
-        console.log('=== MonsterMaker getData() ===')
+        console.log('=== CreatureBuilderForm getData() ===')
         console.log('this.object:', this.object)
         console.log('this.actor:', this.actor)
         console.log('this.actor?.name:', (this.actor as any)?.name)

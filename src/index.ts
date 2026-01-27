@@ -1,17 +1,22 @@
-import { MonsterMaker } from './MonsterMaker'
+import { CreatureBuilderForm } from './CreatureBuilderForm'
+
 Hooks.on('init', async () => {
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    await game['settings'].register('foundryvtt-pf2e-creature-builder', 'roadmaps', {
-        scope: 'world',
-        config: false,
-        type: Object,
-        default: {},
-    })
+    await game['settings'].register(
+        'foundryvtt-pf2e-creature-builder',
+        'roadmaps',
+        {
+            scope: 'world',
+            config: false,
+            type: Object,
+            default: {},
+        },
+    )
 
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
     await game['settings'].register('pf2e-creature-builder', 'abbreviateName', {
-        name: 'Abbreviate Monster Maker',
-        hint: 'Turn this on if you prefer to see MM instead of the full title Monster Maker in the monster sheet.',
+        name: 'Abbreviate Creature Builder',
+        hint: 'Turn this on if you prefer to see CB instead of the full title Creature Builder in the monster sheet.',
         scope: 'world',
         config: true,
         type: Boolean,
@@ -22,8 +27,8 @@ Hooks.on('init', async () => {
 function getMonsterManualLabel() {
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
     return game['settings'].get('pf2e-creature-builder', 'abbreviateName')
-        ? 'MM'
-        : 'Monster Maker'
+        ? 'CB'
+        : 'Creature Builder'
 }
 
 Hooks.on('renderActorSheet', async (sheet, html) => {
@@ -41,16 +46,16 @@ Hooks.on('renderActorSheet', async (sheet, html) => {
         `<a class="popout" style><i style="padding: 0 4px;" class="fas fa-book"></i>${label}</a>`,
     )
     button.on('click', () => {
-        new MonsterMaker(actor).render(true)
+        new CreatureBuilderForm(actor).render(true)
     })
     element.after(button)
 })
 
 Hooks.on('renderActorDirectory', () => {
     const footer = $('#actors .directory-footer.action-buttons')
-    if (footer.find("button:contains('Monster Maker')").length === 0) {
+    if (footer.find("button:contains('Creature Builder')").length === 0) {
         const monsterButton = $(
-            `<button><i class="fas fa-book"></i>Monster Maker</button>`,
+            `<button><i class="fas fa-book"></i>Creature Builder</button>`,
         )
         footer.append(monsterButton)
 
@@ -61,7 +66,7 @@ Hooks.on('renderActorDirectory', () => {
             }
             Actor.create(monsterData).then((actor) => {
                 if (actor) {
-                    new MonsterMaker(actor).render(true)
+                    new CreatureBuilderForm(actor).render(true)
                 }
             })
         })

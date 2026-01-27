@@ -124,7 +124,6 @@ export enum Options {
 }
 
 export const RoadMaps = {
-    // Monster Roadmaps
     'PF2EMONSTERMAKER.brute': {
         [Statistics.per]: Options.low,
         [Statistics.str]: Options.extreme,

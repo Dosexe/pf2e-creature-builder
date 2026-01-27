@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { detectStatLevel, detectHPLevel } from './Values'
+import { describe, expect, it } from 'vitest'
 import { Options, Statistics } from './Keys'
+import { detectHPLevel, detectStatLevel } from './Values'
 
 describe('detectStatLevel', () => {
     describe('ability scores', () => {
