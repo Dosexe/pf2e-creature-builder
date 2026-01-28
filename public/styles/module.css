@@ -1,0 +1,172 @@
+.creatureBuilderForm form {
+    /*display: flex;*/
+    /*flex-direction: column;*/
+}
+
+.creatureBuilderForm .creatureBuilderFormText {
+    /*font-size: 16px;*/
+}
+
+.creatureBuilderForm .creatureBuilderFormTextSmall {
+    /*font-size: 15px;*/
+}
+
+.creatureBuilderForm label {
+    /*font-size: 16px;*/
+}
+
+.creatureBuilderForm .loreEntry {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-bottom: 5px !important;
+    justify-content: flex-start !important;
+}
+
+.creatureBuilderForm .loreNameInput {
+    flex: 5 1 0 !important;
+    min-width: 0 !important;
+    height: 28px !important;
+    box-sizing: border-box !important;
+}
+
+.creatureBuilderForm .loreEntry select {
+    flex: 3 1 0 !important;
+    min-width: 0 !important;
+    height: 28px !important;
+    box-sizing: border-box !important;
+}
+
+.creatureBuilderForm #sectionLore .collapsibleContent {
+    padding-top: 6px;
+}
+
+.creatureBuilderForm .creatureBuilderAddButton {
+    display: inline-block;
+    width: auto;
+    margin: 0 0 8px 0;
+}
+
+.creatureBuilderForm .creatureBuilderRemoveIcon {
+    display: inline-block;
+    cursor: pointer;
+    font-size: 14px;
+    transition: transform 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+    flex-shrink: 0;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.creatureBuilderForm .creatureBuilderRemoveIcon:hover {
+    background-color: #666;
+    transform: scale(1.15);
+}
+
+/* Traits styling - uses Foundry's tagify/paizo-style classes */
+.creatureBuilderForm .traitsContainer {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* Traits dropdown - hide by default, show when .show class is added */
+/* Use ID selector since dropdown may be moved to document.body */
+#creatureBuilderTraitsDropdown {
+    display: none !important;
+}
+
+#creatureBuilderTraitsDropdown.show {
+    display: block !important;
+}
+
+/* Custom entry styling for user-typed traits */
+#creatureBuilderTraitsDropdown .tagify__dropdown__item.customEntry {
+    font-style: italic;
+}
+
+/* Reset button styling */
+.creatureBuilderForm .creatureBuilderResetButton {
+    background-color: #666;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.creatureBuilderForm .creatureBuilderResetButton:hover {
+    background-color: #555;
+}
+
+/* Collapsible sections using native details/summary */
+.creatureBuilderForm details.collapsibleSection {
+    margin-bottom: 10px;
+}
+
+.creatureBuilderForm summary.collapsibleHeader {
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-align: left;
+}
+
+/* TODO add mod ref + class
+/* Remove native marker across browsers */
+summary.collapsibleHeader {
+    list-style: none; /* remove bullet/marker in Firefox */
+}
+
+
+.creatureBuilderForm .creatureBuilderHeaderArrow {
+    transition: transform 0.3s ease; /* smooth rotation */
+    display: inline-block; /* required for transform to work properly */
+    margin-left: 0.5em; /* space after text – adjust as needed */
+    font-size: 1.1em; /* optional */
+}
+
+/* When the <details> is open → rotate the icon */
+.creatureBuilderForm details[open] .creatureBuilderHeaderArrow {
+    transform: rotate(90deg); /* right → down (most common choice) */
+    /* or: transform: rotate(180deg);     → right → up (chevron style) */
+}
+
+.creatureBuilderForm summary.collapsibleHeader::-webkit-details-marker {
+    display: none; /* Chrome, Safari, Edge */
+}
+
+.creatureBuilderForm summary.collapsibleHeader::marker {
+    content: none; /* Firefox */
+}
+
+.creatureBuilderForm summary.collapsibleHeader:hover {
+    opacity: 0.8;
+}
+
+.creatureBuilderForm summary.collapsibleHeader h3 {
+    display: inline-block;
+    margin: 0;
+}
+
+.creatureBuilderForm summary.collapsibleHeader .collapseArrow {
+    display: inline-block;
+    font-size: 10px;
+    transition: transform 0.15s ease;
+}
+
+.creatureBuilderForm details[open] summary.collapsibleHeader .collapseArrow {
+    transform: rotate(90deg);
+}
+
+.creatureBuilderForm .collapsibleContent {
+    padding-left: 5px;
+}
+
+.creatureBuilderForm .formDivider {
+    border-top: 2px solid var(--color-underline-header);
+    margin: 10px 0 10px 0;
+}

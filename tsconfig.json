@@ -11,12 +11,16 @@
     "allowUmdGlobalAccess": true,
     "noImplicitAny": false,
     "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "removeComments": false,
     "resolveJsonModule": true,
-    "typeRoots": ["./types"],
+    "typeRoots": ["./types", "./node_modules/@types"],
     "alwaysStrict": true,
     "strictNullChecks": true,
     "skipLibCheck": true,
+    "noEmit": true,
     "noEmitOnError": false
   },
   "include": ["src"]

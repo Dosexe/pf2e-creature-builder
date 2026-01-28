@@ -1,62 +1,74 @@
-import {MonsterMaker} from "./MonsterMaker"
-Hooks.on('init', async function () {
-    await game["settings"].register("foundryvtt-pf2e-monster-maker", "roadmaps", {
-        scope: 'world',
-        config: false,
-        type: Object,
-        default: {}
-    });
+import { CreatureBuilderForm } from './CreatureBuilderForm'
 
-    await game["settings"].register("pf2e-monster-maker", "abbreviateName", {
-        name:    "Abbreviate Monster Maker",
-        hint:    "Turn this on if you prefer to see “MM” instead of the full title “Monster Maker” in the monster sheet.",
-        scope:   "world",
-        config:  true,
-        type:    Boolean,
-        default: false
-    });
+Hooks.on('init', async () => {
+    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
+    await game['settings'].register(
+        'foundryvtt-pf2e-creature-builder',
+        'roadmaps',
+        {
+            scope: 'world',
+            config: false,
+            type: Object,
+            default: {},
+        },
+    )
+
+    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
+    await game['settings'].register('pf2e-creature-builder', 'abbreviateName', {
+        name: 'Abbreviate Creature Builder',
+        hint: 'Turn this on if you prefer to see CB instead of the full title Creature Builder in the monster sheet.',
+        scope: 'world',
+        config: true,
+        type: Boolean,
+        default: false,
+    })
 })
 
-function getMonsterManualLabel () {
-    return game["settings"].get(
-        "pf2e-monster-maker",
-        "abbreviateName"
-    ) ? "MM" : "Monster Maker";
+function getMonsterManualLabel() {
+    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
+    return game['settings'].get('pf2e-creature-builder', 'abbreviateName')
+        ? 'CB'
+        : 'Creature Builder'
 }
 
-Hooks.on("renderActorSheet", async function (sheet, html) {
-    let actor = sheet.object
-    if (actor?.type !== "npc") {
-        return;
+Hooks.on('renderActorSheet', async (sheet, html) => {
+    const actor = sheet.object
+    if (actor?.type !== 'npc') {
+        return
     }
-    if(!actor.canUserModify(game["user"], "update")) {
-        return;
+    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
+    if (!actor.canUserModify(game['user'], 'update')) {
+        return
     }
-    let element = html.find(".window-header .window-title");
-    let label = getMonsterManualLabel()
-    let button = $(`<a class="popout" style><i style="padding: 0 4px;" class="fas fa-book"></i>${label}</a>`);
-    button.on("click", () => {
-        new MonsterMaker(actor).render(true)
+    const element = html.find('.window-header .window-title')
+    const label = getMonsterManualLabel()
+    const button = $(
+        `<a class="popout" style><i style="padding: 0 4px;" class="fas fa-book"></i>${label}</a>`,
+    )
+    button.on('click', () => {
+        new CreatureBuilderForm(actor).render(true)
     })
-    element.after(button);
+    element.after(button)
 })
 
-Hooks.on("renderActorDirectory", function() {
-    let footer = $("#actors .directory-footer.action-buttons");
-    if (footer.find("button:contains('Monster Maker')").length === 0) {
-        let monsterButton = $(`<button><i class="fas fa-book"></i>Monster Maker</button>`);
-        footer.append(monsterButton);
+Hooks.on('renderActorDirectory', () => {
+    const footer = $('#actors .directory-footer.action-buttons')
+    if (footer.find("button:contains('Creature Builder')").length === 0) {
+        const monsterButton = $(
+            `<button><i class="fas fa-book"></i>Creature Builder</button>`,
+        )
+        footer.append(monsterButton)
 
-        monsterButton.on("click", function() {
-            let monsterData = {
-                name: "Monster",
-                type: "npc",
-            };
-            Actor.create(monsterData).then(actor => {
+        monsterButton.on('click', () => {
+            const monsterData = {
+                name: 'Monster',
+                type: 'npc',
+            }
+            Actor.create(monsterData).then((actor) => {
                 if (actor) {
-                    new MonsterMaker(actor).render(true);
+                    new CreatureBuilderForm(actor).render(true)
                 }
-            });
-        });
+            })
+        })
     }
-});
+})

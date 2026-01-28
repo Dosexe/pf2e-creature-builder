@@ -1,22 +1,35 @@
-# fvtt-module-pf2e-MonsterMaker
-The download link: https://github.com/miki4920/foundryvtt-pf2e-monster-maker/releases/latest/download/module.json
+# fvtt-module-pf2e-CreatureBuilderForm
 
-A Foundry VTT module designed for Pathfinder 2E System, that allows you to create combat NPCs from scratch, using values from the Pathfinder 2e Building Creatures Guide: https://2e.aonprd.com/Rules.aspx?ID=995
+This is forked from the [pf2e-monster-maker](https://github.com/mikolajg-tt/pf2e-monster-maker). Thanks to the creator **mikolajg-tt** for the solid foundation and great work on the original module.
 
-To use the Monster Maker, you have to create a blank NPC. Using a non-blank sheet is possible, but DCs and other special abilities will not scale. 
+The download link: https://github.com/dosexe/foundryvtt-pf2e-creature-builder/releases/latest/download/module.json
 
-When you open its Character Sheet, you can find a button at the top. Clicking this button will open the monster builder.
+A Foundry VTT module designed for Pathfinder 2E System, that allows you to create combat NPCs from scratch or from existing creature, using values from the [Pathfinder 2e Building Creatures Guide](https://2e.aonprd.com/Rules.aspx?ID=995)
+
+Main differences from the original module:
+ - Added support for all official roadmaps as defined in the [Pathfinder 2e rules](https://2e.aonprd.com/Rules.aspx?ID=2919).
+ - Introduced the ability to start a build from an existing creature.
+ - Added  support for Lore skills.
+ - Added support for traits.
+ - Minor UI changes
+
+To use the **Creature Builder**, you can create a blank NPC or start with an existing one. 
+For existing creature note that some of the values won't be inherited, like attacks/actions/passives, although those can be easily added afterward if needed.
+
+When you open actor **Character Sheet**, you can find a button at the top named **Creature Builder**. Clicking this button will open the creature builder.
 In there, you either use one of the roadmaps, allowing you to set values automatically for a given monster type, or you could create your unique creature by changing any of the drop-down menus.
 
-By default, all values are moderate, meaning you will get a creature that does not possess strengths or weaknesses. If you are planning to use your values rather than roadmaps, please take a look at the Creature Building Guide to see how to create a balanced monster: https://2e.aonprd.com/Rules.aspx?ID=995. Whenever you give a monster a strength, don't forget to give it a weakness to compensate. When you are happy with your values for the monster, click the "Submit" button. This will override the current values on the sheet.
+By default, all values are `moderate`, meaning you will get a creature that does not possess strengths or weaknesses. If you are planning to use your values rather than roadmaps, please take a look at the [PF2e Official Creature Building Guide](https://2e.aonprd.com/Rules.aspx?ID=995) to see how to create a balanced monster. 
+Whenever you give a monster a strength, don't forget to give it a weakness to compensate. When you are happy with your values for the monster, click the `Submit` button. This will create a new creature and open its sheet on the screen.
+Note each group in the form is clickable and can be expanded or collapsed. By default, all groups are expanded, except `Skills` and `Lore Skills` 
 
 Below are the images of the form:
-First part contains all of the important values like Hit Points, Level, Name etc.
-The Second part contains all of the skills as well as the Submit Button
+First part contains all the important values like Hit Points, Level, Name etc.
+The Second part contains all the skills as well as the Submit Button.
 
-![Page One of Monster Form](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-MonsterMaker/master/images/PageOne.png)
-![Page Two of Monster Form](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-MonsterMaker/master/images/PageTwo.png)
+![Page One of Monster Form](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-CreatureBuilder/master/images/PageOne.png)
+![Page Two of Monster Form](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-CreatureBuilder/master/images/PageTwo.png)
 
 Here is a comparison of size in relation to UI:
-![Size OVerall](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-MonsterMaker/master/images/ImageToScale.png)
-![Size in Relation to Sidebar](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-MonsterMaker/master/images/Size.png)
+![Size OVerall](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-CreatureBuilder/master/images/ImageToScale.png)
+![Size in Relation to Sidebar](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-CreatureBuilder/master/images/Size.png)

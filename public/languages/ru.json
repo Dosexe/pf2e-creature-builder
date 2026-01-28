@@ -80,9 +80,11 @@
     "PF2EMONSTERMAKER.none": "Отсутствует",
 
     "PF2EMONSTERMAKER.loreSkills": "Навыки Знаний",
-    "PF2EMONSTERMAKER.addLore": "+ Добавить Знание",
+    "PF2EMONSTERMAKER.addLore": "Добавить Знание",
     "PF2EMONSTERMAKER.loreName": "Название знания (напр. Война)",
 
     "PF2EMONSTERMAKER.traits": "Особенности",
-    "PF2EMONSTERMAKER.traitsPlaceholder": "Введите особенность и нажмите Enter"
+    "PF2EMONSTERMAKER.traitsPlaceholder": "Введите особенность и нажмите Enter",
+
+    "PF2EMONSTERMAKER.resetDefaults": "Сбросить к умолчаниям"
 }
