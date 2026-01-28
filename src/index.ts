@@ -64,7 +64,7 @@ Hooks.on('renderActorDirectory', () => {
                 name: 'Monster',
                 type: 'npc',
             }
-            Actor.create(monsterData).then((actor) => {
+            Actor.create(monsterData, { temporary: true }).then((actor) => {
                 if (actor) {
                     new CreatureBuilderForm(actor).render(true)
                 }
