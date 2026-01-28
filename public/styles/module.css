@@ -18,43 +18,45 @@
 #creatureBuilderForm .loreEntry {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 10px;
     margin-bottom: 5px;
 }
 
 #creatureBuilderForm .loreNameInput {
-    flex: 1;             /* take available space */
+    flex: 1;
     min-width: 100px;
-    /*height: 32px;        !* make sure height matches other UI elements *!*/
-    padding: 4px 8px;    /* inner padding for comfortable typing */
-    box-sizing: border-box; /* include padding in width calculation */
+    height: 28px;
+    box-sizing: border-box;
 }
 
-#creatureBuilderForm .creatureBuilderAddButton {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 5px 10px;
+#creatureBuilderForm .loreEntry select {
+    height: 28px;
+    box-sizing: border-box;
+}
+
+#creatureBuilderForm .creatureBuilderAddIcon {
+    color: #4CAF50;
     cursor: pointer;
     font-size: 14px;
+    margin-left: 10px;
+    transition: transform 0.15s ease, color 0.15s ease;
 }
 
-#creatureBuilderForm .creatureBuilderAddButton:hover {
-    background-color: #45a049;
+#creatureBuilderForm .creatureBuilderAddIcon:hover {
+    color: #45a049;
+    transform: scale(1.2);
 }
 
 #creatureBuilderForm .creatureBuilderRemoveButton {
-    background-color: #f44336;
-    color: white;
-    border: none;
-    padding: 2px 8px;
+    color: #f44336;
     cursor: pointer;
     font-size: 14px;
-    min-width: 25px;
+    transition: transform 0.15s ease, color 0.15s ease;
 }
 
 #creatureBuilderForm .creatureBuilderRemoveButton:hover {
-    background-color: #d32f2f;
+    color: #d32f2f;
+    transform: scale(1.2);
 }
 
 #loreSkillsContainer {
@@ -62,7 +64,7 @@
 }
 
 /* Traits styling - uses Foundry's tagify/paizo-style classes */
-#creatureBuilderForm .traits-container {
+#creatureBuilderForm .traitsContainer {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -71,16 +73,16 @@
 
 /* Traits dropdown - hide by default, show when .show class is added */
 /* Use ID selector since dropdown may be moved to document.body */
-#creatureBuilderTraitsDropdown {
+#traitsDropdown {
     display: none !important;
 }
 
-#creatureBuilderTraitsDropdown.show {
+#traitsDropdown.show {
     display: block !important;
 }
 
 /* Custom entry styling for user-typed traits */
-#creatureBuilderTraitsDropdown .tagify__dropdown__item.custom-entry {
+#traitsDropdown .tagify__dropdown__item.customEntry {
     font-style: italic;
 }
 
@@ -100,11 +102,11 @@
 }
 
 /* Collapsible sections using native details/summary */
-#creatureBuilderForm details.collapsible-section {
+#creatureBuilderForm details.collapsibleSection {
     margin-bottom: 10px;
 }
 
-#creatureBuilderForm summary.collapsible-header {
+#creatureBuilderForm summary.collapsibleHeader {
     cursor: pointer;
     user-select: none;
     margin: 0;
@@ -117,7 +119,7 @@
 
 /* TODO add mod ref + class
 /* Remove native marker across browsers */
-summary.collapsible-header {
+summary.collapsibleHeader {
     list-style: none; /* remove bullet/marker in Firefox */
 }
 
@@ -139,35 +141,35 @@ summary.collapsible-header::-webkit-details-marker {
     display: none; /* Chrome, Safari, Edge */
 }
 
-summary.collapsible-header::marker {
+summary.collapsibleHeader::marker {
     content: none; /* Firefox */
 }
 
-#creatureBuilderForm summary.collapsible-header:hover {
+#creatureBuilderForm summary.collapsibleHeader:hover {
     opacity: 0.8;
 }
 
-#creatureBuilderForm summary.collapsible-header h3 {
+#creatureBuilderForm summary.collapsibleHeader h3 {
     display: inline-block;
     margin: 0;
 }
 
-#creatureBuilderForm summary.collapsible-header .collapse-arrow {
+#creatureBuilderForm summary.collapsibleHeader .collapseArrow {
     display: inline-block;
     font-size: 10px;
     transition: transform 0.15s ease;
 }
 
-#creatureBuilderForm details[open] summary.collapsible-header .collapse-arrow {
+#creatureBuilderForm details[open] summary.collapsibleHeader .collapseArrow {
     transform: rotate(90deg);
 }
 
-#creatureBuilderForm .collapsible-content {
+#creatureBuilderForm .collapsibleContent {
     padding-left: 5px;
 }
 
 /* Form divider before buttons */
-#creatureBuilderForm .form-divider {
+#creatureBuilderForm .formDivider {
     border-top: 2px solid #4a4a4a;
     margin: 20px 0 15px 0;
 }

@@ -32,11 +32,11 @@
         <label for="creatureBuilderTraits" class="creatureBuilderFormText">
             {{localize "PF2EMONSTERMAKER.traits"}}
         </label>
-        <div class="traits-container">
+        <div class="traitsContainer">
             <tags class="tagify tags paizo-style" tabindex="-1" id="traitsTagify">
                 <span contenteditable="true" tabindex="0" data-placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}" class="tagify__input" role="textbox" aria-autocomplete="both" aria-multiline="false" id="creatureBuilderTraitsInput"></span>
             </tags>
-            <div id="creatureBuilderTraitsDropdown" class="traits-dropdown tagify__dropdown" role="listbox" aria-labelledby="dropdown" placement="bottom" position="all">
+            <div id="traitsDropdown" class="traitsDropdown tagify__dropdown" role="listbox" aria-labelledby="dropdown" placement="bottom" position="all">
                 <div data-selector="tagify-suggestions-wrapper" class="tagify__dropdown__wrapper">
                     <header data-selector="tagify-suggestions-header" class="tagify__dropdown__header"></header>
                 </div>
@@ -45,11 +45,11 @@
         <input type="hidden" name="PF2EMONSTERMAKER.traits" id="creatureBuilderTraitsHidden" value="">
     </div>
     {{#each CreatureStatistics}}
-    <details class="collapsible-section" data-section-name="{{this.name}}" open>
-        <summary class="collapsible-header">
+    <details class="collapsibleSection" data-section-name="{{this.name}}" open>
+        <summary class="collapsibleHeader">
             <h3>{{localize this.name}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow" style=""></i></h3>
         </summary>
-        <div class="collapsible-content">
+        <div class="collapsibleContent">
             {{#each this.statisticEntries}}
             <div class="form-group setting">
                 <label for="{{concat 'creatureBuilder' this.name}}" class="creatureBuilderFormText">
@@ -76,18 +76,16 @@
         </div>
     </details>
     {{/each}}
-    <details class="collapsible-section" id="section-lore" open>
-        <summary class="collapsible-header">
+    <details class="collapsibleSection" id="sectionLore" open>
+        <summary class="collapsibleHeader">
             <h3>{{localize "PF2EMONSTERMAKER.loreSkills"}}</h3>
+            <span id="addLoreButton" class="creatureBuilderAddIcon fa-solid fa-fw fa-plus" title="{{localize "PF2EMONSTERMAKER.addLore"}}"></span>
         </summary>
-        <div class="collapsible-content">
+        <div class="collapsibleContent">
             <div id="loreSkillsContainer"></div>
-            <div class="form-group setting">
-                <button type="button" id="addLoreButton" class="creatureBuilderAddButton">{{localize "PF2EMONSTERMAKER.addLore"}}</button>
-            </div>
         </div>
     </details>
-    <div class="form-divider"></div>
+    <div class="formDivider"></div>
     <div class="buttons">
         <button type="button" id="creatureBuilderResetButton" class="creatureBuilderResetButton">{{localize "PF2EMONSTERMAKER.resetDefaults"}}</button>
         <button type="submit" id="creatureBuilderFormSubmit">Submit</button>

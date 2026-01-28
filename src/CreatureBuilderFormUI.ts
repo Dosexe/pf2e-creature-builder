@@ -603,7 +603,7 @@ class CreatureBuilderFormUI {
     ): HTMLElement {
         const item = document.createElement('div')
         item.className = isCustom
-            ? 'tagify__dropdown__item custom-entry'
+            ? 'tagify__dropdown__item customEntry'
             : 'tagify__dropdown__item'
         item.id = isCustom
             ? `custom-${traitName}`
@@ -738,7 +738,7 @@ class CreatureBuilderFormUI {
         const loreId = this.loreCounter++
 
         const loreDiv = document.createElement('div')
-        loreDiv.className = 'form-group setting lore-entry'
+        loreDiv.className = 'form-group setting loreEntry'
         loreDiv.id = `loreEntry${loreId}`
 
         const nameInput = document.createElement('input')
@@ -748,7 +748,7 @@ class CreatureBuilderFormUI {
         nameInput.placeholder =
             (window as any).game?.i18n?.localize('PF2EMONSTERMAKER.loreName') ||
             'Lore Name'
-        nameInput.className = 'creatureBuilderFormText lore-name-input'
+        nameInput.className = 'creatureBuilderFormText loreNameInput'
 
         const levelSelect = document.createElement('select')
         levelSelect.name = `loreLevel${loreId}`
@@ -823,7 +823,7 @@ class CreatureBuilderFormUI {
      */
     private initCollapsibleSections(): void {
         const sections = document.querySelectorAll(
-            'details.collapsible-section',
+            'details.collapsibleSection',
         )
 
         sections.forEach((section) => {
@@ -834,7 +834,7 @@ class CreatureBuilderFormUI {
                 sectionName &&
                 (sectionName.toLowerCase().indexOf('skill') !== -1 ||
                     sectionName === 'PF2EMONSTERMAKER.skills')
-            const isLoreSection = sectionId === 'section-lore'
+            const isLoreSection = sectionId === 'sectionLore'
 
             if (isSkillsSection || isLoreSection) {
                 section.removeAttribute('open')
