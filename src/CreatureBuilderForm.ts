@@ -36,7 +36,7 @@ export class CreatureBuilderForm extends FormApplication {
 
     static get defaultOptions() {
         return foundry.utils.mergeObject(FormApplication.defaultOptions, {
-            classes: ['form'],
+            classes: ['form', 'creatureBuilderForm'],
             popOut: true,
             template: `modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html`,
             id: 'creatureBuilderForm',

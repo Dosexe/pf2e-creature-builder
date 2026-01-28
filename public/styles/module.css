@@ -1,68 +1,75 @@
-#creatureBuilderForm form{
+.creatureBuilderForm form{
     display: flex;
     flex-direction: column;
 }
 
-#creatureBuilderForm .creatureBuilderFormText {
+.creatureBuilderForm .creatureBuilderFormText {
     font-size: 16px;
 }
 
-#creatureBuilderForm .creatureBuilderFormTextSmall {
+.creatureBuilderForm .creatureBuilderFormTextSmall {
     font-size: 15px;
 }
 
-#creatureBuilderForm label {
+.creatureBuilderForm label {
     font-size: 16px;
 }
 
-#creatureBuilderForm .loreEntry {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 5px;
-    justify-content: flex-start;
+.creatureBuilderForm .loreEntry {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-bottom: 5px !important;
+    justify-content: flex-start !important;
 }
 
-#creatureBuilderForm .loreNameInput {
-    flex: 1;
-    min-width: 100px;
-    height: 28px;
-    box-sizing: border-box;
+.creatureBuilderForm .loreNameInput {
+    flex: 1 !important;
+    min-width: 100px !important;
+    height: 28px !important;
+    box-sizing: border-box !important;
 }
 
-#creatureBuilderForm .loreEntry select {
-    height: 28px;
-    box-sizing: border-box;
-    min-width: 120px;
-    flex-shrink: 0;
+.creatureBuilderForm .loreEntry select {
+    height: 28px !important;
+    box-sizing: border-box !important;
+    min-width: 120px !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
 }
 
-#creatureBuilderForm .creatureBuilderAddIcon {
-    display: inline-block;
+.creatureBuilderForm .creatureBuilderAddIcon {
+    display: inline-block !important;
     color: #4CAF50;
-    cursor: pointer;
+    cursor: pointer !important;
     font-size: 14px;
     margin-left: 10px;
-    transition: transform 0.15s ease, color 0.15s ease;
+    transition: transform 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+    padding: 4px;
+    border-radius: 4px;
 }
 
-#creatureBuilderForm .creatureBuilderAddIcon:hover {
-    color: #2e7d32;
-    transform: scale(1.25);
+.creatureBuilderForm .creatureBuilderAddIcon:hover {
+    color: #fff !important;
+    background-color: #4CAF50 !important;
+    transform: scale(1.15) !important;
 }
 
-#creatureBuilderForm .creatureBuilderRemoveButton {
-    display: inline-block;
+.creatureBuilderForm .creatureBuilderRemoveButton {
+    display: inline-block !important;
     color: #f44336;
-    cursor: pointer;
+    cursor: pointer !important;
     font-size: 14px;
-    transition: transform 0.15s ease, color 0.15s ease;
-    flex-shrink: 0;
+    transition: transform 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+    flex-shrink: 0 !important;
+    padding: 4px;
+    border-radius: 4px;
 }
 
-#creatureBuilderForm .creatureBuilderRemoveButton:hover {
-    color: #b71c1c;
-    transform: scale(1.25);
+.creatureBuilderForm .creatureBuilderRemoveButton:hover {
+    color: #fff !important;
+    background-color: #f44336 !important;
+    transform: scale(1.15) !important;
 }
 
 #loreSkillsContainer {
@@ -70,7 +77,7 @@
 }
 
 /* Traits styling - uses Foundry's tagify/paizo-style classes */
-#creatureBuilderForm .traitsContainer {
+.creatureBuilderForm .traitsContainer {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -93,7 +100,7 @@
 }
 
 /* Reset button styling */
-#creatureBuilderForm .creatureBuilderResetButton {
+.creatureBuilderForm .creatureBuilderResetButton {
     background-color: #666;
     color: white;
     border: none;
@@ -103,16 +110,16 @@
     margin-right: 10px;
 }
 
-#creatureBuilderForm .creatureBuilderResetButton:hover {
+.creatureBuilderForm .creatureBuilderResetButton:hover {
     background-color: #555;
 }
 
 /* Collapsible sections using native details/summary */
-#creatureBuilderForm details.collapsibleSection {
+.creatureBuilderForm details.collapsibleSection {
     margin-bottom: 10px;
 }
 
-#creatureBuilderForm summary.collapsibleHeader {
+.creatureBuilderForm summary.collapsibleHeader {
     cursor: pointer;
     user-select: none;
     margin: 0;
@@ -151,31 +158,31 @@ summary.collapsibleHeader::marker {
     content: none; /* Firefox */
 }
 
-#creatureBuilderForm summary.collapsibleHeader:hover {
+.creatureBuilderForm summary.collapsibleHeader:hover {
     opacity: 0.8;
 }
 
-#creatureBuilderForm summary.collapsibleHeader h3 {
+.creatureBuilderForm summary.collapsibleHeader h3 {
     display: inline-block;
     margin: 0;
 }
 
-#creatureBuilderForm summary.collapsibleHeader .collapseArrow {
+.creatureBuilderForm summary.collapsibleHeader .collapseArrow {
     display: inline-block;
     font-size: 10px;
     transition: transform 0.15s ease;
 }
 
-#creatureBuilderForm details[open] summary.collapsibleHeader .collapseArrow {
+.creatureBuilderForm details[open] summary.collapsibleHeader .collapseArrow {
     transform: rotate(90deg);
 }
 
-#creatureBuilderForm .collapsibleContent {
+.creatureBuilderForm .collapsibleContent {
     padding-left: 5px;
 }
 
 /* Form divider before buttons */
-#creatureBuilderForm .formDivider {
+.creatureBuilderForm .formDivider {
     border-top: 2px solid #4a4a4a;
     margin: 20px 0 15px 0;
 }
