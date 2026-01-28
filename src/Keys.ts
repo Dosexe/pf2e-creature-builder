@@ -383,6 +383,8 @@ export class CreatureStatisticCategory {
     statisticEntries: CreatureStatistic[]
 }
 
+export const DefaultCreatureLevel = '-1'
+
 export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
     {
         name: 'PF2EMONSTERMAKER.abilityScores',

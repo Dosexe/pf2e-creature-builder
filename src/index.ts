@@ -1,4 +1,5 @@
 import { CreatureBuilderForm } from './CreatureBuilderForm'
+import { DefaultCreatureLevel } from '@/Keys'
 
 Hooks.on('init', async () => {
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
@@ -63,12 +64,25 @@ Hooks.on('renderActorDirectory', () => {
             const monsterData = {
                 name: 'Monster',
                 type: 'npc',
+                system: {
+                    details: {
+                        level: {
+                            value: DefaultCreatureLevel,
+                        },
+                    },
+                },
             }
-            Actor.create(monsterData).then((actor) => {
-                if (actor) {
-                    new CreatureBuilderForm(actor).render(true)
-                }
-            })
+            const actor = new Actor(monsterData)
+            new CreatureBuilderForm(actor, {
+                useDefaultLevel: true,
+            }).render(true)
+            // Actor.create(monsterData, { temporary: true }).then((actor) => {
+            //     if (actor) {
+            //         new CreatureBuilderForm(actor, {
+            //             useDefaultLevel: true,
+            //         }).render(true)
+            //     }
+            // })
         })
     }
 })

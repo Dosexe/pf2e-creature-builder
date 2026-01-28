@@ -4,6 +4,7 @@ import CreatureBuilderFormUI, {
 } from './CreatureBuilderFormUI'
 import {
     actorFields,
+    DefaultCreatureLevel,
     DefaultCreatureStatistics,
     Levels,
     Options,
@@ -12,17 +13,19 @@ import {
     Statistics,
 } from './Keys'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
-import {globalLog} from "@/utils";
+import { globalLog } from '@/utils'
 
 export class CreatureBuilderForm extends FormApplication {
     data = DefaultCreatureStatistics
-    level = '-1'
+    level = DefaultCreatureLevel
     private readonly _uniqueId: string
+    private readonly useDefaultLevel: boolean
     private formUI: CreatureBuilderFormUI | null = null
 
     constructor(object: any, options?: any) {
         super(object, options)
 
+        this.useDefaultLevel = options?.useDefaultLevel === true
         this._uniqueId = `creatureBuilderForm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
     }
 
@@ -57,18 +60,22 @@ export class CreatureBuilderForm extends FormApplication {
         super.activateListeners(html)
 
         // Initialize the UI controller after DOM is ready
+        const actorLevel = this.useDefaultLevel
+            ? DefaultCreatureLevel
+            : String(
+                  foundry.utils.getProperty(
+                      this.actor,
+                      'system.details.level.value',
+                  ) ?? DefaultCreatureLevel,
+              )
+
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
             creatureRoadmaps: RoadMaps,
-            detectedStats: this.detectActorStats(),
+            detectedStats: this.useDefaultLevel ? {} : this.detectActorStats(),
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
-            actorLevel: String(
-                foundry.utils.getProperty(
-                    this.actor,
-                    'system.details.level.value',
-                ) ?? 1,
-            ),
+            actorLevel,
         }
 
         this.formUI = new CreatureBuilderFormUI(config)
@@ -251,12 +258,10 @@ export class CreatureBuilderForm extends FormApplication {
     protected async _updateObject(_event: Event, formData?: object) {
         if (formData) {
             const formLevel = String(formData[Statistics.level])
-            this.level = Levels.includes(formLevel) ? formLevel : '1'
-            globalLog(
-                false,
-                'Form data:',
-                formData,
-            )
+            this.level = Levels.includes(formLevel)
+                ? formLevel
+                : DefaultCreatureLevel
+            globalLog(false, 'Form data:', formData)
 
             const newActorData = {
                 name: formData[Statistics.name] || 'New Monster',
@@ -327,9 +332,11 @@ export class CreatureBuilderForm extends FormApplication {
             foundry.utils.getProperty(
                 this.actor,
                 'system.details.level.value',
-            ) ?? 1,
+            ) ?? DefaultCreatureLevel,
         )
-        const clampedLevel = Levels.includes(actorLevel) ? actorLevel : '1'
+        const clampedLevel = Levels.includes(actorLevel)
+            ? actorLevel
+            : DefaultCreatureLevel
 
         const abilityStats = [
             Statistics.str,
@@ -512,16 +519,14 @@ export class CreatureBuilderForm extends FormApplication {
         const detectedStats = this.detectActorStats()
         const detectedTraits = this.detectTraits()
         const detectedLoreSkills = this.detectLoreSkills()
-        const actorLevel = String(
-            foundry.utils.getProperty(
-                this.actor,
-                'system.details.level.value',
-            ) ?? 1,
-        )
-
-        // console.debug('actorLevel:', actorLevel)
-        // console.debug('detectedStats:', detectedStats)
-        // console.debug('=== End getData() ===')
+        const actorLevel = this.useDefaultLevel
+            ? DefaultCreatureLevel
+            : String(
+                  foundry.utils.getProperty(
+                      this.actor,
+                      'system.details.level.value',
+                  ) ?? DefaultCreatureLevel,
+              )
 
         return {
             CreatureStatistics: JSON.parse(JSON.stringify(this.data)),

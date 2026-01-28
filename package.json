@@ -1,5 +1,5 @@
 {
-  "name": "foundryvtt-pf2e-creature-builder",
+  "name": "pf2e-creature-builder",
   "version": "1.0.0",
   "description": "A module that allows you to make an NPC/Monster from scratch using Creature Building Rules.",
   "scripts": {
@@ -23,7 +23,9 @@
     "@league-of-foundry-developers/foundry-vtt-types": "^9.280.1",
     "typescript": "^4.9.5",
     "vite": "^7.3.1",
+    "jsdom": "^27.4.0",
     "vite-tsconfig-paths": "^6.0.5",
+    "@vitest/coverage-v8": "^4.0.18",
     "vitest": "^4.0.18"
   },
   "dependencies": {
