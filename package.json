@@ -27,6 +27,6 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@yaireo/tagify": "^4.16.4"
+    "@yaireo/tagify": "^4.36.0"
   }
 }
