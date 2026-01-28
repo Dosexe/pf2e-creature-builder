@@ -1,4 +1,4 @@
-.creatureBuilderForm form{
+.creatureBuilderForm form {
     /*display: flex;*/
     /*flex-direction: column;*/
 }
@@ -67,20 +67,18 @@
 }
 
 .creatureBuilderForm .creatureBuilderRemoveIcon {
-    display: inline-block ;
-    color: #f44336;
-    cursor: pointer ;
+    display: inline-block;
+    cursor: pointer;
     font-size: 14px;
     transition: transform 0.15s ease, color 0.15s ease, background-color 0.15s ease;
-    flex-shrink: 0 ;
+    flex-shrink: 0;
     padding: 4px;
     border-radius: 4px;
 }
 
 .creatureBuilderForm .creatureBuilderRemoveIcon:hover {
-    color: #fff ;
-    background-color: #f44336 ;
-    transform: scale(1.15) ;
+    background-color: #666;
+    transform: scale(1.15);
 }
 
 /* Traits styling - uses Foundry's tagify/paizo-style classes */
@@ -144,15 +142,15 @@ summary.collapsibleHeader {
 
 
 .creatureBuilderForm .creatureBuilderHeaderArrow {
-    transition: transform 0.3s ease;       /* smooth rotation */
-    display: inline-block;                 /* required for transform to work properly */
-    margin-left: 0.5em;                    /* space after text – adjust as needed */
-    font-size: 1.1em;                      /* optional */
+    transition: transform 0.3s ease; /* smooth rotation */
+    display: inline-block; /* required for transform to work properly */
+    margin-left: 0.5em; /* space after text – adjust as needed */
+    font-size: 1.1em; /* optional */
 }
 
 /* When the <details> is open → rotate the icon */
 .creatureBuilderForm details[open] .creatureBuilderHeaderArrow {
-    transform: rotate(90deg);              /* right → down (most common choice) */
+    transform: rotate(90deg); /* right → down (most common choice) */
     /* or: transform: rotate(180deg);     → right → up (chevron style) */
 }
 
