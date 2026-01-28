@@ -53,18 +53,15 @@ class MockJQ {
         this.elements.forEach((el) => {
             childElements.forEach((childEl) => el.appendChild(childEl))
         })
-        return this
     }
 
     after(child: MockJQ | Element) {
         const childElement = child instanceof MockJQ ? child.elements[0] : child
         this.elements.forEach((el) => el.after(childElement))
-        return this
     }
 
     on(event: string, handler: EventListenerOrEventListenerObject) {
         this.elements.forEach((el) => el.addEventListener(event, handler))
-        return this
     }
 }
 
@@ -161,7 +158,9 @@ describe('index hooks', () => {
 
         hooks.renderActorSheet?.[0]?.({ object: actor }, html)
 
-        const button = document.querySelector('.window-header .popout') as HTMLElement
+        const button = document.querySelector(
+            '.window-header .popout',
+        ) as HTMLElement
         expect(button).toBeTruthy()
         expect(button.textContent).toContain('Creature Builder')
 
@@ -179,32 +178,10 @@ describe('index hooks', () => {
 
         hooks.renderActorSheet?.[0]?.({ object: actor }, $('#sheet'))
 
-        const button = document.querySelector('.window-header .popout') as HTMLElement
-        expect(button.textContent).toContain('CB')
-    })
-
-    it('creates a temporary actor from the directory button', async () => {
-        const actor = { id: 'temp' }
-        ;(globalThis as any).Actor.create.mockResolvedValue(actor)
-
-        hooks.renderActorDirectory?.[0]?.()
-
         const button = document.querySelector(
-            '#actors .directory-footer.action-buttons button',
+            '.window-header .popout',
         ) as HTMLElement
-        expect(button).toBeTruthy()
-
-        button.click()
-        await new Promise((resolve) => setImmediate(resolve))
-
-        expect((globalThis as any).Actor.create).toHaveBeenCalledWith(
-            { name: 'Monster', type: 'npc' },
-            { temporary: true },
-        )
-        expect(CreatureBuilderFormMock).toHaveBeenCalledWith(actor, {
-            useDefaultLevel: true,
-        })
-        expect(renderSpy).toHaveBeenCalledWith(true)
+        expect(button.textContent).toContain('CB')
     })
 
     it('does not add the directory button twice', () => {

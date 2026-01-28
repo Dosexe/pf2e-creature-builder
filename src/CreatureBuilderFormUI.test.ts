@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
 import { Options, Statistics } from './Keys'
 
-const buildConfig = (overrides: Partial<ConstructorParameters<typeof CreatureBuilderFormUI>[0]> = {}) => ({
+const buildConfig = (
+    overrides: Partial<
+        ConstructorParameters<typeof CreatureBuilderFormUI>[0]
+    > = {},
+) => ({
     creatureStatistics: [
         {
             name: 'PF2EMONSTERMAKER.abilityScores',
@@ -99,15 +103,23 @@ describe('CreatureBuilderFormUI', () => {
         ui.initialize()
         vi.runAllTimers()
 
-        const level = document.getElementById('creatureBuilderLevel') as HTMLSelectElement
-        const str = document.getElementById(`creatureBuilder${Statistics.str}`) as HTMLSelectElement
-        const dex = document.getElementById(`creatureBuilder${Statistics.dex}`) as HTMLSelectElement
+        const level = document.getElementById(
+            'creatureBuilderLevel',
+        ) as HTMLSelectElement
+        const str = document.getElementById(
+            `creatureBuilder${Statistics.str}`,
+        ) as HTMLSelectElement
+        const dex = document.getElementById(
+            `creatureBuilder${Statistics.dex}`,
+        ) as HTMLSelectElement
 
         expect(level.value).toBe('3')
         expect(str.value).toBe(Options.high)
         expect(dex.value).toBe(Options.moderate)
 
-        const loreSection = document.getElementById('sectionLore') as HTMLDetailsElement
+        const loreSection = document.getElementById(
+            'sectionLore',
+        ) as HTMLDetailsElement
         const skillsSection = document.querySelector(
             'details.collapsibleSection[data-section-name="PF2EMONSTERMAKER.skills"]',
         ) as HTMLDetailsElement
@@ -120,7 +132,9 @@ describe('CreatureBuilderFormUI', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()
 
-        const addButton = document.getElementById('addLoreButton') as HTMLButtonElement
+        const addButton = document.getElementById(
+            'addLoreButton',
+        ) as HTMLButtonElement
         addButton.click()
 
         const entries = document.querySelectorAll('.loreEntry')
@@ -129,7 +143,7 @@ describe('CreatureBuilderFormUI', () => {
         expect(select.value).toBe(Options.moderate)
 
         const remove = entries[0].querySelector(
-            '.creatureBuilderRemoveButton',
+            '.creatureBuilderRemoveIcon',
         ) as HTMLElement
         remove.click()
         expect(document.querySelectorAll('.loreEntry').length).toBe(0)
@@ -138,9 +152,7 @@ describe('CreatureBuilderFormUI', () => {
     it('initializes detected lore skills', () => {
         const ui = new CreatureBuilderFormUI(
             buildConfig({
-                detectedLoreSkills: [
-                    { name: 'Sailing', level: Options.high },
-                ],
+                detectedLoreSkills: [{ name: 'Sailing', level: Options.high }],
             }),
         )
         ui.initialize()
@@ -156,12 +168,18 @@ describe('CreatureBuilderFormUI', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()
 
-        const input = document.getElementById('creatureBuilderTraitsInput') as HTMLElement
-        const hidden = document.getElementById('creatureBuilderTraitsHidden') as HTMLInputElement
+        const input = document.getElementById(
+            'creatureBuilderTraitsInput',
+        ) as HTMLElement
+        const hidden = document.getElementById(
+            'creatureBuilderTraitsHidden',
+        ) as HTMLInputElement
         input.textContent = 'undead'
         input.dispatchEvent(new Event('input', { bubbles: true }))
 
-        const item = document.querySelector('.tagify__dropdown__item') as HTMLElement
+        const item = document.querySelector(
+            '.tagify__dropdown__item',
+        ) as HTMLElement
         expect(item).toBeTruthy()
         item.click()
 
@@ -169,7 +187,9 @@ describe('CreatureBuilderFormUI', () => {
         const tag = document.querySelector('tag[data-trait="undead"]')
         expect(tag).toBeTruthy()
 
-        const removeButton = tag?.querySelector('.tagify__tag__removeBtn') as HTMLElement
+        const removeButton = tag?.querySelector(
+            '.tagify__tag__removeBtn',
+        ) as HTMLElement
         removeButton.click()
         expect(hidden.value).toBe('')
     })
@@ -182,11 +202,17 @@ describe('CreatureBuilderFormUI', () => {
         )
         ui.initialize()
 
-        const addButton = document.getElementById('addLoreButton') as HTMLButtonElement
+        const addButton = document.getElementById(
+            'addLoreButton',
+        ) as HTMLButtonElement
         addButton.click()
 
-        const level = document.getElementById('creatureBuilderLevel') as HTMLSelectElement
-        const roadmap = document.getElementById('creatureBuilderRoadmap') as HTMLSelectElement
+        const level = document.getElementById(
+            'creatureBuilderLevel',
+        ) as HTMLSelectElement
+        const roadmap = document.getElementById(
+            'creatureBuilderRoadmap',
+        ) as HTMLSelectElement
         level.value = '3'
         roadmap.value = 'TestRoadmap'
 
@@ -195,8 +221,12 @@ describe('CreatureBuilderFormUI', () => {
         ) as HTMLButtonElement
         resetButton.click()
 
-        const hidden = document.getElementById('creatureBuilderTraitsHidden') as HTMLInputElement
-        const addLoreButton = document.getElementById('addLoreButton') as HTMLButtonElement
+        const hidden = document.getElementById(
+            'creatureBuilderTraitsHidden',
+        ) as HTMLInputElement
+        const addLoreButton = document.getElementById(
+            'addLoreButton',
+        ) as HTMLButtonElement
         expect(hidden.value).toBe('')
         expect(document.querySelectorAll('.loreEntry').length).toBe(0)
         expect(addLoreButton).toBeTruthy()
@@ -208,11 +238,15 @@ describe('CreatureBuilderFormUI', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()
 
-        const roadmap = document.getElementById('creatureBuilderRoadmap') as HTMLSelectElement
+        const roadmap = document.getElementById(
+            'creatureBuilderRoadmap',
+        ) as HTMLSelectElement
         roadmap.value = 'TestRoadmap'
         ui.setRoadmap(roadmap)
 
-        const dex = document.getElementById(`creatureBuilder${Statistics.dex}`) as HTMLSelectElement
+        const dex = document.getElementById(
+            `creatureBuilder${Statistics.dex}`,
+        ) as HTMLSelectElement
         expect(dex.value).toBe(Options.low)
     })
 
@@ -220,8 +254,12 @@ describe('CreatureBuilderFormUI', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()
 
-        const input = document.getElementById('creatureBuilderTraitsInput') as HTMLElement
-        const dropdown = document.getElementById('creatureBuilderTraitsDropdown') as HTMLElement
+        const input = document.getElementById(
+            'creatureBuilderTraitsInput',
+        ) as HTMLElement
+        const dropdown = document.getElementById(
+            'creatureBuilderTraitsDropdown',
+        ) as HTMLElement
 
         input.textContent = 'un'
         input.dispatchEvent(
@@ -235,35 +273,41 @@ describe('CreatureBuilderFormUI', () => {
 
         const items = dropdown.querySelectorAll('.tagify__dropdown__item')
         expect(items.length).toBeGreaterThan(1)
-        expect(items[0].classList.contains('tagify__dropdown__item--active')).toBe(
-            true,
-        )
+        expect(
+            items[0].classList.contains('tagify__dropdown__item--active'),
+        ).toBe(true)
 
         input.dispatchEvent(
             new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
         )
-        expect(items[1].classList.contains('tagify__dropdown__item--active')).toBe(
-            true,
-        )
+        expect(
+            items[1].classList.contains('tagify__dropdown__item--active'),
+        ).toBe(true)
 
         input.dispatchEvent(
             new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
         )
-        expect(items[0].classList.contains('tagify__dropdown__item--active')).toBe(
-            true,
-        )
-        expect(items[1].classList.contains('tagify__dropdown__item--active')).toBe(
-            false,
-        )
+        expect(
+            items[0].classList.contains('tagify__dropdown__item--active'),
+        ).toBe(true)
+        expect(
+            items[1].classList.contains('tagify__dropdown__item--active'),
+        ).toBe(false)
     })
 
     it('handles enter, escape, and backspace keys', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()
 
-        const input = document.getElementById('creatureBuilderTraitsInput') as HTMLElement
-        const hidden = document.getElementById('creatureBuilderTraitsHidden') as HTMLInputElement
-        const dropdown = document.getElementById('creatureBuilderTraitsDropdown') as HTMLElement
+        const input = document.getElementById(
+            'creatureBuilderTraitsInput',
+        ) as HTMLElement
+        const hidden = document.getElementById(
+            'creatureBuilderTraitsHidden',
+        ) as HTMLInputElement
+        const dropdown = document.getElementById(
+            'creatureBuilderTraitsDropdown',
+        ) as HTMLElement
 
         input.textContent = 'undead'
         input.dispatchEvent(new Event('input', { bubbles: true }))
@@ -294,8 +338,12 @@ describe('CreatureBuilderFormUI', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()
 
-        const input = document.getElementById('creatureBuilderTraitsInput') as HTMLElement
-        const hidden = document.getElementById('creatureBuilderTraitsHidden') as HTMLInputElement
+        const input = document.getElementById(
+            'creatureBuilderTraitsInput',
+        ) as HTMLElement
+        const hidden = document.getElementById(
+            'creatureBuilderTraitsHidden',
+        ) as HTMLInputElement
 
         input.textContent = 'customtrait'
         input.dispatchEvent(
@@ -303,7 +351,9 @@ describe('CreatureBuilderFormUI', () => {
         )
 
         expect(hidden.value).toBe('customtrait')
-        expect(document.querySelector('tag[data-trait="customtrait"]')).toBeTruthy()
+        expect(
+            document.querySelector('tag[data-trait="customtrait"]'),
+        ).toBeTruthy()
     })
 
     it('shows custom entries and hides when no options remain', () => {
@@ -312,8 +362,12 @@ describe('CreatureBuilderFormUI', () => {
         )
         ui.initialize()
 
-        const input = document.getElementById('creatureBuilderTraitsInput') as HTMLElement
-        const dropdown = document.getElementById('creatureBuilderTraitsDropdown') as HTMLElement
+        const input = document.getElementById(
+            'creatureBuilderTraitsInput',
+        ) as HTMLElement
+        const dropdown = document.getElementById(
+            'creatureBuilderTraitsDropdown',
+        ) as HTMLElement
 
         input.textContent = 'undead'
         input.dispatchEvent(new Event('input', { bubbles: true }))
@@ -321,7 +375,9 @@ describe('CreatureBuilderFormUI', () => {
 
         input.textContent = 'mycustom'
         input.dispatchEvent(new Event('input', { bubbles: true }))
-        const custom = dropdown.querySelector('.tagify__dropdown__item.customEntry')
+        const custom = dropdown.querySelector(
+            '.tagify__dropdown__item.customEntry',
+        )
         expect(custom).toBeTruthy()
         expect(dropdown.classList.contains('show')).toBe(true)
     })
@@ -330,13 +386,17 @@ describe('CreatureBuilderFormUI', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()
 
-        const dropdown = document.getElementById('creatureBuilderTraitsDropdown') as HTMLElement
+        const dropdown = document.getElementById(
+            'creatureBuilderTraitsDropdown',
+        ) as HTMLElement
         const wrapper = document.createElement('div')
         wrapper.id = 'dropdownWrapper'
         document.querySelector('.creatureBuilderForm')?.appendChild(wrapper)
         wrapper.appendChild(dropdown)
 
-        const input = document.getElementById('creatureBuilderTraitsInput') as HTMLElement
+        const input = document.getElementById(
+            'creatureBuilderTraitsInput',
+        ) as HTMLElement
         input.textContent = 'undead'
         input.dispatchEvent(new Event('input', { bubbles: true }))
 

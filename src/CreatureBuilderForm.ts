@@ -3,7 +3,8 @@ import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
 } from './CreatureBuilderFormUI'
 import {
-    actorFields, DefaultCreatureLevel,
+    actorFields,
+    DefaultCreatureLevel,
     DefaultCreatureStatistics,
     Levels,
     Options,
@@ -12,7 +13,7 @@ import {
     Statistics,
 } from './Keys'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
-import {globalLog} from "@/utils";
+import { globalLog } from '@/utils'
 
 export class CreatureBuilderForm extends FormApplication {
     data = DefaultCreatureStatistics
@@ -71,7 +72,7 @@ export class CreatureBuilderForm extends FormApplication {
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
             creatureRoadmaps: RoadMaps,
-            detectedStats: this.detectActorStats(),
+            detectedStats: this.useDefaultLevel ? {} : this.detectActorStats(),
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
             actorLevel,
@@ -257,12 +258,10 @@ export class CreatureBuilderForm extends FormApplication {
     protected async _updateObject(_event: Event, formData?: object) {
         if (formData) {
             const formLevel = String(formData[Statistics.level])
-            this.level = Levels.includes(formLevel) ? formLevel : DefaultCreatureLevel
-            globalLog(
-                false,
-                'Form data:',
-                formData,
-            )
+            this.level = Levels.includes(formLevel)
+                ? formLevel
+                : DefaultCreatureLevel
+            globalLog(false, 'Form data:', formData)
 
             const newActorData = {
                 name: formData[Statistics.name] || 'New Monster',
@@ -333,9 +332,11 @@ export class CreatureBuilderForm extends FormApplication {
             foundry.utils.getProperty(
                 this.actor,
                 'system.details.level.value',
-            ) ?? 1,
+            ) ?? DefaultCreatureLevel,
         )
-        const clampedLevel = Levels.includes(actorLevel) ? actorLevel : '1'
+        const clampedLevel = Levels.includes(actorLevel)
+            ? actorLevel
+            : DefaultCreatureLevel
 
         const abilityStats = [
             Statistics.str,
@@ -526,10 +527,6 @@ export class CreatureBuilderForm extends FormApplication {
                       'system.details.level.value',
                   ) ?? DefaultCreatureLevel,
               )
-
-        // console.debug('actorLevel:', actorLevel)
-        // console.debug('detectedStats:', detectedStats)
-        // console.debug('=== End getData() ===')
 
         return {
             CreatureStatistics: JSON.parse(JSON.stringify(this.data)),

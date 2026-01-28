@@ -285,10 +285,13 @@ class CreatureBuilderFormUI {
         this.traitsHidden = this.getElement(
             'creatureBuilderTraitsHidden',
         ) as HTMLInputElement
-        this.creatureBuilderTraitsDropdown = this.getElement('creatureBuilderTraitsDropdown')
-        this.traitsDropdownWrapper = this.creatureBuilderTraitsDropdown.querySelector(
-            '.tagify__dropdown__wrapper',
-        )!
+        this.creatureBuilderTraitsDropdown = this.getElement(
+            'creatureBuilderTraitsDropdown',
+        )
+        this.traitsDropdownWrapper =
+            this.creatureBuilderTraitsDropdown.querySelector(
+                '.tagify__dropdown__wrapper',
+            )!
     }
 
     /**
@@ -327,7 +330,11 @@ class CreatureBuilderFormUI {
         window.addEventListener(
             'scroll',
             () => {
-                if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
+                if (
+                    this.creatureBuilderTraitsDropdown.classList.contains(
+                        'show',
+                    )
+                ) {
                     this.positionDropdown()
                 }
             },
@@ -526,7 +533,9 @@ class CreatureBuilderFormUI {
      */
     private positionDropdown(): void {
         // Move dropdown to document body for proper fixed positioning
-        if (this.creatureBuilderTraitsDropdown.parentElement !== document.body) {
+        if (
+            this.creatureBuilderTraitsDropdown.parentElement !== document.body
+        ) {
             document.body.appendChild(this.creatureBuilderTraitsDropdown)
         }
 
@@ -667,7 +676,11 @@ class CreatureBuilderFormUI {
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault()
-                if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
+                if (
+                    this.creatureBuilderTraitsDropdown.classList.contains(
+                        'show',
+                    )
+                ) {
                     this.selectedDropdownIndex = Math.min(
                         this.selectedDropdownIndex + 1,
                         items.length - 1,
@@ -680,7 +693,11 @@ class CreatureBuilderFormUI {
 
             case 'ArrowUp':
                 e.preventDefault()
-                if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
+                if (
+                    this.creatureBuilderTraitsDropdown.classList.contains(
+                        'show',
+                    )
+                ) {
                     this.selectedDropdownIndex = Math.max(
                         this.selectedDropdownIndex - 1,
                         0,
@@ -771,7 +788,8 @@ class CreatureBuilderFormUI {
         }
 
         const removeIcon = document.createElement('span')
-        removeIcon.className = 'creatureBuilderRemoveIcon fa-solid fa-fw fa-trash'
+        removeIcon.className =
+            'creatureBuilderRemoveIcon fa-solid fa-fw fa-trash'
         removeIcon.addEventListener('click', () => {
             container.removeChild(loreDiv)
         })
@@ -824,9 +842,7 @@ class CreatureBuilderFormUI {
      * Initialize collapsible sections (collapse Skills and Lore Skills by default)
      */
     private initCollapsibleSections(): void {
-        const sections = document.querySelectorAll(
-            'details.collapsibleSection',
-        )
+        const sections = document.querySelectorAll('details.collapsibleSection')
 
         sections.forEach((section) => {
             const sectionName = section.getAttribute('data-section-name')
