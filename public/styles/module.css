@@ -128,7 +128,7 @@ summary.collapsibleHeader {
 }
 
 
-.creatureBuilderHeaderArrow {
+.creatureBuilderForm .creatureBuilderHeaderArrow {
     transition: transform 0.3s ease;       /* smooth rotation */
     display: inline-block;                 /* required for transform to work properly */
     margin-left: 0.5em;                    /* space after text – adjust as needed */
@@ -136,16 +136,16 @@ summary.collapsibleHeader {
 }
 
 /* When the <details> is open → rotate the icon */
-.collapsible-section[open] .creatureBuilderHeaderArrow {
+.creatureBuilderForm details[open] .creatureBuilderHeaderArrow {
     transform: rotate(90deg);              /* right → down (most common choice) */
     /* or: transform: rotate(180deg);     → right → up (chevron style) */
 }
 
-summary.collapsible-header::-webkit-details-marker {
+.creatureBuilderForm summary.collapsibleHeader::-webkit-details-marker {
     display: none; /* Chrome, Safari, Edge */
 }
 
-summary.collapsibleHeader::marker {
+.creatureBuilderForm summary.collapsibleHeader::marker {
     content: none; /* Firefox */
 }
 
