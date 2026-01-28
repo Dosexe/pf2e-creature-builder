@@ -2,7 +2,7 @@
 
 This is forked from the [pf2e-monster-maker](https://github.com/mikolajg-tt/pf2e-monster-maker). Thanks to the creator **mikolajg-tt** for the solid foundation and great work on the original module.
 
-The download link: https://github.com/dosexe/foundryvtt-pf2e-creature-builder/releases/latest/download/module.json
+The download link: https://github.com/dosexe/pf2e-creature-builder/releases/latest/download/module.json
 
 A Foundry VTT module designed for Pathfinder 2E System, that allows you to create combat NPCs from scratch or from existing creature, using values from the [Pathfinder 2e Building Creatures Guide](https://2e.aonprd.com/Rules.aspx?ID=995)
 
@@ -24,12 +24,19 @@ Whenever you give a monster a strength, don't forget to give it a weakness to co
 Note each group in the form is clickable and can be expanded or collapsed. By default, all groups are expanded, except `Skills` and `Lore Skills` 
 
 Below are the images of the form:
+
 First part contains all the important values like Hit Points, Level, Name etc.
-The Second part contains all the skills as well as the Submit Button.
 
 ![Page One of The Form](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/PageOne.png?raw=true)
+
+The Second part contains all the skills as well as the `Submit` button and `Reset to Defaults` button.
 ![Page Two of The Form](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/PageTwo.png?raw=true)
+
+Traits will show you suggestions from the list of existing ones, or you can add a new one.
 ![Traits](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/TraitsSection.png?raw=true)
+
+Lore section allow to specify any number of additional lore entries if needed.
+
 ![Lore Section](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/LoreSection.png?raw=true)
 
 Here is a comparison of size in relation to UI:
