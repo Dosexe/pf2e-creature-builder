@@ -37,33 +37,14 @@
     box-sizing: border-box !important;
 }
 
+.creatureBuilderForm #sectionLore .collapsibleContent {
+    padding-top: 6px;
+}
+
 .creatureBuilderForm .creatureBuilderAddButton {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background-color: #4CAF50;
-    color: #fff;
-    border: 1px solid #3e8e41;
-    border-radius: 4px;
-    padding: 4px 8px;
-    cursor: pointer !important;
-    font-size: 13px;
-    margin-bottom: 6px;
-    transition: transform 0.15s ease, background-color 0.15s ease;
-}
-
-.creatureBuilderForm .creatureBuilderAddButton:hover {
-    background-color: #45a049;
-    transform: translateY(-1px);
-}
-
-.creatureBuilderForm .creatureBuilderAddButton:active {
-    transform: translateY(0);
-}
-
-.creatureBuilderForm .creatureBuilderAddButton:focus-visible {
-    outline: 2px solid rgba(76, 175, 80, 0.5);
-    outline-offset: 2px;
+    display: inline-block;
+    width: auto;
+    margin: 0 0 8px 0;
 }
 
 .creatureBuilderForm .creatureBuilderRemoveIcon {
