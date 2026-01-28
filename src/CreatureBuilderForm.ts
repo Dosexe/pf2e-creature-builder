@@ -3,7 +3,7 @@ import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
 } from './CreatureBuilderFormUI'
 import {
-    actorFields,
+    actorFields, DefaultCreatureLevel,
     DefaultCreatureStatistics,
     Levels,
     Options,
@@ -16,7 +16,7 @@ import {globalLog} from "@/utils";
 
 export class CreatureBuilderForm extends FormApplication {
     data = DefaultCreatureStatistics
-    level = '-1'
+    level = DefaultCreatureLevel
     private readonly _uniqueId: string
     private formUI: CreatureBuilderFormUI | null = null
 
@@ -67,7 +67,7 @@ export class CreatureBuilderForm extends FormApplication {
                 foundry.utils.getProperty(
                     this.actor,
                     'system.details.level.value',
-                ) ?? 1,
+                ) ?? DefaultCreatureLevel,
             ),
         }
 
@@ -251,7 +251,7 @@ export class CreatureBuilderForm extends FormApplication {
     protected async _updateObject(_event: Event, formData?: object) {
         if (formData) {
             const formLevel = String(formData[Statistics.level])
-            this.level = Levels.includes(formLevel) ? formLevel : '1'
+            this.level = Levels.includes(formLevel) ? formLevel : DefaultCreatureLevel
             globalLog(
                 false,
                 'Form data:',

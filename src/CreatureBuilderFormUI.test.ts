@@ -128,7 +128,7 @@ describe('CreatureBuilderFormUI', () => {
         expect(select.value).toBe(Options.moderate)
 
         const remove = entries[0].querySelector(
-            '.creatureBuilderRemoveButton',
+            '.creatureBuilderRemoveIcon',
         ) as HTMLElement
         remove.click()
         expect(document.querySelectorAll('.loreEntry').length).toBe(0)
