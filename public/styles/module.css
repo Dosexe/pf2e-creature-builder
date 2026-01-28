@@ -15,16 +15,19 @@
     font-size: 16px;
 }
 
-#creatureBuilderForm .lore-entry {
+#creatureBuilderForm .loreEntry {
     display: flex;
     align-items: center;
     gap: 5px;
     margin-bottom: 5px;
 }
 
-#creatureBuilderForm .lore-name-input {
-    flex: 1;
+#creatureBuilderForm .loreNameInput {
+    flex: 1;             /* take available space */
     min-width: 100px;
+    /*height: 32px;        !* make sure height matches other UI elements *!*/
+    padding: 4px 8px;    /* inner padding for comfortable typing */
+    box-sizing: border-box; /* include padding in width calculation */
 }
 
 #creatureBuilderForm .creatureBuilderAddButton {
@@ -68,16 +71,16 @@
 
 /* Traits dropdown - hide by default, show when .show class is added */
 /* Use ID selector since dropdown may be moved to document.body */
-#traitsDropdown {
+#creatureBuilderTraitsDropdown {
     display: none !important;
 }
 
-#traitsDropdown.show {
+#creatureBuilderTraitsDropdown.show {
     display: block !important;
 }
 
 /* Custom entry styling for user-typed traits */
-#traitsDropdown .tagify__dropdown__item.custom-entry {
+#creatureBuilderTraitsDropdown .tagify__dropdown__item.custom-entry {
     font-style: italic;
 }
 
@@ -116,6 +119,20 @@
 /* Remove native marker across browsers */
 summary.collapsible-header {
     list-style: none; /* remove bullet/marker in Firefox */
+}
+
+
+.creatureBuilderHeaderArrow {
+    transition: transform 0.3s ease;       /* smooth rotation */
+    display: inline-block;                 /* required for transform to work properly */
+    margin-left: 0.5em;                    /* space after text – adjust as needed */
+    font-size: 1.1em;                      /* optional */
+}
+
+/* When the <details> is open → rotate the icon */
+.collapsible-section[open] .creatureBuilderHeaderArrow {
+    transform: rotate(90deg);              /* right → down (most common choice) */
+    /* or: transform: rotate(180deg);     → right → up (chevron style) */
 }
 
 summary.collapsible-header::-webkit-details-marker {

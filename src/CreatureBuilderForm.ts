@@ -12,6 +12,7 @@ import {
     Statistics,
 } from './Keys'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
+import {globalLog} from "@/utils";
 
 export class CreatureBuilderForm extends FormApplication {
     data = DefaultCreatureStatistics
@@ -23,12 +24,6 @@ export class CreatureBuilderForm extends FormApplication {
         super(object, options)
 
         this._uniqueId = `creatureBuilderForm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-        console.log(
-            'CreatureBuilderForm constructor - object:',
-            object,
-            'this.object:',
-            this.object,
-        )
     }
 
     get actor(): BaseActor {
@@ -59,10 +54,6 @@ export class CreatureBuilderForm extends FormApplication {
      * Called after the form is rendered to initialize client-side UI behavior
      */
     activateListeners(html: JQuery) {
-        console.log('=== CreatureBuilderForm.activateListeners called ===')
-        console.log('HTML element:', html)
-        console.log('HTML length:', html.length)
-
         super.activateListeners(html)
 
         // Initialize the UI controller after DOM is ready
@@ -80,11 +71,8 @@ export class CreatureBuilderForm extends FormApplication {
             ),
         }
 
-        console.log('Creating CreatureBuilderFormUI with config:', config)
         this.formUI = new CreatureBuilderFormUI(config)
-        console.log('Initializing CreatureBuilderFormUI...')
         this.formUI.initialize()
-        console.log('=== CreatureBuilderForm.activateListeners complete ===')
     }
 
     /**
@@ -257,20 +245,15 @@ export class CreatureBuilderForm extends FormApplication {
             return {}
         }
 
-        return movement
+        return { 'system.movement': movement }
     }
 
     protected async _updateObject(_event: Event, formData?: object) {
-        console.log('=== _updateObject called ===')
-        console.log('Event:', _event)
-        console.log('Form data:', formData)
-
         if (formData) {
             const formLevel = String(formData[Statistics.level])
             this.level = Levels.includes(formLevel) ? formLevel : '1'
-            console.log(
-                'Creature Builder Submit - Level:',
-                this.level,
+            globalLog(
+                false,
                 'Form data:',
                 formData,
             )
@@ -281,7 +264,7 @@ export class CreatureBuilderForm extends FormApplication {
             }
             const newActor = await Actor.create(newActorData)
             if (!newActor) {
-                console.error('Failed to create new actor')
+                globalLog(true, 'Failed to create new actor')
                 return
             }
 
@@ -513,15 +496,15 @@ export class CreatureBuilderForm extends FormApplication {
 
     // @ts-expect-error - Overriding parent method
     getData() {
-        console.log('=== CreatureBuilderForm getData() ===')
-        console.log('this.object:', this.object)
-        console.log('this.actor:', this.actor)
-        console.log('this.actor?.name:', (this.actor as any)?.name)
-        console.log('this.actor?.system:', (this.actor as any)?.system)
-        console.log(
-            'Level raw:',
-            foundry.utils.getProperty(this.actor, 'system.details.level.value'),
-        )
+        // console.debug('=== CreatureBuilderForm getData() ===')
+        // console.debug('this.object:', this.object)
+        // console.debug('this.actor:', this.actor)
+        // console.debug('this.actor?.name:', (this.actor as any)?.name)
+        // console.debug('this.actor?.system:', (this.actor as any)?.system)
+        // console.debug(
+        //     'Level raw:',
+        //     foundry.utils.getProperty(this.actor, 'system.details.level.value'),
+        // )
 
         Handlebars.registerHelper('json', (context) => JSON.stringify(context))
 
@@ -536,9 +519,9 @@ export class CreatureBuilderForm extends FormApplication {
             ) ?? 1,
         )
 
-        console.log('actorLevel:', actorLevel)
-        console.log('detectedStats:', detectedStats)
-        console.log('=== End getData() ===')
+        // console.debug('actorLevel:', actorLevel)
+        // console.debug('detectedStats:', detectedStats)
+        // console.debug('=== End getData() ===')
 
         return {
             CreatureStatistics: JSON.parse(JSON.stringify(this.data)),

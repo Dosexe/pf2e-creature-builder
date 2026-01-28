@@ -249,7 +249,7 @@ class CreatureBuilderFormUI {
     private traitsInput!: HTMLElement
     private traitsTagify!: HTMLElement
     private traitsHidden!: HTMLInputElement
-    private traitsDropdown!: HTMLElement
+    private creatureBuilderTraitsDropdown!: HTMLElement
     private traitsDropdownWrapper!: HTMLElement
 
     constructor(config: CreatureBuilderFormConfig) {
@@ -259,13 +259,6 @@ class CreatureBuilderFormUI {
         this.detectedTraits = config.detectedTraits
         this.detectedLoreSkills = config.detectedLoreSkills
         this.actorLevel = String(config.actorLevel)
-
-        console.log(
-            'Creature Builder Init - actorLevel:',
-            this.actorLevel,
-            'detectedStats:',
-            this.detectedStats,
-        )
     }
 
     /**
@@ -293,8 +286,8 @@ class CreatureBuilderFormUI {
         this.traitsHidden = this.getElement(
             'creatureBuilderTraitsHidden',
         ) as HTMLInputElement
-        this.traitsDropdown = this.getElement('traitsDropdown')
-        this.traitsDropdownWrapper = this.traitsDropdown.querySelector(
+        this.creatureBuilderTraitsDropdown = this.getElement('creatureBuilderTraitsDropdown')
+        this.traitsDropdownWrapper = this.creatureBuilderTraitsDropdown.querySelector(
             '.tagify__dropdown__wrapper',
         )!
     }
@@ -328,7 +321,7 @@ class CreatureBuilderFormUI {
         document.addEventListener('click', (e) => {
             if (
                 !this.traitsTagify.contains(e.target as Node) &&
-                !this.traitsDropdown.contains(e.target as Node)
+                !this.creatureBuilderTraitsDropdown.contains(e.target as Node)
             ) {
                 this.hideDropdown()
             }
@@ -338,7 +331,7 @@ class CreatureBuilderFormUI {
         window.addEventListener(
             'scroll',
             () => {
-                if (this.traitsDropdown.classList.contains('show')) {
+                if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
                     this.positionDropdown()
                 }
             },
@@ -346,7 +339,7 @@ class CreatureBuilderFormUI {
         )
 
         window.addEventListener('resize', () => {
-            if (this.traitsDropdown.classList.contains('show')) {
+            if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
                 this.positionDropdown()
             }
         })
@@ -389,17 +382,8 @@ class CreatureBuilderFormUI {
      * Set detected stats from the actor
      */
     private setDetectedStats(): void {
-        console.log(
-            'setDetectedStats called with level:',
-            this.actorLevel,
-            'stats:',
-            this.detectedStats,
-        )
-
-        // First set defaults
         this.setDefaults()
 
-        // Set the actor's level
         const levelSelect = document.getElementById(
             'creatureBuilderLevel',
         ) as HTMLSelectElement
@@ -409,7 +393,6 @@ class CreatureBuilderFormUI {
             this.actorLevel !== 'undefined' &&
             this.actorLevel !== 'null'
         ) {
-            console.log('Setting level to:', this.actorLevel)
             levelSelect.value = String(this.actorLevel)
         }
 
@@ -423,7 +406,6 @@ class CreatureBuilderFormUI {
                     `creatureBuilder${key}`,
                 ) as HTMLSelectElement
                 if (select) {
-                    console.log('Setting', key, 'to', value)
                     select.value = value
                 }
             }
@@ -450,8 +432,6 @@ class CreatureBuilderFormUI {
             }
         }
     }
-
-    // ===== TRAITS FUNCTIONALITY =====
 
     /**
      * Update the hidden traits input field
@@ -557,15 +537,15 @@ class CreatureBuilderFormUI {
      */
     private positionDropdown(): void {
         // Move dropdown to document body for proper fixed positioning
-        if (this.traitsDropdown.parentElement !== document.body) {
-            document.body.appendChild(this.traitsDropdown)
+        if (this.creatureBuilderTraitsDropdown.parentElement !== document.body) {
+            document.body.appendChild(this.creatureBuilderTraitsDropdown)
         }
 
         const rect = this.traitsTagify.getBoundingClientRect()
 
-        this.traitsDropdown.style.left = `${rect.left}px`
-        this.traitsDropdown.style.top = `${rect.bottom}px`
-        this.traitsDropdown.style.width = `${rect.width}px`
+        this.creatureBuilderTraitsDropdown.style.left = `${rect.left}px`
+        this.creatureBuilderTraitsDropdown.style.top = `${rect.bottom}px`
+        this.creatureBuilderTraitsDropdown.style.width = `${rect.width}px`
     }
 
     /**
@@ -618,7 +598,7 @@ class CreatureBuilderFormUI {
 
         if (itemCount > 0) {
             this.positionDropdown()
-            this.traitsDropdown.classList.add('show')
+            this.creatureBuilderTraitsDropdown.classList.add('show')
         } else {
             this.hideDropdown()
         }
@@ -657,7 +637,7 @@ class CreatureBuilderFormUI {
      * Hide the dropdown
      */
     private hideDropdown(): void {
-        this.traitsDropdown.classList.remove('show')
+        this.creatureBuilderTraitsDropdown.classList.remove('show')
         this.selectedDropdownIndex = -1
     }
 
@@ -698,7 +678,7 @@ class CreatureBuilderFormUI {
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault()
-                if (this.traitsDropdown.classList.contains('show')) {
+                if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
                     this.selectedDropdownIndex = Math.min(
                         this.selectedDropdownIndex + 1,
                         items.length - 1,
@@ -711,7 +691,7 @@ class CreatureBuilderFormUI {
 
             case 'ArrowUp':
                 e.preventDefault()
-                if (this.traitsDropdown.classList.contains('show')) {
+                if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
                     this.selectedDropdownIndex = Math.max(
                         this.selectedDropdownIndex - 1,
                         0,
@@ -803,17 +783,15 @@ class CreatureBuilderFormUI {
             levelSelect.appendChild(opt)
         }
 
-        const removeButton = document.createElement('button')
-        removeButton.type = 'button'
-        removeButton.textContent = '✕'
-        removeButton.className = 'creatureBuilderRemoveButton'
-        removeButton.addEventListener('click', () => {
+        const removeIcon = document.createElement('span')
+        removeIcon.className = 'creatureBuilderRemoveButton fa-solid fa-fw fa-trash'
+        removeIcon.addEventListener('click', () => {
             container.removeChild(loreDiv)
         })
 
         loreDiv.appendChild(nameInput)
         loreDiv.appendChild(levelSelect)
-        loreDiv.appendChild(removeButton)
+        loreDiv.appendChild(removeIcon)
         container.appendChild(loreDiv)
     }
 
