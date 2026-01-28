@@ -16,39 +16,54 @@
 }
 
 .creatureBuilderForm .loreEntry {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-bottom: 5px !important;
+    justify-content: flex-start !important;
 }
 
 .creatureBuilderForm .loreNameInput {
-    min-width: 100px;
-    height: 27px;
+    flex: 5 1 0 !important;
+    min-width: 0 !important;
+    height: 28px !important;
+    box-sizing: border-box !important;
 }
 
 .creatureBuilderForm .loreEntry select {
-    /*height: 28px ;*/
-    /*box-sizing: border-box ;*/
-    /*min-width: 120px ;*/
-    /*flex-shrink: 0 ;*/
-    /*flex-grow: 0 ;*/
+    flex: 3 1 0 !important;
+    min-width: 0 !important;
+    height: 28px !important;
+    box-sizing: border-box !important;
 }
 
-.creatureBuilderForm .creatureBuilderAddIcon {
-    display: inline-block ;
-    color: #4CAF50;
-    cursor: pointer ;
-    font-size: 14px;
-    margin-left: 10px;
-    transition: transform 0.15s ease, color 0.15s ease, background-color 0.15s ease;
-    padding: 4px;
+.creatureBuilderForm .creatureBuilderAddButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #4CAF50;
+    color: #fff;
+    border: 1px solid #3e8e41;
     border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer !important;
+    font-size: 13px;
+    margin-bottom: 6px;
+    transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
-.creatureBuilderForm .creatureBuilderAddIcon:hover {
-    color: #fff ;
-    background-color: #4CAF50 ;
-    transform: scale(1.15) ;
+.creatureBuilderForm .creatureBuilderAddButton:hover {
+    background-color: #45a049;
+    transform: translateY(-1px);
+}
+
+.creatureBuilderForm .creatureBuilderAddButton:active {
+    transform: translateY(0);
+}
+
+.creatureBuilderForm .creatureBuilderAddButton:focus-visible {
+    outline: 2px solid rgba(76, 175, 80, 0.5);
+    outline-offset: 2px;
 }
 
 .creatureBuilderForm .creatureBuilderRemoveIcon {
