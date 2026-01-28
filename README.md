@@ -27,9 +27,10 @@ Below are the images of the form:
 First part contains all the important values like Hit Points, Level, Name etc.
 The Second part contains all the skills as well as the Submit Button.
 
-![Page One of Monster Form](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-CreatureBuilder/master/images/PageOne.png)
-![Page Two of Monster Form](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-CreatureBuilder/master/images/PageTwo.png)
+![Page One of The Form](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/PageOne.png?raw=true)
+![Page Two of The Form](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/PageTwo.png?raw=true)
+![Traits](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/TraitsSection.png?raw=true)
+![Lore Section](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/LoreSection.png?raw=true)
 
 Here is a comparison of size in relation to UI:
-![Size OVerall](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-CreatureBuilder/master/images/ImageToScale.png)
-![Size in Relation to Sidebar](https://raw.githubusercontent.com/miki4920/fvtt-module-pf2e-CreatureBuilder/master/images/Size.png)
+![Full UI Size](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/FullUIImage.png?raw=true)
