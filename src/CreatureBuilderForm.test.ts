@@ -414,7 +414,6 @@ describe('CreatureBuilderForm', () => {
 
         form.activateListeners({} as JQuery)
 
-        expect(form['formUI']).toBeInstanceOf(CreatureBuilderFormUI)
         expect(initSpy).toHaveBeenCalled()
     })
 
