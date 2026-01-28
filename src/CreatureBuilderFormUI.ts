@@ -771,7 +771,7 @@ class CreatureBuilderFormUI {
         }
 
         const removeIcon = document.createElement('span')
-        removeIcon.className = 'creatureBuilderRemoveButton fa-solid fa-fw fa-trash'
+        removeIcon.className = 'creatureBuilderRemoveIcon fa-solid fa-fw fa-trash'
         removeIcon.addEventListener('click', () => {
             container.removeChild(loreDiv)
         })

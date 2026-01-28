@@ -1,47 +1,43 @@
 .creatureBuilderForm form{
-    display: flex;
-    flex-direction: column;
+    /*display: flex;*/
+    /*flex-direction: column;*/
 }
 
 .creatureBuilderForm .creatureBuilderFormText {
-    font-size: 16px;
+    /*font-size: 16px;*/
 }
 
 .creatureBuilderForm .creatureBuilderFormTextSmall {
-    font-size: 15px;
+    /*font-size: 15px;*/
 }
 
 .creatureBuilderForm label {
-    font-size: 16px;
+    /*font-size: 16px;*/
 }
 
 .creatureBuilderForm .loreEntry {
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-    margin-bottom: 5px !important;
-    justify-content: flex-start !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .creatureBuilderForm .loreNameInput {
-    flex: 1 !important;
-    min-width: 100px !important;
-    height: 28px !important;
-    box-sizing: border-box !important;
+    min-width: 100px;
+    height: 27px;
 }
 
 .creatureBuilderForm .loreEntry select {
-    height: 28px !important;
-    box-sizing: border-box !important;
-    min-width: 120px !important;
-    flex-shrink: 0 !important;
-    flex-grow: 0 !important;
+    /*height: 28px ;*/
+    /*box-sizing: border-box ;*/
+    /*min-width: 120px ;*/
+    /*flex-shrink: 0 ;*/
+    /*flex-grow: 0 ;*/
 }
 
 .creatureBuilderForm .creatureBuilderAddIcon {
-    display: inline-block !important;
+    display: inline-block ;
     color: #4CAF50;
-    cursor: pointer !important;
+    cursor: pointer ;
     font-size: 14px;
     margin-left: 10px;
     transition: transform 0.15s ease, color 0.15s ease, background-color 0.15s ease;
@@ -50,37 +46,32 @@
 }
 
 .creatureBuilderForm .creatureBuilderAddIcon:hover {
-    color: #fff !important;
-    background-color: #4CAF50 !important;
-    transform: scale(1.15) !important;
+    color: #fff ;
+    background-color: #4CAF50 ;
+    transform: scale(1.15) ;
 }
 
-.creatureBuilderForm .creatureBuilderRemoveButton {
-    display: inline-block !important;
+.creatureBuilderForm .creatureBuilderRemoveIcon {
+    display: inline-block ;
     color: #f44336;
-    cursor: pointer !important;
+    cursor: pointer ;
     font-size: 14px;
     transition: transform 0.15s ease, color 0.15s ease, background-color 0.15s ease;
-    flex-shrink: 0 !important;
+    flex-shrink: 0 ;
     padding: 4px;
     border-radius: 4px;
 }
 
-.creatureBuilderForm .creatureBuilderRemoveButton:hover {
-    color: #fff !important;
-    background-color: #f44336 !important;
-    transform: scale(1.15) !important;
-}
-
-#loreSkillsContainer {
-    margin-bottom: 10px;
+.creatureBuilderForm .creatureBuilderRemoveIcon:hover {
+    color: #fff ;
+    background-color: #f44336 ;
+    transform: scale(1.15) ;
 }
 
 /* Traits styling - uses Foundry's tagify/paizo-style classes */
 .creatureBuilderForm .traitsContainer {
     display: flex;
     flex-direction: column;
-    flex: 1;
     position: relative;
 }
 
@@ -181,8 +172,7 @@ summary.collapsibleHeader::marker {
     padding-left: 5px;
 }
 
-/* Form divider before buttons */
 .creatureBuilderForm .formDivider {
-    border-top: 2px solid #4a4a4a;
-    margin: 20px 0 15px 0;
+    border-top: 2px solid var(--color-underline-header);
+    margin: 10px 0 10px 0;
 }
