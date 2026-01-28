@@ -23,6 +23,7 @@
     "@league-of-foundry-developers/foundry-vtt-types": "^9.280.0",
     "typescript": "^4.9.5",
     "vite": "^7.3.1",
+    "jsdom": "^27.4.0",
     "vite-tsconfig-paths": "^6.0.5",
     "@vitest/coverage-v8": "^4.0.18",
     "vitest": "^4.0.18"

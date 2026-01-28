@@ -1,4 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { globalLog } from '@/utils'
+import CreatureBuilderFormUI from './CreatureBuilderFormUI'
 import { Options, Skills, Statistics } from './Keys'
 import { statisticValues } from './Values'
 
@@ -377,6 +379,51 @@ describe('CreatureBuilderForm', () => {
             { name: 'Sailing', level: Options.moderate },
         ])
         expect(data.actorLevel).toBe('1')
+    })
+
+    it('exposes default options for the form', () => {
+        const options = CreatureBuilderForm.defaultOptions
+        expect(options.classes).toContain('creatureBuilderForm')
+        expect(options.id).toBe('creatureBuilderForm')
+    })
+
+    it('activates listeners and initializes the UI', () => {
+        const actor = buildActor({
+            system: { details: { level: { value: 2 } } },
+        })
+        const form = new CreatureBuilderForm(actor)
+        const initSpy = vi
+            .spyOn(CreatureBuilderFormUI.prototype, 'initialize')
+            .mockImplementation(() => {})
+        vi.spyOn(form, 'detectActorStats').mockReturnValue({
+            [Statistics.str]: Options.high,
+        })
+        vi.spyOn(form, 'detectTraits').mockReturnValue(['undead'])
+        vi.spyOn(form, 'detectLoreSkills').mockReturnValue([])
+
+        form.activateListeners({} as JQuery)
+
+        expect(form['formUI']).toBeInstanceOf(CreatureBuilderFormUI)
+        expect(initSpy).toHaveBeenCalled()
+    })
+
+    it('clears form UI reference on close', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        form['formUI'] = {} as CreatureBuilderFormUI
+        await form.close()
+        expect(form['formUI']).toBeNull()
+    })
+
+    it('logs and returns when actor creation fails', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        ;(Actor.create as any).mockResolvedValue(null)
+
+        await form['_updateObject'](undefined as unknown as Event, {
+            [Statistics.name]: 'New Monster',
+            [Statistics.level]: '1',
+        })
+
+        expect(globalLog).toHaveBeenCalledWith(true, 'Failed to create new actor')
     })
 
     it('creates a new actor and applies updates', async () => {

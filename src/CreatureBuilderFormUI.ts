@@ -802,7 +802,7 @@ class CreatureBuilderFormUI {
         const levelSelect = document.getElementById(
             'creatureBuilderLevel',
         ) as HTMLSelectElement
-        if (levelSelect) levelSelect.value = '1'
+        if (levelSelect) levelSelect.value = '-1'
 
         const roadmapSelect = document.getElementById(
             'creatureBuilderRoadmap',
