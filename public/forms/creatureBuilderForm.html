@@ -36,7 +36,7 @@
             <tags class="tagify tags paizo-style" tabindex="-1" id="traitsTagify">
                 <span contenteditable="true" tabindex="0" data-placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}" class="tagify__input" role="textbox" aria-autocomplete="both" aria-multiline="false" id="creatureBuilderTraitsInput"></span>
             </tags>
-            <div id="traitsDropdown" class="traitsDropdown tagify__dropdown" role="listbox" aria-labelledby="dropdown" placement="bottom" position="all">
+            <div id="creatureBuilderTraitsDropdown" class="creatureBuilderTraitsDropdown tagify__dropdown" role="listbox" aria-labelledby="dropdown" placement="bottom" position="all">
                 <div data-selector="tagify-suggestions-wrapper" class="tagify__dropdown__wrapper">
                     <header data-selector="tagify-suggestions-header" class="tagify__dropdown__header"></header>
                 </div>
@@ -78,11 +78,12 @@
     {{/each}}
     <details class="collapsibleSection" id="sectionLore" open>
         <summary class="collapsibleHeader">
-            <h3>{{localize "PF2EMONSTERMAKER.loreSkills"}}</h3>
-            <span id="addLoreButton" class="creatureBuilderAddIcon fa-solid fa-fw fa-plus" title="{{localize "PF2EMONSTERMAKER.addLore"}}"></span>
+            <h3>{{localize "PF2EMONSTERMAKER.loreSkills"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow" style=""></i></h3>
         </summary>
         <div class="collapsibleContent">
-            <div id="loreSkillsContainer"></div>
+            <div id="loreSkillsContainer">
+                <span id="addLoreButton" class="creatureBuilderAddIcon fa-solid fa-fw fa-plus" title="{{localize "PF2EMONSTERMAKER.addLore"}}"></span>
+            </div>
         </div>
     </details>
     <div class="formDivider"></div>

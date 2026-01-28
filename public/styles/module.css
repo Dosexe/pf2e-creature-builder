@@ -73,16 +73,16 @@
 
 /* Traits dropdown - hide by default, show when .show class is added */
 /* Use ID selector since dropdown may be moved to document.body */
-#traitsDropdown {
+#creatureBuilderTraitsDropdown {
     display: none !important;
 }
 
-#traitsDropdown.show {
+#creatureBuilderTraitsDropdown.show {
     display: block !important;
 }
 
 /* Custom entry styling for user-typed traits */
-#traitsDropdown .tagify__dropdown__item.customEntry {
+#creatureBuilderTraitsDropdown .tagify__dropdown__item.customEntry {
     font-style: italic;
 }
 
