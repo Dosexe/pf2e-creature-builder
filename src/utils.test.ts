@@ -29,10 +29,7 @@ describe('globalLog', () => {
     it('logs when dev mode is enabled', () => {
         ;(globalThis as { game?: any }).game = {
             modules: new Map([
-                [
-                    '_dev-mode',
-                    { api: { getPackageDebugValue: () => true } },
-                ],
+                ['_dev-mode', { api: { getPackageDebugValue: () => true } }],
             ]),
         }
         globalLog(false, 'dev mode')
@@ -42,10 +39,7 @@ describe('globalLog', () => {
     it('does not log when dev mode is disabled', () => {
         ;(globalThis as { game?: any }).game = {
             modules: new Map([
-                [
-                    '_dev-mode',
-                    { api: { getPackageDebugValue: () => false } },
-                ],
+                ['_dev-mode', { api: { getPackageDebugValue: () => false } }],
             ]),
         }
         globalLog(false, 'quiet')

@@ -1,8 +1,7 @@
 import { CreatureBuilderForm } from './CreatureBuilderForm'
 
 Hooks.on('init', async () => {
-    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    await game['settings'].register(
+    game.settings!.register(
         'foundryvtt-pf2e-creature-builder',
         'roadmaps',
         {
@@ -13,8 +12,7 @@ Hooks.on('init', async () => {
         },
     )
 
-    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    await game['settings'].register('pf2e-creature-builder', 'abbreviateName', {
+    game.settings!.register('pf2e-creature-builder', 'abbreviateName', {
         name: 'Abbreviate Creature Builder',
         hint: 'Turn this on if you prefer to see CB instead of the full title Creature Builder in the monster sheet.',
         scope: 'world',
@@ -25,19 +23,18 @@ Hooks.on('init', async () => {
 })
 
 function getMonsterManualLabel() {
-    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    return game['settings'].get('pf2e-creature-builder', 'abbreviateName')
+    return game.settings!.get('pf2e-creature-builder', 'abbreviateName')
         ? 'CB'
         : 'Creature Builder'
 }
 
 Hooks.on('renderActorSheet', async (sheet, html) => {
     const actor = sheet.object
-    if (actor?.type !== 'npc') {
+    if ((actor?.type as string) !== 'npc') {
         return
     }
-    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    if (!actor.canUserModify(game['user'], 'update')) {
+    const user = game.user
+    if (!user || !actor.canUserModify(user, 'update')) {
         return
     }
     const element = html.find('.window-header .window-title')
@@ -62,15 +59,12 @@ Hooks.on('renderActorDirectory', () => {
         monsterButton.on('click', () => {
             const monsterData = {
                 name: 'Monster',
-                type: 'npc',
+                type: 'npc' as const,
             }
-            Actor.create(monsterData, { temporary: true }).then((actor) => {
-                if (actor) {
-                    new CreatureBuilderForm(actor, {
-                        useDefaultLevel: true,
-                    }).render(true)
-                }
-            })
+            const actor = new Actor(monsterData as Actor.CreateData)
+            new CreatureBuilderForm(actor, {
+                useDefaultLevel: true,
+            }).render(true)
         })
     }
 })

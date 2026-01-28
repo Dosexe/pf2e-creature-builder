@@ -1,9 +1,10 @@
-import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
+import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
 } from './CreatureBuilderFormUI'
 import {
-    actorFields, DefaultCreatureLevel,
+    actorFields,
+    DefaultCreatureLevel,
     DefaultCreatureStatistics,
     Levels,
     Options,
@@ -12,7 +13,6 @@ import {
     Statistics,
 } from './Keys'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
-import {globalLog} from "@/utils";
 
 export class CreatureBuilderForm extends FormApplication {
     data = DefaultCreatureStatistics
@@ -28,12 +28,16 @@ export class CreatureBuilderForm extends FormApplication {
         this._uniqueId = `creatureBuilderForm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
     }
 
-    get actor(): BaseActor {
-        return this.object as BaseActor
+    get actor(): Actor {
+        return this.object as Actor
     }
 
-    set actor(value: BaseActor) {
+    set actor(value: Actor) {
         this.object = value
+    }
+
+    private localize(key: string): string {
+        return game.i18n?.localize(key) ?? key
     }
 
     static get defaultOptions() {
@@ -135,9 +139,8 @@ export class CreatureBuilderForm extends FormApplication {
                 strikeDamageOption
             ]
         const strike = {
-            // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-            name: game['i18n'].localize('PF2EMONSTERMAKER.strike'),
-            type: 'melee',
+            name: this.localize('PF2EMONSTERMAKER.strike'),
+            type: 'melee' as const,
             system: {
                 damageRolls: {
                     strikeDamageID: {
@@ -151,7 +154,7 @@ export class CreatureBuilderForm extends FormApplication {
                 },
             },
         }
-        return Item.create(strike, { parent: this.actor })
+        return Item.create(strike as unknown as Item.CreateData, { parent: this.actor })
     }
 
     applySpellcasting(formData: object) {
@@ -166,9 +169,8 @@ export class CreatureBuilderForm extends FormApplication {
             10,
         )
         const spellcasting = {
-            // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-            name: game['i18n'].localize('PF2EMONSTERMAKER.spellcasting'),
-            type: 'spellcastingEntry',
+            name: this.localize('PF2EMONSTERMAKER.spellcasting'),
+            type: 'spellcastingEntry' as const,
             system: {
                 spelldc: {
                     value: spellcastingBonus,
@@ -183,7 +185,7 @@ export class CreatureBuilderForm extends FormApplication {
                 showUnpreparedSpells: { value: true },
             },
         }
-        return Item.create(spellcasting, { parent: this.actor })
+        return Item.create(spellcasting as unknown as Item.CreateData, { parent: this.actor })
     }
 
     async applySkills(formData: object) {
@@ -227,48 +229,51 @@ export class CreatureBuilderForm extends FormApplication {
             )
             const loreItem = {
                 name: `${lore.name} Lore`,
-                type: 'lore',
+                type: 'lore' as const,
                 system: {
                     mod: {
                         value: value,
                     },
                 },
             }
-            await Item.create(loreItem, { parent: this.actor })
+            await Item.create(loreItem as unknown as Item.CreateData, { parent: this.actor })
         }
     }
 
-    applySenses(senses: Array<object>) {
-        if (!senses || senses.length === 0) {
+    applySenses(senses: unknown) {
+        if (!Array.isArray(senses) || senses.length === 0) {
             return {}
         }
 
         return { 'system.perception.senses': senses }
     }
 
-    applyMovement(movement: object) {
-        if (!movement || Object.keys(movement).length === 0) {
+    applyMovement(movement: unknown) {
+        if (
+            !movement ||
+            typeof movement !== 'object' ||
+            Array.isArray(movement) ||
+            Object.keys(movement).length === 0
+        ) {
             return {}
         }
 
-        return { 'system.movement': movement }
+        return { 'system.movement': movement as Record<string, unknown> }
     }
 
     protected async _updateObject(_event: Event, formData?: object) {
         if (formData) {
             const formLevel = String(formData[Statistics.level])
-            this.level = Levels.includes(formLevel) ? formLevel : DefaultCreatureLevel
-            globalLog(
-                false,
-                'Form data:',
-                formData,
-            )
+            this.level = Levels.includes(formLevel)
+                ? formLevel
+                : DefaultCreatureLevel
+            globalLog(false, 'Form data:', formData)
 
             const newActorData = {
                 name: formData[Statistics.name] || 'New Monster',
-                type: 'npc',
+                type: 'npc' as const,
             }
-            const newActor = await Actor.create(newActorData)
+            const newActor = await Actor.create(newActorData as Actor.CreateData)
             if (!newActor) {
                 globalLog(true, 'Failed to create new actor')
                 return
@@ -309,12 +314,12 @@ export class CreatureBuilderForm extends FormApplication {
                     foundry.utils.getProperty(this.actor, 'system.movement'),
                 ),
             )
-            await newActor.update(updateData)
+            await newActor.update(updateData as Actor.UpdateData)
 
             const originalActor = this.actor
             this.actor = newActor
             await Promise.all([
-                this.actor.update(this.applyHitPoints(formData)),
+                this.actor.update(this.applyHitPoints(formData) as Actor.UpdateData),
                 this.applyStrike(formData),
                 this.applySpellcasting(formData),
                 this.applySkills(formData),
@@ -484,8 +489,9 @@ export class CreatureBuilderForm extends FormApplication {
                         item.name
                             ?.replace(' Lore', '')
                             .replace(/ \(.*\)$/, '') || 'Unknown'
-                    const modValue =
-                        foundry.utils.getProperty(item, 'system.mod.value') ?? 0
+                    const modValue = Number(
+                        foundry.utils.getProperty(item, 'system.mod.value') ?? 0,
+                    )
                     if (modValue > 0) {
                         const level = detectStatLevel(
                             Statistics.acrobatics,
@@ -500,8 +506,7 @@ export class CreatureBuilderForm extends FormApplication {
         return loreSkills
     }
 
-    // @ts-expect-error - Overriding parent method
-    getData() {
+    override getData(_options?: Partial<FormApplication.Options>) {
         // console.debug('=== CreatureBuilderForm getData() ===')
         // console.debug('this.object:', this.object)
         // console.debug('this.actor:', this.actor)

@@ -10,7 +10,10 @@ let CreatureBuilderForm: typeof import('./CreatureBuilderForm').CreatureBuilderF
 let Actor: { create: ReturnType<typeof vi.fn> }
 let Item: { create: ReturnType<typeof vi.fn> }
 
-const mergeObject = (target: Record<string, unknown>, source: Record<string, unknown>) => ({
+const mergeObject = (
+    target: Record<string, unknown>,
+    source: Record<string, unknown>,
+) => ({
     ...target,
     ...source,
 })
@@ -33,7 +36,10 @@ const flattenObject = (
     for (const [key, value] of Object.entries(obj)) {
         const path = prefix ? `${prefix}.${key}` : key
         if (value && typeof value === 'object' && !Array.isArray(value)) {
-            Object.assign(result, flattenObject(value as Record<string, unknown>, path))
+            Object.assign(
+                result,
+                flattenObject(value as Record<string, unknown>, path),
+            )
         } else {
             result[path] = value
         }
@@ -366,10 +372,9 @@ describe('CreatureBuilderForm', () => {
         ])
 
         const data = form.getData()
-        expect((globalThis as any).Handlebars.registerHelper).toHaveBeenCalledWith(
-            'json',
-            expect.any(Function),
-        )
+        expect(
+            (globalThis as any).Handlebars.registerHelper,
+        ).toHaveBeenCalledWith('json', expect.any(Function))
         expect(data.name).toBe('Hero')
         expect(data.detectedStats).toEqual({
             [Statistics.str]: Options.high,
@@ -450,7 +455,10 @@ describe('CreatureBuilderForm', () => {
             [Statistics.level]: '1',
         })
 
-        expect(globalLog).toHaveBeenCalledWith(true, 'Failed to create new actor')
+        expect(globalLog).toHaveBeenCalledWith(
+            true,
+            'Failed to create new actor',
+        )
     })
 
     it('creates a new actor and applies updates', async () => {

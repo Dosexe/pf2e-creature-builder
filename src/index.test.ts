@@ -6,6 +6,10 @@ const CreatureBuilderFormMock = vi.fn(function (this: any, actor: unknown) {
     this.actor = actor
     this.render = renderSpy
 })
+const ActorMock = vi.fn(function (this: any, data: unknown, options: unknown) {
+    this.data = data
+    this.options = options
+})
 
 type HookCallback = (...args: any[]) => void
 let hooks: Record<string, HookCallback[]> = {}
@@ -84,18 +88,15 @@ const $ = (input: string | Element) => {
 const setupModule = async () => {
     hooks = {}
     vi.resetModules()
-    vi.doMock(
-        '@/utils',
-        () => ({
-            globalLog: vi.fn(),
-        }),
-        { virtual: true },
-    )
+    vi.doMock('@/utils', () => ({
+        globalLog: vi.fn(),
+    }))
     vi.doMock('./CreatureBuilderForm', () => ({
         CreatureBuilderForm: CreatureBuilderFormMock,
     }))
     CreatureBuilderFormMock.mockClear()
     renderSpy.mockClear()
+    ActorMock.mockClear()
 
     ;(globalThis as any).Hooks = {
         on: vi.fn((event: string, callback: HookCallback) => {
@@ -111,7 +112,7 @@ const setupModule = async () => {
         },
         user: {},
     }
-    ;(globalThis as any).Actor = { create: vi.fn() }
+    ;(globalThis as any).Actor = ActorMock
     ;(globalThis as any).$ = $
 
     await import('./index')
@@ -161,7 +162,9 @@ describe('index hooks', () => {
 
         hooks.renderActorSheet?.[0]?.({ object: actor }, html)
 
-        const button = document.querySelector('.window-header .popout') as HTMLElement
+        const button = document.querySelector(
+            '.window-header .popout',
+        ) as HTMLElement
         expect(button).toBeTruthy()
         expect(button.textContent).toContain('Creature Builder')
 
@@ -179,14 +182,13 @@ describe('index hooks', () => {
 
         hooks.renderActorSheet?.[0]?.({ object: actor }, $('#sheet'))
 
-        const button = document.querySelector('.window-header .popout') as HTMLElement
+        const button = document.querySelector(
+            '.window-header .popout',
+        ) as HTMLElement
         expect(button.textContent).toContain('CB')
     })
 
     it('creates a temporary actor from the directory button', async () => {
-        const actor = { id: 'temp' }
-        ;(globalThis as any).Actor.create.mockResolvedValue(actor)
-
         hooks.renderActorDirectory?.[0]?.()
 
         const button = document.querySelector(
@@ -195,13 +197,13 @@ describe('index hooks', () => {
         expect(button).toBeTruthy()
 
         button.click()
-        await new Promise((resolve) => setImmediate(resolve))
 
-        expect((globalThis as any).Actor.create).toHaveBeenCalledWith(
-            { name: 'Monster', type: 'npc' },
-            { temporary: true },
-        )
-        expect(CreatureBuilderFormMock).toHaveBeenCalledWith(actor, {
+        expect((globalThis as any).Actor).toHaveBeenCalledWith({
+            name: 'Monster',
+            type: 'npc',
+        })
+        const actorInstance = ActorMock.mock.instances[0]
+        expect(CreatureBuilderFormMock).toHaveBeenCalledWith(actorInstance, {
             useDefaultLevel: true,
         })
         expect(renderSpy).toHaveBeenCalledWith(true)
