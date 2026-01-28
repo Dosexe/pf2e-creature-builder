@@ -814,7 +814,9 @@ class CreatureBuilderFormUI {
         this.updateTraitsHidden()
 
         const loreContainer = this.getElement('loreSkillsContainer')
-        loreContainer.innerHTML = ''
+        loreContainer.querySelectorAll('.loreEntry').forEach((entry) => {
+            entry.remove()
+        })
         this.loreCounter = 0
     }
 

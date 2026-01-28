@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
-import { Options, Skills, Statistics } from './Keys'
+import { DefaultCreatureLevel, Options, Skills, Statistics } from './Keys'
 import { statisticValues } from './Values'
 
 vi.mock('@/utils', () => ({ globalLog: vi.fn() }))
@@ -381,6 +381,17 @@ describe('CreatureBuilderForm', () => {
         expect(data.actorLevel).toBe('1')
     })
 
+    it('returns default level in getData when requested', () => {
+        const actor = buildActor({
+            name: 'Hero',
+            system: { details: { level: { value: 1 } } },
+        })
+        const form = new CreatureBuilderForm(actor, { useDefaultLevel: true })
+
+        const data = form.getData()
+        expect(data.actorLevel).toBe(DefaultCreatureLevel)
+    })
+
     it('exposes default options for the form', () => {
         const options = CreatureBuilderForm.defaultOptions
         expect(options.classes).toContain('creatureBuilderForm')
@@ -404,6 +415,22 @@ describe('CreatureBuilderForm', () => {
         form.activateListeners({} as JQuery)
 
         expect(form['formUI']).toBeInstanceOf(CreatureBuilderFormUI)
+        expect(initSpy).toHaveBeenCalled()
+    })
+
+    it('uses the default level when requested', () => {
+        const actor = buildActor({
+            system: { details: { level: { value: 2 } } },
+        })
+        const form = new CreatureBuilderForm(actor, { useDefaultLevel: true })
+        const initSpy = vi
+            .spyOn(CreatureBuilderFormUI.prototype, 'initialize')
+            .mockImplementation(() => {})
+
+        form.activateListeners({} as JQuery)
+
+        const actorLevel = (form['formUI'] as any).actorLevel
+        expect(actorLevel).toBe(DefaultCreatureLevel)
         expect(initSpy).toHaveBeenCalled()
     })
 

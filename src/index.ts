@@ -66,7 +66,9 @@ Hooks.on('renderActorDirectory', () => {
             }
             Actor.create(monsterData, { temporary: true }).then((actor) => {
                 if (actor) {
-                    new CreatureBuilderForm(actor).render(true)
+                    new CreatureBuilderForm(actor, {
+                        useDefaultLevel: true,
+                    }).render(true)
                 }
             })
         })

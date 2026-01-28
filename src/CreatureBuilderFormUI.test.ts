@@ -30,8 +30,9 @@ const setupDom = () => {
     document.body.innerHTML = `
         <div class="creatureBuilderForm">
             <input id="creatureBuilderTraitsHidden" />
-            <div id="loreSkillsContainer"></div>
-            <button id="addLoreButton" type="button">Add Lore</button>
+            <div id="loreSkillsContainer">
+                <button id="addLoreButton" type="button">Add Lore</button>
+            </div>
             <button id="creatureBuilderResetButton" type="button">Reset</button>
             <select id="creatureBuilderLevel">
                 <option value="-1">-1</option>
@@ -128,7 +129,7 @@ describe('CreatureBuilderFormUI', () => {
         expect(select.value).toBe(Options.moderate)
 
         const remove = entries[0].querySelector(
-            '.creatureBuilderRemoveIcon',
+            '.creatureBuilderRemoveButton',
         ) as HTMLElement
         remove.click()
         expect(document.querySelectorAll('.loreEntry').length).toBe(0)
@@ -195,8 +196,10 @@ describe('CreatureBuilderFormUI', () => {
         resetButton.click()
 
         const hidden = document.getElementById('creatureBuilderTraitsHidden') as HTMLInputElement
+        const addLoreButton = document.getElementById('addLoreButton') as HTMLButtonElement
         expect(hidden.value).toBe('')
         expect(document.querySelectorAll('.loreEntry').length).toBe(0)
+        expect(addLoreButton).toBeTruthy()
         expect(level.value).toBe('-1')
         expect(roadmap.value).toBe('Default')
     })
