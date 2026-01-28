@@ -20,6 +20,7 @@
     align-items: center;
     gap: 10px;
     margin-bottom: 5px;
+    justify-content: flex-start;
 }
 
 #creatureBuilderForm .loreNameInput {
@@ -32,9 +33,12 @@
 #creatureBuilderForm .loreEntry select {
     height: 28px;
     box-sizing: border-box;
+    min-width: 120px;
+    flex-shrink: 0;
 }
 
 #creatureBuilderForm .creatureBuilderAddIcon {
+    display: inline-block;
     color: #4CAF50;
     cursor: pointer;
     font-size: 14px;
@@ -43,20 +47,22 @@
 }
 
 #creatureBuilderForm .creatureBuilderAddIcon:hover {
-    color: #45a049;
-    transform: scale(1.2);
+    color: #2e7d32;
+    transform: scale(1.25);
 }
 
 #creatureBuilderForm .creatureBuilderRemoveButton {
+    display: inline-block;
     color: #f44336;
     cursor: pointer;
     font-size: 14px;
     transition: transform 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
 }
 
 #creatureBuilderForm .creatureBuilderRemoveButton:hover {
-    color: #d32f2f;
-    transform: scale(1.2);
+    color: #b71c1c;
+    transform: scale(1.25);
 }
 
 #loreSkillsContainer {
