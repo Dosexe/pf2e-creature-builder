@@ -278,7 +278,6 @@ class CreatureBuilderFormUI {
         this.initializeLoreSkills()
         this.initCollapsibleSections()
 
-        // Initialize with detected stats after a short delay
         setTimeout(() => {
             this.setDetectedStats()
         }, 0)
@@ -303,7 +302,6 @@ class CreatureBuilderFormUI {
      * Setup all event listeners
      */
     private setupEventListeners(): void {
-        // Traits input events
         this.traitsInput.addEventListener('input', () => {
             this.showDropdown(this.getInputText())
         })
@@ -324,7 +322,6 @@ class CreatureBuilderFormUI {
             this.showDropdown(this.getInputText())
         })
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if (
                 !this.traitsTagify.contains(e.target as Node) &&
@@ -334,7 +331,6 @@ class CreatureBuilderFormUI {
             }
         })
 
-        // Reposition dropdown on scroll/resize
         window.addEventListener(
             'scroll',
             () => {
@@ -351,19 +347,16 @@ class CreatureBuilderFormUI {
             }
         })
 
-        // Add lore button
         const addLoreButton = this.getElement('addLoreButton')
         addLoreButton.addEventListener('click', () => {
             this.addLoreSkill()
         })
 
-        // Reset button
         const resetButton = this.getElement('creatureBuilderResetButton')
         resetButton.addEventListener('click', () => {
             this.resetToDefaults()
         })
 
-        // Expose setRoadmap to global scope for the HTML onchange handler
         ;(window as any).setRoadmap = (selectedRoadmap: HTMLSelectElement) => {
             this.setRoadmap(selectedRoadmap)
         }
@@ -396,10 +389,8 @@ class CreatureBuilderFormUI {
             this.detectedStats,
         )
 
-        // First set defaults
         this.setDefaults()
 
-        // Set the actor's level
         const levelSelect = document.getElementById(
             'creatureBuilderLevel',
         ) as HTMLSelectElement
@@ -450,8 +441,6 @@ class CreatureBuilderFormUI {
             }
         }
     }
-
-    // ===== TRAITS FUNCTIONALITY =====
 
     /**
      * Update the hidden traits input field
@@ -504,13 +493,11 @@ class CreatureBuilderFormUI {
      * Render all trait tags
      */
     private renderTraits(): void {
-        // Remove existing tags (but keep the input span)
         const existingTags = this.traitsTagify.querySelectorAll('tag')
         existingTags.forEach((tag) => {
             tag.remove()
         })
 
-        // Add tags before the input
         for (const trait of this.traits) {
             const tag = document.createElement('tag')
             tag.className = 'tagify__tag tagify--noAnim'
@@ -534,15 +521,13 @@ class CreatureBuilderFormUI {
             tag.appendChild(removeBtn)
             tag.appendChild(textDiv)
 
-            // Insert before the input span
             this.traitsTagify.insertBefore(tag, this.traitsInput)
         }
 
-        // Add click handlers for remove buttons
-        const removeBtns = this.traitsTagify.querySelectorAll(
+        const removeButtons = this.traitsTagify.querySelectorAll(
             '.tagify__tag__removeBtn',
         )
-        removeBtns.forEach((btn) => {
+        removeButtons.forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation()
                 const tag = (e.target as HTMLElement).parentElement!
@@ -556,7 +541,6 @@ class CreatureBuilderFormUI {
      * Position the dropdown relative to the tagify container
      */
     private positionDropdown(): void {
-        // Move dropdown to document body for proper fixed positioning
         if (this.traitsDropdown.parentElement !== document.body) {
             document.body.appendChild(this.traitsDropdown)
         }
@@ -761,8 +745,6 @@ class CreatureBuilderFormUI {
         }
     }
 
-    // ===== LORE SKILLS FUNCTIONALITY =====
-
     /**
      * Add a lore skill entry
      */
@@ -828,8 +810,6 @@ class CreatureBuilderFormUI {
         }
     }
 
-    // ===== UTILITY METHODS =====
-
     /**
      * Reset form to defaults
      */
@@ -891,13 +871,10 @@ class CreatureBuilderFormUI {
     }
 }
 
-// Export for use in other modules
 export default CreatureBuilderFormUI
 
-// Also export the interface for use in CreatureBuilderForm.ts
 export type { CreatureBuilderFormConfig }
 
-// Attach to window for global access in the HTML template
 if (typeof window !== 'undefined') {
     ;(window as any).CreatureBuilderFormUI = CreatureBuilderFormUI
 }
