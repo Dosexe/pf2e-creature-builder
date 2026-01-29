@@ -11,7 +11,7 @@ Main differences from the original module:
  - Introduced the ability to start a build from an existing creature.
  - Added  support for Lore skills.
  - Added support for traits.
- - Minor UI changes
+ - Minor UI changes.
 
 To use the **Creature Builder**, you can create a blank NPC or start with an existing one. 
 For existing creature note that some of the values won't be inherited, like attacks/actions/passives, although those can be easily added afterward if needed.
@@ -19,9 +19,10 @@ For existing creature note that some of the values won't be inherited, like atta
 When you open actor **Character Sheet**, you can find a button at the top named **Creature Builder**. Clicking this button will open the creature builder.
 In there, you either use one of the roadmaps, allowing you to set values automatically for a given monster type, or you could create your unique creature by changing any of the drop-down menus.
 
-By default, all values are `moderate`, meaning you will get a creature that does not possess strengths or weaknesses. If you are planning to use your values rather than roadmaps, please take a look at the [PF2e Official Creature Building Guide](https://2e.aonprd.com/Rules.aspx?ID=995) to see how to create a balanced monster. 
-Whenever you give a monster a strength, don't forget to give it a weakness to compensate. When you are happy with your values for the monster, click the `Submit` button. This will create a new creature and open its sheet on the screen.
-Note each group in the form is clickable and can be expanded or collapsed. By default, all groups are expanded, except `Skills` and `Lore Skills` 
+By default, all values are `moderate` and level is set to `-1`, meaning you will get a creature that does not possess strengths or weaknesses. If you are planning to use your values rather than roadmaps, please take a look at the [PF2e Official Creature Building Guide](https://2e.aonprd.com/Rules.aspx?ID=995) to see how to create a balanced monster. 
+When the values are set, click the `Submit` button. This will create a new creature and open its sheet on the screen. 
+If you want to start from scratch you can always click `Reset to Defaults` button, that will flush all changes in the form.
+Note each group in the form is clickable and can be expanded or collapsed. By default, all groups are expanded, except `Skills` and `Lore Skills`.
 
 Below are the images of the form:
 
