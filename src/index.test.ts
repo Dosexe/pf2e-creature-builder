@@ -51,17 +51,23 @@ class MockJQ {
     append(child: MockJQ | Element) {
         const childElements = child instanceof MockJQ ? child.elements : [child]
         this.elements.forEach((el) => {
-            childElements.forEach((childEl) => el.appendChild(childEl))
+            for (const childEl of childElements) {
+                el.appendChild(childEl)
+            }
         })
     }
 
     after(child: MockJQ | Element) {
         const childElement = child instanceof MockJQ ? child.elements[0] : child
-        this.elements.forEach((el) => el.after(childElement))
+        for (const el of this.elements) {
+            el.after(childElement)
+        }
     }
 
     on(event: string, handler: EventListenerOrEventListenerObject) {
-        this.elements.forEach((el) => el.addEventListener(event, handler))
+        for (const el of this.elements) {
+            el.addEventListener(event, handler)
+        }
     }
 }
 

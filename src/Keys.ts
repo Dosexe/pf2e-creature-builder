@@ -27,6 +27,8 @@ export const Levels: string[] = [
     '24',
 ]
 
+export const KeyPrefix = 'PF2EMONSTERMAKER'
+
 export enum Statistics {
     name = 'PF2EMONSTERMAKER.name',
     level = 'PF2EMONSTERMAKER.level',
@@ -387,7 +389,7 @@ export const DefaultCreatureLevel = '-1'
 
 export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
     {
-        name: 'PF2EMONSTERMAKER.abilityScores',
+        name: `${KeyPrefix}.abilityScores`,
         availableOptions: [
             Options.abysmal,
             Options.terrible,
@@ -457,7 +459,7 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
         ],
     },
     {
-        name: 'PF2EMONSTERMAKER.strikes',
+        name: `${KeyPrefix}.strikes`,
         availableOptions: [
             Options.low,
             Options.moderate,
@@ -490,7 +492,7 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
         ],
     },
     {
-        name: 'PF2EMONSTERMAKER.skills',
+        name: `${KeyPrefix}.skills`,
         defaultValue: Options.none,
         availableOptions: [
             Options.none,

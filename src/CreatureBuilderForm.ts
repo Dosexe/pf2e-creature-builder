@@ -1,4 +1,5 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
+import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
 } from './CreatureBuilderFormUI'
@@ -6,6 +7,7 @@ import {
     actorFields,
     DefaultCreatureLevel,
     DefaultCreatureStatistics,
+    KeyPrefix,
     Levels,
     Options,
     RoadMaps,
@@ -13,7 +15,6 @@ import {
     Statistics,
 } from './Keys'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
-import { globalLog } from '@/utils'
 
 export class CreatureBuilderForm extends FormApplication {
     data = DefaultCreatureStatistics
@@ -59,7 +60,6 @@ export class CreatureBuilderForm extends FormApplication {
     activateListeners(html: JQuery) {
         super.activateListeners(html)
 
-        // Initialize the UI controller after DOM is ready
         const actorLevel = this.useDefaultLevel
             ? DefaultCreatureLevel
             : String(
@@ -98,7 +98,7 @@ export class CreatureBuilderForm extends FormApplication {
     }
 
     applyTraits(formData: object) {
-        const traitsString = formData['PF2EMONSTERMAKER.traits']
+        const traitsString = formData[`${KeyPrefix}.traits`]
         if (traitsString && traitsString.trim() !== '') {
             const traits = traitsString
                 .split(',')
@@ -137,7 +137,7 @@ export class CreatureBuilderForm extends FormApplication {
             ]
         const strike = {
             // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-            name: game['i18n'].localize('PF2EMONSTERMAKER.strike'),
+            name: game['i18n'].localize(`${KeyPrefix}.strike`),
             type: 'melee',
             system: {
                 damageRolls: {
@@ -168,7 +168,7 @@ export class CreatureBuilderForm extends FormApplication {
         )
         const spellcasting = {
             // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-            name: game['i18n'].localize('PF2EMONSTERMAKER.spellcasting'),
+            name: game['i18n'].localize(`${KeyPrefix}.spellcasting`),
             type: 'spellcastingEntry',
             system: {
                 spelldc: {
@@ -515,7 +515,6 @@ export class CreatureBuilderForm extends FormApplication {
 
         Handlebars.registerHelper('json', (context) => JSON.stringify(context))
 
-        // Detect current actor stats
         const detectedStats = this.detectActorStats()
         const detectedTraits = this.detectTraits()
         const detectedLoreSkills = this.detectLoreSkills()

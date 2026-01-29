@@ -16,25 +16,25 @@
 }
 
 .creatureBuilderForm .loreEntry {
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-    margin-bottom: 5px !important;
-    justify-content: flex-start !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+    justify-content: flex-start;
 }
 
 .creatureBuilderForm .loreNameInput {
-    flex: 5 1 0 !important;
-    min-width: 0 !important;
-    height: 28px !important;
-    box-sizing: border-box !important;
+    flex: 5 1 0;
+    min-width: 0;
+    height: 28px;
+    box-sizing: border-box;
 }
 
 .creatureBuilderForm .loreEntry select {
-    flex: 3 1 0 !important;
-    min-width: 0 !important;
-    height: 28px !important;
-    box-sizing: border-box !important;
+    flex: 3 1 0;
+    min-width: 0;
+    height: 28px;
+    box-sizing: border-box;
 }
 
 .creatureBuilderForm #sectionLore .collapsibleContent {
@@ -69,8 +69,6 @@
     position: relative;
 }
 
-/* Traits dropdown - hide by default, show when .show class is added */
-/* Use ID selector since dropdown may be moved to document.body */
 #creatureBuilderTraitsDropdown {
     display: none !important;
 }
@@ -99,7 +97,6 @@
     background-color: #555;
 }
 
-/* Collapsible sections using native details/summary */
 .creatureBuilderForm details.collapsibleSection {
     margin-bottom: 10px;
 }
@@ -115,24 +112,19 @@
     text-align: left;
 }
 
-/* TODO add mod ref + class
-/* Remove native marker across browsers */
 summary.collapsibleHeader {
     list-style: none; /* remove bullet/marker in Firefox */
 }
 
-
 .creatureBuilderForm .creatureBuilderHeaderArrow {
-    transition: transform 0.3s ease; /* smooth rotation */
-    display: inline-block; /* required for transform to work properly */
-    margin-left: 0.5em; /* space after text – adjust as needed */
-    font-size: 1.1em; /* optional */
+    transition: transform 0.3s ease;
+    display: inline-block;
+    margin-left: 0.5em;
+    font-size: 1.1em;
 }
 
-/* When the <details> is open → rotate the icon */
 .creatureBuilderForm details[open] .creatureBuilderHeaderArrow {
-    transform: rotate(90deg); /* right → down (most common choice) */
-    /* or: transform: rotate(180deg);     → right → up (chevron style) */
+    transform: rotate(90deg);
 }
 
 .creatureBuilderForm summary.collapsibleHeader::-webkit-details-marker {

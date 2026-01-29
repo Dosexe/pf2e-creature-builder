@@ -1,5 +1,5 @@
-import { CreatureBuilderForm } from './CreatureBuilderForm'
 import { DefaultCreatureLevel } from '@/Keys'
+import { CreatureBuilderForm } from './CreatureBuilderForm'
 
 Hooks.on('init', async () => {
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround

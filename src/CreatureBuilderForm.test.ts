@@ -433,6 +433,7 @@ describe('CreatureBuilderForm', () => {
 
         form.activateListeners({} as JQuery)
 
+        // biome-ignore lint/complexity/useLiteralKeys: private property
         const actorLevel = (form['formUI'] as any).actorLevel
         expect(actorLevel).toBe(DefaultCreatureLevel)
         expect(initSpy).toHaveBeenCalled()
@@ -440,8 +441,10 @@ describe('CreatureBuilderForm', () => {
 
     it('clears form UI reference on close', async () => {
         const form = new CreatureBuilderForm(buildActor())
+        // biome-ignore lint/complexity/useLiteralKeys: private property
         form['formUI'] = {} as CreatureBuilderFormUI
         await form.close()
+        // biome-ignore lint/complexity/useLiteralKeys: private property
         expect(form['formUI']).toBeNull()
     })
 
@@ -449,6 +452,7 @@ describe('CreatureBuilderForm', () => {
         const form = new CreatureBuilderForm(buildActor())
         ;(Actor.create as any).mockResolvedValue(null)
 
+        // biome-ignore lint/complexity/useLiteralKeys: protected property
         await form['_updateObject'](undefined as unknown as Event, {
             [Statistics.name]: 'New Monster',
             [Statistics.level]: '1',
@@ -481,6 +485,7 @@ describe('CreatureBuilderForm', () => {
         vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
         vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
 
+        // biome-ignore lint/complexity/useLiteralKeys: protected property
         await form['_updateObject'](undefined as unknown as Event, {
             [Statistics.name]: 'New Monster',
             [Statistics.level]: '1',
