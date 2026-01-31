@@ -9,7 +9,7 @@
     "compatibleCoreVersion": "13",
     "compatibility": {
         "minimum": 13,
-        "verified": "13.345",
+        "verified": "13.351",
         "maximum": 13
     },
     "scripts": ["dist/bundle.js"],
