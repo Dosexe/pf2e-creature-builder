@@ -3,6 +3,7 @@
     "PF2EMONSTERMAKER.nameLevelRoadmap": "Nazwa, poziom i plan działania",
     "PF2EMONSTERMAKER.roadmap": "Plan działania",
     "PF2EMONSTERMAKER.strike": "Atak",
+    "PF2EMONSTERMAKER.spells": "Zaklęcia",
 
     "PF2EMONSTERMAKER.name": "Nazwa",
     "PF2EMONSTERMAKER.level": "Poziom",
@@ -30,6 +31,13 @@
     "PF2EMONSTERMAKER.casterInnate": "Wrodzony",
     "PF2EMONSTERMAKER.casterPrepared": "Przygotowany",
     "PF2EMONSTERMAKER.casterSpontaneous": "Spontaniczny",
+    "PF2EMONSTERMAKER.spellcastingAttribute": "Kluczowy atrybut",
+    "PF2EMONSTERMAKER.attrStr": "Siła",
+    "PF2EMONSTERMAKER.attrDex": "Zręczność",
+    "PF2EMONSTERMAKER.attrCon": "Kondycja",
+    "PF2EMONSTERMAKER.attrInt": "Inteligencja",
+    "PF2EMONSTERMAKER.attrWis": "Mądrość",
+    "PF2EMONSTERMAKER.attrCha": "Charyzma",
 
     "PF2EMONSTERMAKER.acrobatics": "Akrobatyka",
     "PF2EMONSTERMAKER.arcana": "Arkana",

@@ -211,7 +211,7 @@ describe('CreatureBuilderForm', () => {
         expect(Item.create).toHaveBeenCalledTimes(1)
         const [payload, options] = Item.create.mock.calls[0]
         expect(payload).toMatchObject({
-            name: 'loc:PF2EMONSTERMAKER.spellcasting',
+            name: 'Arcane Innate loc:PF2EMONSTERMAKER.spells',
             type: 'spellcastingEntry',
             system: {
                 spelldc: {

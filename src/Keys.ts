@@ -57,6 +57,7 @@ export enum Statistics {
     spellcasting = 'PF2EMONSTERMAKER.spellcasting',
     spellcastingTradition = 'PF2EMONSTERMAKER.spellcastingTradition',
     spellcastingType = 'PF2EMONSTERMAKER.spellcastingType',
+    spellcastingAttribute = 'PF2EMONSTERMAKER.spellcastingAttribute',
 
     // Skills
     acrobatics = 'PF2EMONSTERMAKER.acrobatics',
@@ -138,6 +139,15 @@ export enum CasterType {
     innate = 'PF2EMONSTERMAKER.casterInnate',
     prepared = 'PF2EMONSTERMAKER.casterPrepared',
     spontaneous = 'PF2EMONSTERMAKER.casterSpontaneous',
+}
+
+export enum SpellcastingAttribute {
+    str = 'PF2EMONSTERMAKER.attrStr',
+    dex = 'PF2EMONSTERMAKER.attrDex',
+    con = 'PF2EMONSTERMAKER.attrCon',
+    int = 'PF2EMONSTERMAKER.attrInt',
+    wis = 'PF2EMONSTERMAKER.attrWis',
+    cha = 'PF2EMONSTERMAKER.attrCha',
 }
 
 export const RoadMaps = {
@@ -390,13 +400,23 @@ export const RoadMaps = {
 
 export class CreatureStatistic {
     name: string
-    availableOptions?: (Options | MagicalTradition | CasterType)[]
+    availableOptions?: (
+        | Options
+        | MagicalTradition
+        | CasterType
+        | SpellcastingAttribute
+    )[]
 }
 
 export class CreatureStatisticCategory {
     name: string
-    availableOptions: (Options | MagicalTradition | CasterType)[]
-    defaultValue: Options | MagicalTradition | CasterType
+    availableOptions: (
+        | Options
+        | MagicalTradition
+        | CasterType
+        | SpellcastingAttribute
+    )[]
+    defaultValue: Options | MagicalTradition | CasterType | SpellcastingAttribute
     statisticEntries: CreatureStatistic[]
 }
 
@@ -519,6 +539,17 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
                     CasterType.innate,
                     CasterType.prepared,
                     CasterType.spontaneous,
+                ],
+            },
+            {
+                name: Statistics.spellcastingAttribute,
+                availableOptions: [
+                    SpellcastingAttribute.cha,
+                    SpellcastingAttribute.int,
+                    SpellcastingAttribute.wis,
+                    SpellcastingAttribute.str,
+                    SpellcastingAttribute.dex,
+                    SpellcastingAttribute.con,
                 ],
             },
         ],

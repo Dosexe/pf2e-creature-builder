@@ -14,6 +14,7 @@ import {
     Options,
     RoadMaps,
     Skills,
+    SpellcastingAttribute,
     Statistics,
 } from './Keys'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
@@ -188,9 +189,26 @@ export class CreatureBuilderForm extends FormApplication {
         const casterTypeOption = formData[Statistics.spellcastingType]
         const casterType = casterTypeMap[casterTypeOption] || 'innate'
 
+        const attributeMap: { [key: string]: string } = {
+            [SpellcastingAttribute.str]: 'str',
+            [SpellcastingAttribute.dex]: 'dex',
+            [SpellcastingAttribute.con]: 'con',
+            [SpellcastingAttribute.int]: 'int',
+            [SpellcastingAttribute.wis]: 'wis',
+            [SpellcastingAttribute.cha]: 'cha',
+        }
+        const attributeOption = formData[Statistics.spellcastingAttribute]
+        const keyAttribute = attributeMap[attributeOption] || 'cha'
+
+        // Construct spellcasting entry name: "{Tradition} {CasterType} Spells"
+        const capitalize = (s: string) =>
+            s.charAt(0).toUpperCase() + s.slice(1)
+        // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
+        const spellsLabel = game['i18n'].localize(`${KeyPrefix}.spells`)
+        const spellcastingName = `${capitalize(tradition)} ${capitalize(casterType)} ${spellsLabel}`
+
         const spellcasting = {
-            // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-            name: game['i18n'].localize(`${KeyPrefix}.spellcasting`),
+            name: spellcastingName,
             type: 'spellcastingEntry',
             system: {
                 spelldc: {
@@ -202,6 +220,9 @@ export class CreatureBuilderForm extends FormApplication {
                 },
                 prepared: {
                     value: casterType,
+                },
+                ability: {
+                    value: keyAttribute,
                 },
                 showUnpreparedSpells: { value: true },
             },
