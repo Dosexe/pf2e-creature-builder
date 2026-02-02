@@ -5,10 +5,12 @@ import CreatureBuilderFormUI, {
 } from './CreatureBuilderFormUI'
 import {
     actorFields,
+    CasterType,
     DefaultCreatureLevel,
     DefaultCreatureStatistics,
     KeyPrefix,
     Levels,
+    MagicalTradition,
     Options,
     RoadMaps,
     Skills,
@@ -166,6 +168,26 @@ export class CreatureBuilderForm extends FormApplication {
             ],
             10,
         )
+
+        // Map tradition enum to system value (default: arcane)
+        const traditionMap: { [key: string]: string } = {
+            [MagicalTradition.arcane]: 'arcane',
+            [MagicalTradition.divine]: 'divine',
+            [MagicalTradition.occult]: 'occult',
+            [MagicalTradition.primal]: 'primal',
+        }
+        const traditionOption = formData[Statistics.spellcastingTradition]
+        const tradition = traditionMap[traditionOption] || 'arcane'
+
+        // Map caster type enum to system value (default: innate)
+        const casterTypeMap: { [key: string]: string } = {
+            [CasterType.innate]: 'innate',
+            [CasterType.prepared]: 'prepared',
+            [CasterType.spontaneous]: 'spontaneous',
+        }
+        const casterTypeOption = formData[Statistics.spellcastingType]
+        const casterType = casterTypeMap[casterTypeOption] || 'innate'
+
         const spellcasting = {
             // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
             name: game['i18n'].localize(`${KeyPrefix}.spellcasting`),
@@ -176,10 +198,10 @@ export class CreatureBuilderForm extends FormApplication {
                     dc: spellcastingBonus + 8,
                 },
                 tradition: {
-                    value: 'arcane',
+                    value: tradition,
                 },
                 prepared: {
-                    value: 'innate',
+                    value: casterType,
                 },
                 showUnpreparedSpells: { value: true },
             },

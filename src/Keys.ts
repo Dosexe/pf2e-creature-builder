@@ -55,6 +55,8 @@ export enum Statistics {
     strikeBonus = 'PF2EMONSTERMAKER.strikeBonus',
     strikeDamage = 'PF2EMONSTERMAKER.strikeDamage',
     spellcasting = 'PF2EMONSTERMAKER.spellcasting',
+    spellcastingTradition = 'PF2EMONSTERMAKER.spellcastingTradition',
+    spellcastingType = 'PF2EMONSTERMAKER.spellcastingType',
 
     // Skills
     acrobatics = 'PF2EMONSTERMAKER.acrobatics',
@@ -123,6 +125,19 @@ export enum Options {
     terrible = 'PF2EMONSTERMAKER.terrible',
     abysmal = 'PF2EMONSTERMAKER.abysmal',
     none = 'PF2EMONSTERMAKER.none',
+}
+
+export enum MagicalTradition {
+    arcane = 'PF2EMONSTERMAKER.traditionArcane',
+    divine = 'PF2EMONSTERMAKER.traditionDivine',
+    occult = 'PF2EMONSTERMAKER.traditionOccult',
+    primal = 'PF2EMONSTERMAKER.traditionPrimal',
+}
+
+export enum CasterType {
+    innate = 'PF2EMONSTERMAKER.casterInnate',
+    prepared = 'PF2EMONSTERMAKER.casterPrepared',
+    spontaneous = 'PF2EMONSTERMAKER.casterSpontaneous',
 }
 
 export const RoadMaps = {
@@ -375,13 +390,13 @@ export const RoadMaps = {
 
 export class CreatureStatistic {
     name: string
-    availableOptions?: Options[]
+    availableOptions?: (Options | MagicalTradition | CasterType)[]
 }
 
 export class CreatureStatisticCategory {
     name: string
-    availableOptions: Options[]
-    defaultValue: Options
+    availableOptions: (Options | MagicalTradition | CasterType)[]
+    defaultValue: Options | MagicalTradition | CasterType
     statisticEntries: CreatureStatistic[]
 }
 
@@ -488,6 +503,23 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
         statisticEntries: [
             {
                 name: Statistics.spellcasting,
+            },
+            {
+                name: Statistics.spellcastingTradition,
+                availableOptions: [
+                    MagicalTradition.arcane,
+                    MagicalTradition.divine,
+                    MagicalTradition.occult,
+                    MagicalTradition.primal,
+                ],
+            },
+            {
+                name: Statistics.spellcastingType,
+                availableOptions: [
+                    CasterType.innate,
+                    CasterType.prepared,
+                    CasterType.spontaneous,
+                ],
             },
         ],
     },
