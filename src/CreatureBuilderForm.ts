@@ -170,7 +170,6 @@ export class CreatureBuilderForm extends FormApplication {
             10,
         )
 
-        // Map tradition enum to system value (default: arcane)
         const traditionMap: { [key: string]: string } = {
             [MagicalTradition.arcane]: 'arcane',
             [MagicalTradition.divine]: 'divine',
@@ -180,7 +179,6 @@ export class CreatureBuilderForm extends FormApplication {
         const traditionOption = formData[Statistics.spellcastingTradition]
         const tradition = traditionMap[traditionOption] || 'arcane'
 
-        // Map caster type enum to system value (default: innate)
         const casterTypeMap: { [key: string]: string } = {
             [CasterType.innate]: 'innate',
             [CasterType.prepared]: 'prepared',
