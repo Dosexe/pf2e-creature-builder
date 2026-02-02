@@ -5,18 +5,19 @@ import CreatureBuilderFormUI, {
 } from './CreatureBuilderFormUI'
 import {
     actorFields,
-    CasterType,
     DefaultCreatureLevel,
     DefaultCreatureStatistics,
     KeyPrefix,
     Levels,
-    MagicalTradition,
     Options,
     RoadMaps,
     Skills,
-    SpellcastingAttribute,
     Statistics,
 } from './Keys'
+import {
+    buildSpellcastingEntry,
+    parseSpellcastingFormData,
+} from './CreatureBuilderSpellcasting'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 
 export class CreatureBuilderForm extends FormApplication {
@@ -163,6 +164,7 @@ export class CreatureBuilderForm extends FormApplication {
         if (spellcastingOption === Options.none) {
             return
         }
+
         const spellcastingBonus = parseInt(
             statisticValues[Statistics.spellcasting][this.level][
                 spellcastingOption
@@ -170,61 +172,17 @@ export class CreatureBuilderForm extends FormApplication {
             10,
         )
 
-        const traditionMap: { [key: string]: string } = {
-            [MagicalTradition.arcane]: 'arcane',
-            [MagicalTradition.divine]: 'divine',
-            [MagicalTradition.occult]: 'occult',
-            [MagicalTradition.primal]: 'primal',
-        }
-        const traditionOption = formData[Statistics.spellcastingTradition]
-        const tradition = traditionMap[traditionOption] || 'arcane'
+        const { tradition, casterType, keyAttribute } =
+            parseSpellcastingFormData(formData)
 
-        const casterTypeMap: { [key: string]: string } = {
-            [CasterType.innate]: 'innate',
-            [CasterType.prepared]: 'prepared',
-            [CasterType.spontaneous]: 'spontaneous',
-        }
-        const casterTypeOption = formData[Statistics.spellcastingType]
-        const casterType = casterTypeMap[casterTypeOption] || 'innate'
+        const spellcasting = buildSpellcastingEntry({
+            tradition,
+            casterType,
+            keyAttribute,
+            spellcastingBonus,
+            level: this.level,
+        })
 
-        const attributeMap: { [key: string]: string } = {
-            [SpellcastingAttribute.str]: 'str',
-            [SpellcastingAttribute.dex]: 'dex',
-            [SpellcastingAttribute.con]: 'con',
-            [SpellcastingAttribute.int]: 'int',
-            [SpellcastingAttribute.wis]: 'wis',
-            [SpellcastingAttribute.cha]: 'cha',
-        }
-        const attributeOption = formData[Statistics.spellcastingAttribute]
-        const keyAttribute = attributeMap[attributeOption] || 'cha'
-
-        // Construct spellcasting entry name: "{Tradition} {CasterType} Spells"
-        const capitalize = (s: string) =>
-            s.charAt(0).toUpperCase() + s.slice(1)
-        // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-        const spellsLabel = game['i18n'].localize(`${KeyPrefix}.spells`)
-        const spellcastingName = `${capitalize(tradition)} ${capitalize(casterType)} ${spellsLabel}`
-
-        const spellcasting = {
-            name: spellcastingName,
-            type: 'spellcastingEntry',
-            system: {
-                spelldc: {
-                    value: spellcastingBonus,
-                    dc: spellcastingBonus + 8,
-                },
-                tradition: {
-                    value: tradition,
-                },
-                prepared: {
-                    value: casterType,
-                },
-                ability: {
-                    value: keyAttribute,
-                },
-                showUnpreparedSpells: { value: true },
-            },
-        }
         return Item.create(spellcasting, { parent: this.actor })
     }
 
