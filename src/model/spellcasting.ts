@@ -18,3 +18,11 @@ export interface SpellcastingConfig {
     level: string
     slots?: Record<string, SpellSlot>
 }
+
+export interface DetectedSpell {
+    originalId: string
+    slotKey: string // "slot0", "slot1", etc.
+    slotIndex: number // index within the prepared array
+    spellData: Record<string, unknown> // spell item data (excluding _id)
+    compendiumSource?: string // UUID for creating from compendium
+}

@@ -193,10 +193,10 @@ describe('CreatureBuilderForm', () => {
         expect(options).toEqual({ parent: form.actor })
     })
 
-    it('skips spellcasting when option is none', () => {
+    it('skips spellcasting when option is none', async () => {
         const form = new CreatureBuilderForm(buildActor())
         form.level = '1'
-        const result = form.applySpellcasting({
+        const result = await form.applySpellcasting({
             [Statistics.spellcasting]: Options.none,
         })
         expect(result).toBeUndefined()
@@ -455,6 +455,245 @@ describe('CreatureBuilderForm', () => {
         expect(payload.system.slots.slot1.max).toBe(4)
         expect(payload.system.slots.slot2.max).toBe(4)
         expect(payload.system.slots.slot3.max).toBe(3)
+    })
+
+    it('copies detected spells to new actor with updated IDs', async () => {
+        const oldEntryId = 'oldEntry123'
+        const oldSpellId = 'oldSpell456'
+        const newEntryId = 'newEntry789'
+        const newSpellId = 'newSpell012'
+
+        // Mock Item.create to return items with new IDs
+        let createCallCount = 0
+        Item.create.mockImplementation(() => {
+            createCallCount++
+            if (createCallCount === 1) {
+                // First call is for spellcasting entry
+                return Promise.resolve({ id: newEntryId, update: vi.fn() })
+            }
+            // Second call is for the spell
+            return Promise.resolve({ id: newSpellId })
+        })
+
+        const actor = buildActor({
+            system: {
+                details: { level: { value: 1 } },
+            },
+            items: [
+                {
+                    id: oldEntryId,
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'prepared' },
+                        slots: {
+                            slot0: {
+                                max: 5,
+                                value: 5,
+                                prepared: [{ id: oldSpellId, expended: false }],
+                            },
+                        },
+                    },
+                },
+                {
+                    id: oldSpellId,
+                    type: 'spell',
+                    name: 'Daze',
+                    system: {
+                        location: { value: oldEntryId },
+                        level: { value: 1 },
+                    },
+                },
+            ],
+        })
+
+        const form = new CreatureBuilderForm(actor)
+        form.level = '1'
+
+        // Detect stats (will find slots and spells)
+        form.detectActorStats()
+
+        // Apply spellcasting
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingTradition]: MagicalTradition.arcane,
+            [Statistics.spellcastingType]: CasterType.prepared,
+        })
+
+        // Should have created spellcasting entry + 1 spell
+        expect(Item.create).toHaveBeenCalledTimes(2)
+
+        // First call: spellcasting entry (with nulled slot IDs initially)
+        const [entryPayload] = Item.create.mock.calls[0]
+        expect(entryPayload.type).toBe('spellcastingEntry')
+        expect(entryPayload.system.slots.slot0.prepared[0].id).toBeNull()
+
+        // Second call: spell with new entry ID as location
+        const [spellPayload] = Item.create.mock.calls[1]
+        expect(spellPayload.name).toBe('Daze')
+        expect(spellPayload.system.location.value).toBe(newEntryId)
+    })
+
+    it('creates spells from compendium when source is available', async () => {
+        const oldEntryId = 'oldEntry123'
+        const oldSpellId = 'oldSpell456'
+        const newEntryId = 'newEntry789'
+        const newSpellId = 'newSpell012'
+        const compendiumSource = 'Compendium.pf2e.spells-srd.Item.abc123'
+
+        // Mock fromUuid to return a compendium spell
+        const mockCompendiumSpell = {
+            toObject: () => ({
+                name: 'Compendium Daze',
+                type: 'spell',
+                system: {
+                    level: { value: 1 },
+                    description: { value: 'Fresh from compendium' },
+                },
+            }),
+        }
+        ;(globalThis as any).fromUuid = vi
+            .fn()
+            .mockResolvedValue(mockCompendiumSpell)
+
+        // Mock Item.create
+        let createCallCount = 0
+        Item.create.mockImplementation(() => {
+            createCallCount++
+            if (createCallCount === 1) {
+                return Promise.resolve({ id: newEntryId, update: vi.fn() })
+            }
+            return Promise.resolve({ id: newSpellId })
+        })
+
+        const actor = buildActor({
+            system: {
+                details: { level: { value: 1 } },
+            },
+            items: [
+                {
+                    id: oldEntryId,
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'prepared' },
+                        slots: {
+                            slot0: {
+                                max: 5,
+                                value: 5,
+                                prepared: [{ id: oldSpellId, expended: false }],
+                            },
+                        },
+                    },
+                },
+                {
+                    id: oldSpellId,
+                    type: 'spell',
+                    name: 'Old Daze',
+                    _stats: {
+                        compendiumSource: compendiumSource,
+                    },
+                    system: {
+                        location: { value: oldEntryId },
+                        level: { value: 1 },
+                    },
+                },
+            ],
+        })
+
+        const form = new CreatureBuilderForm(actor)
+        form.level = '1'
+        form.detectActorStats()
+
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingTradition]: MagicalTradition.arcane,
+            [Statistics.spellcastingType]: CasterType.prepared,
+        })
+
+        // fromUuid should have been called with the compendium source
+        expect((globalThis as any).fromUuid).toHaveBeenCalledWith(
+            compendiumSource,
+        )
+
+        // Spell should be created with compendium data
+        const [spellPayload] = Item.create.mock.calls[1]
+        expect(spellPayload.name).toBe('Compendium Daze')
+        expect(spellPayload.system.location.value).toBe(newEntryId)
+    })
+
+    it('falls back to detected spell data when compendium fetch fails', async () => {
+        const oldEntryId = 'oldEntry123'
+        const oldSpellId = 'oldSpell456'
+        const newEntryId = 'newEntry789'
+        const newSpellId = 'newSpell012'
+
+        // Mock fromUuid to throw an error
+        ;(globalThis as any).fromUuid = vi
+            .fn()
+            .mockRejectedValue(new Error('Compendium not found'))
+
+        let createCallCount = 0
+        Item.create.mockImplementation(() => {
+            createCallCount++
+            if (createCallCount === 1) {
+                return Promise.resolve({ id: newEntryId, update: vi.fn() })
+            }
+            return Promise.resolve({ id: newSpellId })
+        })
+
+        const actor = buildActor({
+            system: {
+                details: { level: { value: 1 } },
+            },
+            items: [
+                {
+                    id: oldEntryId,
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'prepared' },
+                        slots: {
+                            slot0: {
+                                max: 5,
+                                value: 5,
+                                prepared: [{ id: oldSpellId, expended: false }],
+                            },
+                        },
+                    },
+                },
+                {
+                    id: oldSpellId,
+                    type: 'spell',
+                    name: 'Fallback Daze',
+                    _stats: {
+                        compendiumSource: 'Compendium.invalid.source',
+                    },
+                    system: {
+                        location: { value: oldEntryId },
+                        level: { value: 1 },
+                    },
+                },
+            ],
+        })
+
+        const form = new CreatureBuilderForm(actor)
+        form.level = '1'
+        form.detectActorStats()
+
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingTradition]: MagicalTradition.arcane,
+            [Statistics.spellcastingType]: CasterType.prepared,
+        })
+
+        // Should fall back to detected spell data
+        const [spellPayload] = Item.create.mock.calls[1]
+        expect(spellPayload.name).toBe('Fallback Daze')
+        expect(spellPayload.system.location.value).toBe(newEntryId)
     })
 
     it('detects traits from the actor', () => {

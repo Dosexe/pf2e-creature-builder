@@ -150,7 +150,77 @@ export enum SpellcastingAttribute {
     cha = 'PF2EMONSTERMAKER.attrCha',
 }
 
-export const RoadMaps = {
+// ============================================================================
+// Roadmap Types
+// ============================================================================
+
+/** Internal roadmap format - maps Statistics keys to Options values */
+export type Roadmap = { [key: string]: Options }
+
+/** Collection of roadmaps keyed by their internal name (e.g., 'PF2EMONSTERMAKER.brute') */
+export type RoadmapCollection = { [key: string]: Roadmap }
+
+/** User-friendly roadmap format for JSON files */
+export interface UserFriendlyRoadmap {
+    name: string
+    statistics: { [key: string]: string }
+}
+
+/** User-friendly statistic names mapped to internal Statistics enum values */
+export const STAT_KEY_MAP: { [key: string]: string } = {
+    // Ability Scores
+    strength: Statistics.str,
+    dexterity: Statistics.dex,
+    constitution: Statistics.con,
+    intelligence: Statistics.int,
+    wisdom: Statistics.wis,
+    charisma: Statistics.cha,
+    // Defence & Perception
+    hitPoints: Statistics.hp,
+    perception: Statistics.per,
+    armorClass: Statistics.ac,
+    fortitude: Statistics.fort,
+    reflex: Statistics.ref,
+    will: Statistics.wil,
+    // Strikes & Spellcasting
+    strikeBonus: Statistics.strikeBonus,
+    strikeDamage: Statistics.strikeDamage,
+    spellcasting: Statistics.spellcasting,
+    // Skills
+    acrobatics: Statistics.acrobatics,
+    arcana: Statistics.arcana,
+    athletics: Statistics.athletics,
+    crafting: Statistics.crafting,
+    deception: Statistics.deception,
+    diplomacy: Statistics.diplomacy,
+    intimidation: Statistics.intimidation,
+    medicine: Statistics.medicine,
+    nature: Statistics.nature,
+    occultism: Statistics.occultism,
+    performance: Statistics.performance,
+    religion: Statistics.religion,
+    society: Statistics.society,
+    stealth: Statistics.stealth,
+    survival: Statistics.survival,
+    thievery: Statistics.thievery,
+}
+
+/** User-friendly option values mapped to internal Options enum values */
+export const OPTION_MAP: { [key: string]: Options } = {
+    extreme: Options.extreme,
+    high: Options.high,
+    moderate: Options.moderate,
+    low: Options.low,
+    terrible: Options.terrible,
+    abysmal: Options.abysmal,
+    none: Options.none,
+}
+
+// ============================================================================
+// Built-in Roadmaps
+// ============================================================================
+
+export const RoadMaps: RoadmapCollection = {
     'PF2EMONSTERMAKER.brute': {
         [Statistics.per]: Options.low,
         [Statistics.str]: Options.extreme,

@@ -583,5 +583,159 @@ describe('CreatureBuilderSpellcasting', () => {
                 expect(result.casterType).toBe(expectedEnums[index])
             })
         })
+
+        it('detects spells with their slot assignments', () => {
+            const spellcastingEntryId = 'entry123'
+            const spell1Id = 'spell1'
+            const spell2Id = 'spell2'
+
+            const items = [
+                {
+                    id: spellcastingEntryId,
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'prepared' },
+                        slots: {
+                            slot0: {
+                                max: 5,
+                                value: 5,
+                                prepared: [{ id: spell1Id, expended: false }],
+                            },
+                            slot1: {
+                                max: 3,
+                                value: 3,
+                                prepared: [{ id: spell2Id, expended: false }],
+                            },
+                        },
+                    },
+                },
+                {
+                    id: spell1Id,
+                    type: 'spell',
+                    name: 'Daze',
+                    system: {
+                        location: { value: spellcastingEntryId },
+                        level: { value: 1 },
+                    },
+                },
+                {
+                    id: spell2Id,
+                    type: 'spell',
+                    name: 'Magic Missile',
+                    system: {
+                        location: { value: spellcastingEntryId },
+                        level: { value: 1 },
+                    },
+                },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '1')
+
+            expect(result.spellcastingEntryId).toBe(spellcastingEntryId)
+            expect(result.spells).toHaveLength(2)
+
+            const dazeSpell = result.spells?.find(
+                (s) => s.originalId === spell1Id,
+            )
+            expect(dazeSpell).toBeDefined()
+            expect(dazeSpell?.slotKey).toBe('slot0')
+            expect(dazeSpell?.slotIndex).toBe(0)
+            expect(dazeSpell?.spellData.name).toBe('Daze')
+
+            const mmSpell = result.spells?.find(
+                (s) => s.originalId === spell2Id,
+            )
+            expect(mmSpell).toBeDefined()
+            expect(mmSpell?.slotKey).toBe('slot1')
+            expect(mmSpell?.slotIndex).toBe(0)
+            expect(mmSpell?.spellData.name).toBe('Magic Missile')
+        })
+
+        it('ignores spells not in slots', () => {
+            const spellcastingEntryId = 'entry123'
+            const spellInSlotId = 'spell1'
+            const spellNotInSlotId = 'spell2'
+
+            const items = [
+                {
+                    id: spellcastingEntryId,
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'prepared' },
+                        slots: {
+                            slot0: {
+                                max: 5,
+                                value: 5,
+                                prepared: [
+                                    { id: spellInSlotId, expended: false },
+                                ],
+                            },
+                        },
+                    },
+                },
+                {
+                    id: spellInSlotId,
+                    type: 'spell',
+                    name: 'Daze',
+                    system: {
+                        location: { value: spellcastingEntryId },
+                    },
+                },
+                {
+                    id: spellNotInSlotId,
+                    type: 'spell',
+                    name: 'Unused Spell',
+                    system: {
+                        location: { value: spellcastingEntryId },
+                    },
+                },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '1')
+
+            expect(result.spells).toHaveLength(1)
+            expect(result.spells?.[0].originalId).toBe(spellInSlotId)
+        })
+
+        it('ignores spells belonging to different spellcasting entry', () => {
+            const spellcastingEntryId = 'entry123'
+            const otherEntryId = 'otherEntry'
+            const spellId = 'spell1'
+
+            const items = [
+                {
+                    id: spellcastingEntryId,
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'prepared' },
+                        slots: {
+                            slot0: {
+                                max: 5,
+                                value: 5,
+                                prepared: [],
+                            },
+                        },
+                    },
+                },
+                {
+                    id: spellId,
+                    type: 'spell',
+                    name: 'Other Entry Spell',
+                    system: {
+                        location: { value: otherEntryId },
+                    },
+                },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '1')
+
+            expect(result.spells).toBeUndefined()
+        })
     })
 })

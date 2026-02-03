@@ -1,6 +1,7 @@
 import type { ItemData } from '@/model/item'
 import type {
     CasterType,
+    DetectedSpell,
     KeyAttribute,
     SpellcastingConfig,
     SpellSlot,
@@ -24,6 +25,8 @@ interface DetectedSpellcasting {
     tradition?: MagicalTradition
     casterType?: CasterTypeEnum
     slots?: Record<string, SpellSlot>
+    spells?: DetectedSpell[]
+    spellcastingEntryId: string | null
 }
 
 // Spell slots table for prepared casters [cantrips, 1st, 2nd, ..., 10th]
@@ -136,8 +139,8 @@ export function getAttributeValue(attributeOption: string): KeyAttribute {
 export function generateSpellSlots(
     casterType: CasterType,
     level: string,
-): { [key: string]: SpellSlot } {
-    const slots: { [key: string]: SpellSlot } = {}
+): Record<string, SpellSlot> {
+    const slots: Record<string, SpellSlot> = {}
 
     // Innate casters don't use spell slots
     if (casterType === 'innate') {
@@ -255,21 +258,26 @@ const systemCasterTypeToEnum: Record<string, CasterTypeEnum> = {
 
 /**
  * Detect spellcasting configuration from actor items
- * Returns detected spellcasting level, tradition, caster type, and slots
+ * Returns detected spellcasting level, tradition, caster type, slots, and spells
  */
 export function detectSpellcasting(
     items: Iterable<Item>,
     creatureLevel: string,
 ): DetectedSpellcasting {
-    const detected: DetectedSpellcasting = {}
+    const detected: DetectedSpellcasting = { spellcastingEntryId: null }
+    const itemsArray = Array.from(items)
 
-    for (const item of items) {
+    // First pass: find the spellcasting entry
+    for (const item of itemsArray) {
         if (item.type === 'spellcastingEntry') {
             const spellDC =
                 foundry.utils.getProperty(item, 'system.spelldc.dc') ??
                 foundry.utils.getProperty(item, 'system.spelldc.value')
 
             if (spellDC) {
+                // Store the spellcasting entry ID for spell lookup
+                detected.spellcastingEntryId = item.id
+
                 // DC is typically attack + 8, so we check the attack value
                 const attackValue = Number(spellDC) - 8
                 detected.spellcastingLevel = detectStatLevel(
@@ -303,6 +311,69 @@ export function detectSpellcasting(
 
                 break // Use the first spellcasting entry found
             }
+        }
+    }
+
+    // Second pass: find spells that belong to this spellcasting entry
+    if (detected.spellcastingEntryId && detected.slots) {
+        const spells: DetectedSpell[] = []
+
+        // Build a map of spell ID to slot location
+        const spellIdToSlot = new Map<
+            string,
+            { slotKey: string; slotIndex: number }
+        >()
+        for (const [slotKey, slot] of Object.entries(detected.slots)) {
+            if (slot.prepared) {
+                slot.prepared.forEach((preparedSpell, index) => {
+                    if (preparedSpell.id) {
+                        spellIdToSlot.set(preparedSpell.id, {
+                            slotKey,
+                            slotIndex: index,
+                        })
+                    }
+                })
+            }
+        }
+
+        // Find spell items and store their data
+        for (const item of itemsArray) {
+            if (item.type === 'spell' && item.id) {
+                const spellLocation = foundry.utils.getProperty(
+                    item,
+                    'system.location.value',
+                ) as string | undefined
+
+                // Check if this spell belongs to our spellcasting entry
+                if (spellLocation === detected.spellcastingEntryId) {
+                    const slotInfo = spellIdToSlot.get(item.id)
+                    if (slotInfo) {
+                        // Clone the spell data without id
+                        const { id, ...spellDataWithoutId } = item
+
+                        // Get compendium source if available
+                        const compendiumSource = foundry.utils.getProperty(
+                            item,
+                            '_stats.compendiumSource',
+                        ) as string | undefined
+
+                        spells.push({
+                            originalId: id,
+                            slotKey: slotInfo.slotKey,
+                            slotIndex: slotInfo.slotIndex,
+                            spellData: spellDataWithoutId as Record<
+                                string,
+                                unknown
+                            >,
+                            compendiumSource,
+                        })
+                    }
+                }
+            }
+        }
+
+        if (spells.length > 0) {
+            detected.spells = spells
         }
     }
 

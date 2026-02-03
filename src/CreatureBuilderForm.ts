@@ -1,6 +1,6 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import type { ItemData } from '@/model/item'
-import type { SpellSlot } from '@/model/spellcasting'
+import type { DetectedSpell } from '@/model/spellcasting'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
@@ -19,10 +19,10 @@ import {
     Levels,
     type MagicalTradition,
     Options,
-    RoadMaps,
     Skills,
     Statistics,
 } from './Keys'
+import { RoadMapRegistry } from './RoadMapRegistry'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 
 type DetectedStatValue = Options | MagicalTradition | CasterType
@@ -33,7 +33,15 @@ export class CreatureBuilderForm extends FormApplication {
     private readonly _uniqueId: string
     private readonly useDefaultLevel: boolean
     private formUI: CreatureBuilderFormUI | null = null
-    private detectedSpellSlots?: Record<string, SpellSlot>
+    private detectedSpellSlots?: Record<
+        string,
+        {
+            max: number
+            value: number
+            prepared: { id: string | null; expended: boolean }[]
+        }
+    >
+    private detectedSpells?: DetectedSpell[]
 
     constructor(object: any, options?: any) {
         super(object, options)
@@ -83,7 +91,7 @@ export class CreatureBuilderForm extends FormApplication {
 
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
-            creatureRoadmaps: RoadMaps,
+            creatureRoadmaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
             detectedStats: this.useDefaultLevel ? {} : this.detectActorStats(),
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
@@ -167,7 +175,7 @@ export class CreatureBuilderForm extends FormApplication {
         return Item.create(strike, { parent: this.actor })
     }
 
-    applySpellcasting(formData: object) {
+    async applySpellcasting(formData: object) {
         const spellcastingOption = formData[Statistics.spellcasting]
         if (spellcastingOption === Options.none) {
             return
@@ -183,16 +191,197 @@ export class CreatureBuilderForm extends FormApplication {
         const { tradition, casterType, keyAttribute } =
             parseSpellcastingFormData(formData)
 
+        // Build initial slots for the entry
+        // If we have spells to copy, use slots with null IDs (we'll update after creating spells)
+        // Otherwise use the detected slots as-is
+        let slotsForEntry = this.detectedSpellSlots
+        if (slotsForEntry && this.detectedSpells?.length) {
+            slotsForEntry = this.buildSlotsWithNullIds(slotsForEntry)
+        }
+
         const spellcasting = buildSpellcastingEntry({
             tradition,
             casterType,
             keyAttribute,
             spellcastingBonus,
             level: this.level,
-            slots: this.detectedSpellSlots,
+            slots: slotsForEntry,
         })
 
-        return Item.create(spellcasting, { parent: this.actor })
+        // Create the spellcasting entry first
+        const createdEntry = await Item.create(spellcasting, {
+            parent: this.actor,
+        })
+
+        // If we have detected spells and successfully created the entry, create the spells
+        if (createdEntry && this.detectedSpells?.length) {
+            const newEntryId = createdEntry.id
+
+            // Track created spells with their slot positions
+            const createdSpellsInfo: {
+                newId: string
+                slotKey: string
+                slotIndex: number
+            }[] = []
+
+            // Create each spell
+            for (const detectedSpell of this.detectedSpells) {
+                let spellData: Record<string, unknown>
+
+                // Try to get spell from compendium if source is available
+                if (detectedSpell.compendiumSource) {
+                    try {
+                        const compendiumSpell = await fromUuid(
+                            detectedSpell.compendiumSource,
+                        )
+                        if (compendiumSpell) {
+                            // Use compendium spell data with updated location
+                            const baseData =
+                                typeof compendiumSpell.toObject === 'function'
+                                    ? compendiumSpell.toObject()
+                                    : compendiumSpell
+                            spellData = {
+                                ...baseData,
+                                system: {
+                                    ...baseData.system,
+                                    location: { value: newEntryId },
+                                },
+                            }
+                        } else {
+                            // Fallback to detected spell data
+                            spellData = this.buildSpellDataFromDetected(
+                                detectedSpell,
+                                newEntryId,
+                            )
+                        }
+                    } catch {
+                        // Fallback to detected spell data on error
+                        spellData = this.buildSpellDataFromDetected(
+                            detectedSpell,
+                            newEntryId,
+                        )
+                    }
+                } else {
+                    // No compendium source, use detected spell data
+                    spellData = this.buildSpellDataFromDetected(
+                        detectedSpell,
+                        newEntryId,
+                    )
+                }
+
+                const createdSpell = await Item.create(spellData as ItemData, {
+                    parent: this.actor,
+                })
+
+                if (createdSpell) {
+                    createdSpellsInfo.push({
+                        newId: createdSpell.id,
+                        slotKey: detectedSpell.slotKey,
+                        slotIndex: detectedSpell.slotIndex,
+                    })
+                }
+            }
+
+            // Build updated slots with new spell IDs
+            if (createdSpellsInfo.length > 0 && this.detectedSpellSlots) {
+                const updatedSlots: Record<
+                    string,
+                    {
+                        max: number
+                        value: number
+                        prepared: { id: string | null; expended: boolean }[]
+                    }
+                > = {}
+
+                // Initialize slots with base structure
+                for (const [slotKey, slot] of Object.entries(
+                    this.detectedSpellSlots,
+                )) {
+                    updatedSlots[slotKey] = {
+                        max: slot.max,
+                        value: slot.value,
+                        prepared: slot.prepared.map(() => ({
+                            id: null,
+                            expended: false,
+                        })),
+                    }
+                }
+
+                // Populate with new spell IDs at correct positions
+                for (const spellInfo of createdSpellsInfo) {
+                    const slot = updatedSlots[spellInfo.slotKey]
+                    if (slot?.prepared[spellInfo.slotIndex]) {
+                        slot.prepared[spellInfo.slotIndex].id = spellInfo.newId
+                    }
+                }
+
+                // Update the entry with the correct slot IDs
+                await createdEntry.update({
+                    'system.slots': updatedSlots,
+                })
+            }
+        }
+
+        return createdEntry
+    }
+
+    /**
+     * Build spell data from detected spell for creation
+     */
+    private buildSpellDataFromDetected(
+        detectedSpell: DetectedSpell,
+        newEntryId: string,
+    ): Record<string, unknown> {
+        return {
+            ...detectedSpell.spellData,
+            system: {
+                ...(detectedSpell.spellData.system as Record<string, unknown>),
+                location: { value: newEntryId },
+            },
+        }
+    }
+
+    /**
+     * Build slots structure with null spell IDs
+     */
+    private buildSlotsWithNullIds(
+        slots: Record<
+            string,
+            {
+                max: number
+                value: number
+                prepared: { id: string | null; expended: boolean }[]
+            }
+        >,
+    ): Record<
+        string,
+        {
+            max: number
+            value: number
+            prepared: { id: string | null; expended: boolean }[]
+        }
+    > {
+        const result: Record<
+            string,
+            {
+                max: number
+                value: number
+                prepared: { id: string | null; expended: boolean }[]
+            }
+        > = {}
+
+        for (const [slotKey, slot] of Object.entries(slots)) {
+            result[slotKey] = {
+                max: slot.max,
+                value: slot.value,
+                prepared: slot.prepared.map(() => ({
+                    id: null,
+                    expended: false,
+                })),
+            }
+        }
+
+        return result
     }
 
     async applySkills(formData: object) {
@@ -458,6 +647,10 @@ export class CreatureBuilderForm extends FormApplication {
             if (spellcastingData.slots) {
                 this.detectedSpellSlots = spellcastingData.slots
             }
+            // Store detected spells for copying to new actor
+            if (spellcastingData.spells) {
+                this.detectedSpells = spellcastingData.spells
+            }
         }
 
         return detected
@@ -538,7 +731,7 @@ export class CreatureBuilderForm extends FormApplication {
         return {
             CreatureStatistics: JSON.parse(JSON.stringify(this.data)),
             Levels: Levels,
-            RoadMaps: RoadMaps,
+            RoadMaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
             name: this.actor.name,
             detectedStats: detectedStats,
             detectedTraits: detectedTraits,
