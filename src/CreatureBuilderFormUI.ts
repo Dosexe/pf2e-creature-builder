@@ -465,7 +465,8 @@ class CreatureBuilderFormUI {
                 ) as HTMLSelectElement
                 if (element) {
                     // Use entry's own default if available, otherwise category default
-                    element.value = statistic.defaultValue ?? category.defaultValue
+                    element.value =
+                        statistic.defaultValue ?? category.defaultValue
                 }
             }
         }

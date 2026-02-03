@@ -9,14 +9,26 @@ import {
     CasterType as CasterTypeEnum,
     KeyPrefix,
     MagicalTradition,
+    type Options,
     SpellcastingAttribute,
     Statistics,
 } from './Keys'
+import { detectStatLevel } from './Values'
 
 interface SpellSlot {
     max: number
     value: number
-    prepared: { id: null; expended: boolean }[]
+    prepared: { id: string | null; expended: boolean }[]
+}
+
+/**
+ * Detected spellcasting data from an actor
+ */
+export interface DetectedSpellcasting {
+    spellcastingLevel?: Options
+    tradition?: MagicalTradition
+    casterType?: CasterTypeEnum
+    slots?: Record<string, SpellSlot>
 }
 
 // Spell slots table for prepared casters [cantrips, 1st, 2nd, ..., 10th]
@@ -80,7 +92,6 @@ const spontaneousSlots: { [level: string]: number[] } = {
     '24': [5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1],
 }
 
-// Maps for converting enum values to system values
 const traditionMap: Record<string, Tradition> = {
     [MagicalTradition.arcane]: 'arcane',
     [MagicalTradition.divine]: 'divine',
@@ -229,4 +240,74 @@ export function parseSpellcastingFormData(formData: object): {
         casterType: getCasterTypeValue(casterTypeOption),
         keyAttribute: 'cha', // Default to charisma for now
     }
+}
+
+// Reverse maps for converting system values back to enum values
+const systemTraditionToEnum: Record<string, MagicalTradition> = {
+    arcane: MagicalTradition.arcane,
+    divine: MagicalTradition.divine,
+    occult: MagicalTradition.occult,
+    primal: MagicalTradition.primal,
+}
+
+const systemCasterTypeToEnum: Record<string, CasterTypeEnum> = {
+    innate: CasterTypeEnum.innate,
+    prepared: CasterTypeEnum.prepared,
+    spontaneous: CasterTypeEnum.spontaneous,
+}
+
+/**
+ * Detect spellcasting configuration from actor items
+ * Returns detected spellcasting level, tradition, caster type, and slots
+ */
+export function detectSpellcasting(
+    items: Iterable<Item>,
+    creatureLevel: string,
+): DetectedSpellcasting {
+    const detected: DetectedSpellcasting = {}
+
+    for (const item of items) {
+        if (item.type === 'spellcastingEntry') {
+            const spellDC =
+                foundry.utils.getProperty(item, 'system.spelldc.dc') ??
+                foundry.utils.getProperty(item, 'system.spelldc.value')
+
+            if (spellDC) {
+                // DC is typically attack + 8, so we check the attack value
+                const attackValue = Number(spellDC) - 8
+                detected.spellcastingLevel = detectStatLevel(
+                    Statistics.spellcasting,
+                    creatureLevel,
+                    attackValue,
+                )
+
+                const tradition = foundry.utils.getProperty(
+                    item,
+                    'system.tradition.value',
+                ) as string | undefined
+                if (tradition && systemTraditionToEnum[tradition]) {
+                    detected.tradition = systemTraditionToEnum[tradition]
+                }
+
+                const casterType = foundry.utils.getProperty(
+                    item,
+                    'system.prepared.value',
+                ) as string | undefined
+                if (casterType && systemCasterTypeToEnum[casterType]) {
+                    detected.casterType = systemCasterTypeToEnum[casterType]
+                }
+
+                const slots = foundry.utils.getProperty(item, 'system.slots') as
+                    | Record<string, SpellSlot>
+                    | undefined
+                if (slots) {
+                    detected.slots = slots
+                }
+
+                break // Use the first spellcasting entry found
+            }
+        }
+    }
+
+    return detected
 }

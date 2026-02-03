@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
     buildSpellcastingEntry,
     buildSpellcastingName,
+    detectSpellcasting,
     generateSpellSlots,
     getAttributeValue,
     getCasterTypeValue,
@@ -11,15 +12,30 @@ import {
 import {
     CasterType,
     MagicalTradition,
+    Options,
     SpellcastingAttribute,
     Statistics,
 } from './Keys'
 
-// Mock the global game object
+// Mock the global game object and foundry utilities
 beforeEach(() => {
     ;(globalThis as any).game = {
         i18n: {
             localize: (key: string) => `loc:${key}`,
+        },
+    }
+    ;(globalThis as any).foundry = {
+        utils: {
+            getProperty: (obj: object, path: string) => {
+                const parts = path.split('.')
+                let current: unknown = obj
+                for (const part of parts) {
+                    if (current === null || current === undefined)
+                        return undefined
+                    current = (current as Record<string, unknown>)[part]
+                }
+                return current
+            },
         },
     }
 })
@@ -323,6 +339,182 @@ describe('CreatureBuilderSpellcasting', () => {
             expect(result.tradition).toBe('occult')
             expect(result.casterType).toBe('innate')
             expect(result.keyAttribute).toBe('cha')
+        })
+    })
+
+    describe('detectSpellcasting', () => {
+        it('detects spellcasting level, tradition, and caster type', () => {
+            const items = [
+                {
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 22 },
+                        tradition: { value: 'divine' },
+                        prepared: { value: 'prepared' },
+                    },
+                },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '5')
+
+            expect(result.spellcastingLevel).toBe(Options.high)
+            expect(result.tradition).toBe(MagicalTradition.divine)
+            expect(result.casterType).toBe(CasterType.prepared)
+        })
+
+        it('returns empty object when no spellcasting entries exist', () => {
+            const items = [
+                { type: 'weapon', system: {} },
+                { type: 'armor', system: {} },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '5')
+
+            expect(result.spellcastingLevel).toBeUndefined()
+            expect(result.tradition).toBeUndefined()
+            expect(result.casterType).toBeUndefined()
+        })
+
+        it('returns empty object for empty items', () => {
+            const result = detectSpellcasting([], '5')
+
+            expect(result.spellcastingLevel).toBeUndefined()
+            expect(result.tradition).toBeUndefined()
+            expect(result.casterType).toBeUndefined()
+        })
+
+        it('uses first spellcasting entry when multiple exist', () => {
+            const items = [
+                {
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'innate' },
+                    },
+                },
+                {
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 22 },
+                        tradition: { value: 'divine' },
+                        prepared: { value: 'prepared' },
+                    },
+                },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '1')
+
+            expect(result.tradition).toBe(MagicalTradition.arcane)
+            expect(result.casterType).toBe(CasterType.innate)
+        })
+
+        it('handles spellcasting entry without tradition or caster type', () => {
+            const items = [
+                {
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                    },
+                },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '1')
+
+            expect(result.spellcastingLevel).toBe(Options.high)
+            expect(result.tradition).toBeUndefined()
+            expect(result.casterType).toBeUndefined()
+        })
+
+        it('detects spell slots from spellcasting entry', () => {
+            const slots = {
+                slot0: { max: 5, value: 5, prepared: [] },
+                slot1: { max: 3, value: 3, prepared: [] },
+                slot2: { max: 2, value: 2, prepared: [] },
+            }
+            const items = [
+                {
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'spontaneous' },
+                        slots: slots,
+                    },
+                },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '1')
+
+            expect(result.slots).toEqual(slots)
+        })
+
+        it('handles spellcasting entry without slots', () => {
+            const items = [
+                {
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'innate' },
+                    },
+                },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '1')
+
+            expect(result.slots).toBeUndefined()
+        })
+
+        it('detects all tradition types', () => {
+            const traditions = ['arcane', 'divine', 'occult', 'primal']
+            const expectedEnums = [
+                MagicalTradition.arcane,
+                MagicalTradition.divine,
+                MagicalTradition.occult,
+                MagicalTradition.primal,
+            ]
+
+            traditions.forEach((tradition, index) => {
+                const items = [
+                    {
+                        type: 'spellcastingEntry',
+                        system: {
+                            spelldc: { dc: 17 },
+                            tradition: { value: tradition },
+                            prepared: { value: 'innate' },
+                        },
+                    },
+                ]
+
+                const result = detectSpellcasting(items as Iterable<Item>, '1')
+                expect(result.tradition).toBe(expectedEnums[index])
+            })
+        })
+
+        it('detects all caster types', () => {
+            const casterTypes = ['innate', 'prepared', 'spontaneous']
+            const expectedEnums = [
+                CasterType.innate,
+                CasterType.prepared,
+                CasterType.spontaneous,
+            ]
+
+            casterTypes.forEach((casterType, index) => {
+                const items = [
+                    {
+                        type: 'spellcastingEntry',
+                        system: {
+                            spelldc: { dc: 17 },
+                            tradition: { value: 'arcane' },
+                            prepared: { value: casterType },
+                        },
+                    },
+                ]
+
+                const result = detectSpellcasting(items as Iterable<Item>, '1')
+                expect(result.casterType).toBe(expectedEnums[index])
+            })
         })
     })
 })

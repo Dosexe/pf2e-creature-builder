@@ -6,20 +6,25 @@ import CreatureBuilderFormUI, {
 } from './CreatureBuilderFormUI'
 import {
     buildSpellcastingEntry,
+    detectSpellcasting,
     parseSpellcastingFormData,
 } from './CreatureBuilderSpellcasting'
 import {
     actorFields,
+    type CasterType,
     DefaultCreatureLevel,
     DefaultCreatureStatistics,
     KeyPrefix,
     Levels,
+    type MagicalTradition,
     Options,
     RoadMaps,
     Skills,
     Statistics,
 } from './Keys'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
+
+type DetectedStatValue = Options | MagicalTradition | CasterType
 
 export class CreatureBuilderForm extends FormApplication {
     data = DefaultCreatureStatistics
@@ -325,8 +330,8 @@ export class CreatureBuilderForm extends FormApplication {
         }
     }
 
-    detectActorStats(): { [key: string]: Options } {
-        const detected: { [key: string]: Options } = {}
+    detectActorStats(): Record<string, DetectedStatValue> {
+        const detected: Record<string, DetectedStatValue> = {}
 
         const actorLevel = String(
             foundry.utils.getProperty(
@@ -433,22 +438,18 @@ export class CreatureBuilderForm extends FormApplication {
         // Detect Spellcasting (check if actor has any spellcasting entries)
         const items = this.actor.items
         if (items) {
-            for (const item of items) {
-                if (item.type === 'spellcastingEntry') {
-                    const spellDC =
-                        foundry.utils.getProperty(item, 'system.spelldc.dc') ??
-                        foundry.utils.getProperty(item, 'system.spelldc.value')
-                    if (spellDC) {
-                        // DC is typically attack + 8, so we check the attack value
-                        const attackValue = Number(spellDC) - 8
-                        detected[Statistics.spellcasting] = detectStatLevel(
-                            Statistics.spellcasting,
-                            clampedLevel,
-                            attackValue,
-                        )
-                        break
-                    }
-                }
+            const spellcastingData = detectSpellcasting(items, clampedLevel)
+            if (spellcastingData.spellcastingLevel) {
+                detected[Statistics.spellcasting] =
+                    spellcastingData.spellcastingLevel
+            }
+            if (spellcastingData.tradition) {
+                detected[Statistics.spellcastingTradition] =
+                    spellcastingData.tradition
+            }
+            if (spellcastingData.casterType) {
+                detected[Statistics.spellcastingType] =
+                    spellcastingData.casterType
             }
         }
 

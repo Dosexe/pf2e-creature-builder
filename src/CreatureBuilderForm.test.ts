@@ -1,7 +1,14 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
-import { DefaultCreatureLevel, Options, Skills, Statistics } from './Keys'
+import {
+    CasterType,
+    DefaultCreatureLevel,
+    MagicalTradition,
+    Options,
+    Skills,
+    Statistics,
+} from './Keys'
 import { statisticValues } from './Values'
 
 vi.mock('@/utils', () => ({ globalLog: vi.fn() }))
@@ -325,6 +332,31 @@ describe('CreatureBuilderForm', () => {
         expect(detected[Statistics.fort]).toBe(Options.moderate)
         expect(detected[Statistics.athletics]).toBe(Options.high)
         expect(detected[Statistics.spellcasting]).toBe(Options.high)
+    })
+
+    it('detects spellcasting tradition and caster type', () => {
+        const actor = buildActor({
+            system: {
+                details: { level: { value: 5 } },
+            },
+            items: [
+                {
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 22 },
+                        tradition: { value: 'divine' },
+                        prepared: { value: 'prepared' },
+                    },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        const detected = form.detectActorStats()
+        expect(detected[Statistics.spellcasting]).toBe(Options.high)
+        expect(detected[Statistics.spellcastingTradition]).toBe(
+            MagicalTradition.divine,
+        )
+        expect(detected[Statistics.spellcastingType]).toBe(CasterType.prepared)
     })
 
     it('detects traits from the actor', () => {
