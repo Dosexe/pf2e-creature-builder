@@ -299,6 +299,73 @@ describe('CreatureBuilderSpellcasting', () => {
             expect(entry.system.spelldc.value).toBe(20)
             expect(entry.system.spelldc.dc).toBe(28)
         })
+
+        it('uses existingSlots when provided instead of generating new ones', () => {
+            const customSlots = {
+                slot0: { max: 7, value: 7, prepared: [] },
+                slot1: { max: 5, value: 5, prepared: [] },
+                slot2: { max: 4, value: 4, prepared: [] },
+                slot3: { max: 2, value: 2, prepared: [] },
+            }
+
+            const entry = buildSpellcastingEntry({
+                tradition: 'arcane',
+                casterType: 'spontaneous',
+                keyAttribute: 'cha',
+                spellcastingBonus: 15,
+                level: '5',
+                slots: customSlots,
+            }) as any
+
+            // Should use the custom slots, not the generated ones for level 5 spontaneous
+            expect(entry.system.slots).toBe(customSlots)
+            expect(entry.system.slots.slot0.max).toBe(7) // Custom value, not 5
+            expect(entry.system.slots.slot1.max).toBe(5) // Custom value, not 4
+            expect(entry.system.slots.slot3.max).toBe(2) // Custom value, not 3
+        })
+
+        it('generates slots when existingSlots is undefined', () => {
+            const entry = buildSpellcastingEntry({
+                tradition: 'divine',
+                casterType: 'prepared',
+                keyAttribute: 'wis',
+                spellcastingBonus: 10,
+                level: '5',
+                slots: undefined,
+            }) as any
+
+            // Should use generated slots for level 5 prepared
+            expect(entry.system.slots.slot0.max).toBe(5)
+            expect(entry.system.slots.slot1.max).toBe(3)
+            expect(entry.system.slots.slot2.max).toBe(3)
+            expect(entry.system.slots.slot3.max).toBe(2)
+        })
+
+        it('preserves creature-specific slot configuration with existingSlots', () => {
+            // Simulate a creature with unusual slot distribution (e.g., a boss monster)
+            const bossSlots = {
+                slot0: { max: 5, value: 5, prepared: [] },
+                slot1: { max: 0, value: 0, prepared: [] }, // No 1st level slots
+                slot2: { max: 0, value: 0, prepared: [] }, // No 2nd level slots
+                slot3: { max: 6, value: 6, prepared: [] }, // Many 3rd level slots
+                slot4: { max: 6, value: 6, prepared: [] }, // Many 4th level slots
+            }
+
+            const entry = buildSpellcastingEntry({
+                tradition: 'occult',
+                casterType: 'spontaneous',
+                keyAttribute: 'cha',
+                spellcastingBonus: 18,
+                level: '10',
+                slots: bossSlots,
+            }) as any
+
+            // Should preserve the unusual distribution
+            expect(entry.system.slots.slot1.max).toBe(0)
+            expect(entry.system.slots.slot2.max).toBe(0)
+            expect(entry.system.slots.slot3.max).toBe(6)
+            expect(entry.system.slots.slot4.max).toBe(6)
+        })
     })
 
     describe('parseSpellcastingFormData', () => {

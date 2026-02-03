@@ -1,5 +1,6 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import type { ItemData } from '@/model/item'
+import type { SpellSlot } from '@/model/spellcasting'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
@@ -32,6 +33,7 @@ export class CreatureBuilderForm extends FormApplication {
     private readonly _uniqueId: string
     private readonly useDefaultLevel: boolean
     private formUI: CreatureBuilderFormUI | null = null
+    private detectedSpellSlots?: Record<string, SpellSlot>
 
     constructor(object: any, options?: any) {
         super(object, options)
@@ -187,6 +189,7 @@ export class CreatureBuilderForm extends FormApplication {
             keyAttribute,
             spellcastingBonus,
             level: this.level,
+            slots: this.detectedSpellSlots,
         })
 
         return Item.create(spellcasting, { parent: this.actor })
@@ -450,6 +453,10 @@ export class CreatureBuilderForm extends FormApplication {
             if (spellcastingData.casterType) {
                 detected[Statistics.spellcastingType] =
                     spellcastingData.casterType
+            }
+            // Store detected spell slots for use when applying spellcasting
+            if (spellcastingData.slots) {
+                this.detectedSpellSlots = spellcastingData.slots
             }
         }
 

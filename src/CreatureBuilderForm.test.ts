@@ -359,6 +359,104 @@ describe('CreatureBuilderForm', () => {
         expect(detected[Statistics.spellcastingType]).toBe(CasterType.prepared)
     })
 
+    it('stores detected spell slots when detecting actor stats', () => {
+        const customSlots = {
+            slot0: { max: 5, value: 5, prepared: [] },
+            slot1: { max: 4, value: 4, prepared: [] },
+            slot2: { max: 3, value: 3, prepared: [] },
+        }
+        const actor = buildActor({
+            system: {
+                details: { level: { value: 5 } },
+            },
+            items: [
+                {
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 22 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'spontaneous' },
+                        slots: customSlots,
+                    },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        form.detectActorStats()
+        // biome-ignore lint/complexity/useLiteralKeys: private property
+        expect(form['detectedSpellSlots']).toEqual(customSlots)
+    })
+
+    it('passes detected spell slots to applySpellcasting', async () => {
+        const customSlots = {
+            slot0: { max: 7, value: 7, prepared: [] },
+            slot1: { max: 5, value: 5, prepared: [] },
+            slot2: { max: 4, value: 4, prepared: [] },
+        }
+        const actor = buildActor({
+            system: {
+                details: { level: { value: 5 } },
+            },
+            items: [
+                {
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 22 },
+                        tradition: { value: 'divine' },
+                        prepared: { value: 'prepared' },
+                        slots: customSlots,
+                    },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        form.level = '5'
+
+        // Detect stats to populate detectedSpellSlots
+        form.detectActorStats()
+
+        // Apply spellcasting
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingTradition]: MagicalTradition.divine,
+            [Statistics.spellcastingType]: CasterType.prepared,
+        })
+
+        expect(Item.create).toHaveBeenCalledTimes(1)
+        const [payload] = Item.create.mock.calls[0]
+        // The slots should be the custom detected slots, not generated ones
+        expect(payload.system.slots).toEqual(customSlots)
+    })
+
+    it('generates new slots when no detected slots exist', async () => {
+        const actor = buildActor({
+            system: {
+                details: { level: { value: 5 } },
+            },
+            items: [], // No spellcasting entry to detect
+        })
+        const form = new CreatureBuilderForm(actor)
+        form.level = '5'
+
+        // Detect stats (will not find any slots)
+        form.detectActorStats()
+
+        // Apply spellcasting
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingTradition]: MagicalTradition.arcane,
+            [Statistics.spellcastingType]: CasterType.spontaneous,
+        })
+
+        expect(Item.create).toHaveBeenCalledTimes(1)
+        const [payload] = Item.create.mock.calls[0]
+        // Should have generated slots for level 5 spontaneous caster
+        expect(payload.system.slots.slot0.max).toBe(5)
+        expect(payload.system.slots.slot1.max).toBe(4)
+        expect(payload.system.slots.slot2.max).toBe(4)
+        expect(payload.system.slots.slot3.max).toBe(3)
+    })
+
     it('detects traits from the actor', () => {
         const actor = buildActor({
             system: { traits: { value: ['undead'] } },

@@ -3,6 +3,7 @@ import type {
     CasterType,
     KeyAttribute,
     SpellcastingConfig,
+    SpellSlot,
     Tradition,
 } from '@/model/spellcasting'
 import {
@@ -15,16 +16,10 @@ import {
 } from './Keys'
 import { detectStatLevel } from './Values'
 
-interface SpellSlot {
-    max: number
-    value: number
-    prepared: { id: string | null; expended: boolean }[]
-}
-
 /**
  * Detected spellcasting data from an actor
  */
-export interface DetectedSpellcasting {
+interface DetectedSpellcasting {
     spellcastingLevel?: Options
     tradition?: MagicalTradition
     casterType?: CasterTypeEnum
@@ -191,7 +186,9 @@ export function buildSpellcastingName(
  * Build the complete spellcasting entry object for PF2e
  */
 export function buildSpellcastingEntry(config: SpellcastingConfig): ItemData {
-    const slots = generateSpellSlots(config.casterType, config.level)
+    // Use existing slots if provided (from detected creature), otherwise generate new ones
+    const slots =
+        config.slots ?? generateSpellSlots(config.casterType, config.level)
 
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
     const spellsLabel = game['i18n'].localize(`${KeyPrefix}.spells`)
