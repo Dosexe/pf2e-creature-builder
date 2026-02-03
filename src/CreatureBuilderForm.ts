@@ -1,6 +1,5 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import type { ItemData } from '@/model/item'
-import type { DetectedSpell } from '@/model/spellcasting'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
@@ -24,6 +23,8 @@ import {
 } from './Keys'
 import { RoadMapRegistry } from './RoadMapRegistry'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
+import type { DetectedSpell, SpellSlot } from '@/model/spellcasting'
+import { createSpellCopyStrategy } from '@/spellcasting/SpellCopyStrategies'
 
 type DetectedStatValue = Options | MagicalTradition | CasterType
 
@@ -35,11 +36,7 @@ export class CreatureBuilderForm extends FormApplication {
     private formUI: CreatureBuilderFormUI | null = null
     private detectedSpellSlots?: Record<
         string,
-        {
-            max: number
-            value: number
-            prepared: { id: string | null; expended: boolean }[]
-        }
+        { max: number; value: number; prepared: { id: string | null; expended: boolean }[] }
     >
     private detectedSpells?: DetectedSpell[]
 
@@ -191,12 +188,16 @@ export class CreatureBuilderForm extends FormApplication {
         const { tradition, casterType, keyAttribute } =
             parseSpellcastingFormData(formData)
 
-        // Build initial slots for the entry
-        // If we have spells to copy, use slots with null IDs (we'll update after creating spells)
-        // Otherwise use the detected slots as-is
-        let slotsForEntry = this.detectedSpellSlots
-        if (slotsForEntry && this.detectedSpells?.length) {
-            slotsForEntry = this.buildSlotsWithNullIds(slotsForEntry)
+        // Get the appropriate spell copy strategy for this caster type
+        const strategy = createSpellCopyStrategy(casterType, this.actor)
+
+        // Build initial slots for the entry based on caster type
+        let slotsForEntry: Record<string, SpellSlot> | undefined
+        if (this.detectedSpellSlots && strategy) {
+            slotsForEntry = strategy.buildInitialSlots(
+                this.detectedSpellSlots,
+                this.level,
+            )
         }
 
         const spellcasting = buildSpellcastingEntry({
@@ -213,175 +214,29 @@ export class CreatureBuilderForm extends FormApplication {
             parent: this.actor,
         })
 
-        // If we have detected spells and successfully created the entry, create the spells
-        if (createdEntry && this.detectedSpells?.length) {
-            const newEntryId = createdEntry.id
+        // If we have detected spells, a strategy, and successfully created the entry, process spells
+        if (
+            createdEntry &&
+            this.detectedSpells?.length &&
+            this.detectedSpellSlots &&
+            strategy
+        ) {
+            const result = await strategy.processSpells({
+                detectedSpells: this.detectedSpells,
+                detectedSlots: this.detectedSpellSlots,
+                newEntryId: createdEntry.id,
+                level: this.level,
+            })
 
-            // Track created spells with their slot positions
-            const createdSpellsInfo: {
-                newId: string
-                slotKey: string
-                slotIndex: number
-            }[] = []
-
-            // Create each spell
-            for (const detectedSpell of this.detectedSpells) {
-                let spellData: Record<string, unknown>
-
-                // Try to get spell from compendium if source is available
-                if (detectedSpell.compendiumSource) {
-                    try {
-                        const compendiumSpell = await fromUuid(
-                            detectedSpell.compendiumSource,
-                        )
-                        if (compendiumSpell) {
-                            // Use compendium spell data with updated location
-                            const baseData =
-                                typeof compendiumSpell.toObject === 'function'
-                                    ? compendiumSpell.toObject()
-                                    : compendiumSpell
-                            spellData = {
-                                ...baseData,
-                                system: {
-                                    ...baseData.system,
-                                    location: { value: newEntryId },
-                                },
-                            }
-                        } else {
-                            // Fallback to detected spell data
-                            spellData = this.buildSpellDataFromDetected(
-                                detectedSpell,
-                                newEntryId,
-                            )
-                        }
-                    } catch {
-                        // Fallback to detected spell data on error
-                        spellData = this.buildSpellDataFromDetected(
-                            detectedSpell,
-                            newEntryId,
-                        )
-                    }
-                } else {
-                    // No compendium source, use detected spell data
-                    spellData = this.buildSpellDataFromDetected(
-                        detectedSpell,
-                        newEntryId,
-                    )
-                }
-
-                const createdSpell = await Item.create(spellData as ItemData, {
-                    parent: this.actor,
-                })
-
-                if (createdSpell) {
-                    createdSpellsInfo.push({
-                        newId: createdSpell.id,
-                        slotKey: detectedSpell.slotKey,
-                        slotIndex: detectedSpell.slotIndex,
-                    })
-                }
-            }
-
-            // Build updated slots with new spell IDs
-            if (createdSpellsInfo.length > 0 && this.detectedSpellSlots) {
-                const updatedSlots: Record<
-                    string,
-                    {
-                        max: number
-                        value: number
-                        prepared: { id: string | null; expended: boolean }[]
-                    }
-                > = {}
-
-                // Initialize slots with base structure
-                for (const [slotKey, slot] of Object.entries(
-                    this.detectedSpellSlots,
-                )) {
-                    updatedSlots[slotKey] = {
-                        max: slot.max,
-                        value: slot.value,
-                        prepared: slot.prepared.map(() => ({
-                            id: null,
-                            expended: false,
-                        })),
-                    }
-                }
-
-                // Populate with new spell IDs at correct positions
-                for (const spellInfo of createdSpellsInfo) {
-                    const slot = updatedSlots[spellInfo.slotKey]
-                    if (slot?.prepared[spellInfo.slotIndex]) {
-                        slot.prepared[spellInfo.slotIndex].id = spellInfo.newId
-                    }
-                }
-
-                // Update the entry with the correct slot IDs
+            // Update slots if the strategy requires it (prepared casters need this)
+            if (strategy.requiresSlotUpdate() && result.updatedSlots) {
                 await createdEntry.update({
-                    'system.slots': updatedSlots,
+                    'system.slots': result.updatedSlots,
                 })
             }
         }
 
         return createdEntry
-    }
-
-    /**
-     * Build spell data from detected spell for creation
-     */
-    private buildSpellDataFromDetected(
-        detectedSpell: DetectedSpell,
-        newEntryId: string,
-    ): Record<string, unknown> {
-        return {
-            ...detectedSpell.spellData,
-            system: {
-                ...(detectedSpell.spellData.system as Record<string, unknown>),
-                location: { value: newEntryId },
-            },
-        }
-    }
-
-    /**
-     * Build slots structure with null spell IDs
-     */
-    private buildSlotsWithNullIds(
-        slots: Record<
-            string,
-            {
-                max: number
-                value: number
-                prepared: { id: string | null; expended: boolean }[]
-            }
-        >,
-    ): Record<
-        string,
-        {
-            max: number
-            value: number
-            prepared: { id: string | null; expended: boolean }[]
-        }
-    > {
-        const result: Record<
-            string,
-            {
-                max: number
-                value: number
-                prepared: { id: string | null; expended: boolean }[]
-            }
-        > = {}
-
-        for (const [slotKey, slot] of Object.entries(slots)) {
-            result[slotKey] = {
-                max: slot.max,
-                value: slot.value,
-                prepared: slot.prepared.map(() => ({
-                    id: null,
-                    expended: false,
-                })),
-            }
-        }
-
-        return result
     }
 
     async applySkills(formData: object) {

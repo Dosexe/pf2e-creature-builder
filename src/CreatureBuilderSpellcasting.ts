@@ -315,24 +315,29 @@ export function detectSpellcasting(
     }
 
     // Second pass: find spells that belong to this spellcasting entry
-    if (detected.spellcastingEntryId && detected.slots) {
+    if (detected.spellcastingEntryId) {
         const spells: DetectedSpell[] = []
 
-        // Build a map of spell ID to slot location
+        // For prepared casters, build a map of spell ID to slot location
         const spellIdToSlot = new Map<
             string,
             { slotKey: string; slotIndex: number }
         >()
-        for (const [slotKey, slot] of Object.entries(detected.slots)) {
-            if (slot.prepared) {
-                slot.prepared.forEach((preparedSpell, index) => {
-                    if (preparedSpell.id) {
-                        spellIdToSlot.set(preparedSpell.id, {
-                            slotKey,
-                            slotIndex: index,
-                        })
-                    }
-                })
+
+        const isPreparedCaster = detected.casterType === CasterTypeEnum.prepared
+
+        if (isPreparedCaster && detected.slots) {
+            for (const [slotKey, slot] of Object.entries(detected.slots)) {
+                if (slot.prepared) {
+                    slot.prepared.forEach((preparedSpell, index) => {
+                        if (preparedSpell.id) {
+                            spellIdToSlot.set(preparedSpell.id, {
+                                slotKey,
+                                slotIndex: index,
+                            })
+                        }
+                    })
+                }
             }
         }
 
@@ -346,21 +351,44 @@ export function detectSpellcasting(
 
                 // Check if this spell belongs to our spellcasting entry
                 if (spellLocation === detected.spellcastingEntryId) {
-                    const slotInfo = spellIdToSlot.get(item.id)
-                    if (slotInfo) {
-                        // Clone the spell data without id
-                        const { id, ...spellDataWithoutId } = item
+                    // Clone the spell data without id
+                    const { id, ...spellDataWithoutId } = item
 
-                        // Get compendium source if available
-                        const compendiumSource = foundry.utils.getProperty(
-                            item,
-                            '_stats.compendiumSource',
-                        ) as string | undefined
+                    // Get compendium source if available
+                    const compendiumSource = foundry.utils.getProperty(
+                        item,
+                        '_stats.compendiumSource',
+                    ) as string | undefined
 
+                    // Get spell level for spontaneous casters
+                    const spellLevel = foundry.utils.getProperty(
+                        item,
+                        'system.level.value',
+                    ) as number | undefined
+
+                    if (isPreparedCaster) {
+                        // For prepared casters, only include spells that are in slots
+                        const slotInfo = spellIdToSlot.get(item.id)
+                        if (slotInfo) {
+                            spells.push({
+                                originalId: id,
+                                slotKey: slotInfo.slotKey,
+                                slotIndex: slotInfo.slotIndex,
+                                spellData: spellDataWithoutId as Record<
+                                    string,
+                                    unknown
+                                >,
+                                compendiumSource,
+                            })
+                        }
+                    } else {
+                        // For spontaneous/innate casters, include all spells
+                        // Use spell level to determine slot key (for display purposes)
+                        const slotKey = `slot${spellLevel ?? 0}`
                         spells.push({
                             originalId: id,
-                            slotKey: slotInfo.slotKey,
-                            slotIndex: slotInfo.slotIndex,
+                            slotKey,
+                            slotIndex: 0, // Not meaningful for spontaneous
                             spellData: spellDataWithoutId as Record<
                                 string,
                                 unknown
