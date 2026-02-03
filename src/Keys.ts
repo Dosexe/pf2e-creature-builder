@@ -406,6 +406,11 @@ export class CreatureStatistic {
         | CasterType
         | SpellcastingAttribute
     )[]
+    defaultValue?:
+        | Options
+        | MagicalTradition
+        | CasterType
+        | SpellcastingAttribute
 }
 
 export class CreatureStatisticCategory {
@@ -416,7 +421,11 @@ export class CreatureStatisticCategory {
         | CasterType
         | SpellcastingAttribute
     )[]
-    defaultValue: Options | MagicalTradition | CasterType | SpellcastingAttribute
+    defaultValue:
+        | Options
+        | MagicalTradition
+        | CasterType
+        | SpellcastingAttribute
     statisticEntries: CreatureStatistic[]
 }
 
@@ -532,6 +541,7 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
                     MagicalTradition.occult,
                     MagicalTradition.primal,
                 ],
+                defaultValue: MagicalTradition.arcane,
             },
             {
                 name: Statistics.spellcastingType,
@@ -540,17 +550,7 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
                     CasterType.prepared,
                     CasterType.spontaneous,
                 ],
-            },
-            {
-                name: Statistics.spellcastingAttribute,
-                availableOptions: [
-                    SpellcastingAttribute.cha,
-                    SpellcastingAttribute.int,
-                    SpellcastingAttribute.wis,
-                    SpellcastingAttribute.str,
-                    SpellcastingAttribute.dex,
-                    SpellcastingAttribute.con,
-                ],
+                defaultValue: CasterType.innate,
             },
         ],
     },

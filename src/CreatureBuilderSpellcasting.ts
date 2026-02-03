@@ -1,25 +1,18 @@
-import {
+import type { ItemData } from '@/model/item'
+import type {
     CasterType,
+    KeyAttribute,
+    SpellcastingConfig,
+    Tradition,
+} from '@/model/spellcasting'
+import {
+    CasterType as CasterTypeEnum,
     KeyPrefix,
     MagicalTradition,
     SpellcastingAttribute,
     Statistics,
 } from './Keys'
 
-/**
- * Configuration for creating a spellcasting entry
- */
-export interface SpellcastingConfig {
-    tradition: string
-    casterType: string
-    keyAttribute: string
-    spellcastingBonus: number
-    level: string
-}
-
-/**
- * Spell slot structure for PF2e
- */
 interface SpellSlot {
     max: number
     value: number
@@ -88,20 +81,20 @@ const spontaneousSlots: { [level: string]: number[] } = {
 }
 
 // Maps for converting enum values to system values
-const traditionMap: { [key: string]: string } = {
+const traditionMap: Record<string, Tradition> = {
     [MagicalTradition.arcane]: 'arcane',
     [MagicalTradition.divine]: 'divine',
     [MagicalTradition.occult]: 'occult',
     [MagicalTradition.primal]: 'primal',
 }
 
-const casterTypeMap: { [key: string]: string } = {
-    [CasterType.innate]: 'innate',
-    [CasterType.prepared]: 'prepared',
-    [CasterType.spontaneous]: 'spontaneous',
+const casterTypeMap: Record<string, CasterType> = {
+    [CasterTypeEnum.innate]: 'innate',
+    [CasterTypeEnum.prepared]: 'prepared',
+    [CasterTypeEnum.spontaneous]: 'spontaneous',
 }
 
-const attributeMap: { [key: string]: string } = {
+const attributeMap: Record<string, KeyAttribute> = {
     [SpellcastingAttribute.str]: 'str',
     [SpellcastingAttribute.dex]: 'dex',
     [SpellcastingAttribute.con]: 'con',
@@ -113,21 +106,21 @@ const attributeMap: { [key: string]: string } = {
 /**
  * Convert tradition enum value to system value
  */
-export function getTraditionValue(traditionOption: string): string {
+export function getTraditionValue(traditionOption: string): Tradition {
     return traditionMap[traditionOption] || 'arcane'
 }
 
 /**
  * Convert caster type enum value to system value
  */
-export function getCasterTypeValue(casterTypeOption: string): string {
+export function getCasterTypeValue(casterTypeOption: string): CasterType {
     return casterTypeMap[casterTypeOption] || 'innate'
 }
 
 /**
  * Convert attribute enum value to system value
  */
-export function getAttributeValue(attributeOption: string): string {
+export function getAttributeValue(attributeOption: string): KeyAttribute {
     return attributeMap[attributeOption] || 'cha'
 }
 
@@ -135,7 +128,7 @@ export function getAttributeValue(attributeOption: string): string {
  * Generate spell slots based on caster type and creature level
  */
 export function generateSpellSlots(
-    casterType: string,
+    casterType: CasterType,
     level: string,
 ): { [key: string]: SpellSlot } {
     const slots: { [key: string]: SpellSlot } = {}
@@ -175,8 +168,8 @@ export function generateSpellSlots(
  * Build the spellcasting entry name from tradition and caster type
  */
 export function buildSpellcastingName(
-    tradition: string,
-    casterType: string,
+    tradition: Tradition,
+    casterType: CasterType,
     spellsLabel: string,
 ): string {
     const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -186,7 +179,7 @@ export function buildSpellcastingName(
 /**
  * Build the complete spellcasting entry object for PF2e
  */
-export function buildSpellcastingEntry(config: SpellcastingConfig): object {
+export function buildSpellcastingEntry(config: SpellcastingConfig): ItemData {
     const slots = generateSpellSlots(config.casterType, config.level)
 
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
@@ -224,17 +217,16 @@ export function buildSpellcastingEntry(config: SpellcastingConfig): object {
  * Parse form data and extract spellcasting configuration
  */
 export function parseSpellcastingFormData(formData: object): {
-    tradition: string
-    casterType: string
-    keyAttribute: string
+    tradition: Tradition
+    casterType: CasterType
+    keyAttribute: KeyAttribute
 } {
     const traditionOption = formData[Statistics.spellcastingTradition]
     const casterTypeOption = formData[Statistics.spellcastingType]
-    const attributeOption = formData[Statistics.spellcastingAttribute]
 
     return {
         tradition: getTraditionValue(traditionOption),
         casterType: getCasterTypeValue(casterTypeOption),
-        keyAttribute: getAttributeValue(attributeOption),
+        keyAttribute: 'cha', // Default to charisma for now
     }
 }

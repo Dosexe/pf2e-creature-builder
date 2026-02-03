@@ -7,6 +7,7 @@
 interface StatisticEntry {
     name: string
     availableOptions?: string[]
+    defaultValue?: string
 }
 
 interface CreatureStatistic {
@@ -463,7 +464,8 @@ class CreatureBuilderFormUI {
                     `creatureBuilder${statistic.name}`,
                 ) as HTMLSelectElement
                 if (element) {
-                    element.value = category.defaultValue
+                    // Use entry's own default if available, otherwise category default
+                    element.value = statistic.defaultValue ?? category.defaultValue
                 }
             }
         }

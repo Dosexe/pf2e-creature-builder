@@ -1,8 +1,13 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
+import type { ItemData } from '@/model/item'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
 } from './CreatureBuilderFormUI'
+import {
+    buildSpellcastingEntry,
+    parseSpellcastingFormData,
+} from './CreatureBuilderSpellcasting'
 import {
     actorFields,
     DefaultCreatureLevel,
@@ -14,10 +19,6 @@ import {
     Skills,
     Statistics,
 } from './Keys'
-import {
-    buildSpellcastingEntry,
-    parseSpellcastingFormData,
-} from './CreatureBuilderSpellcasting'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 
 export class CreatureBuilderForm extends FormApplication {
@@ -139,7 +140,7 @@ export class CreatureBuilderForm extends FormApplication {
             statisticValues[Statistics.strikeDamage][this.level][
                 strikeDamageOption
             ]
-        const strike = {
+        const strike: ItemData = {
             // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
             name: game['i18n'].localize(`${KeyPrefix}.strike`),
             type: 'melee',
@@ -225,7 +226,7 @@ export class CreatureBuilderForm extends FormApplication {
                 statisticValues[Statistics.acrobatics][this.level][lore.option],
                 10,
             )
-            const loreItem = {
+            const loreItem: ItemData = {
                 name: `${lore.name} Lore`,
                 type: 'lore',
                 system: {

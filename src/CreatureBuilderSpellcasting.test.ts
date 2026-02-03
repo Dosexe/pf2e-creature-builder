@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
-    getTraditionValue,
-    getCasterTypeValue,
-    getAttributeValue,
-    generateSpellSlots,
-    buildSpellcastingName,
     buildSpellcastingEntry,
+    buildSpellcastingName,
+    generateSpellSlots,
+    getAttributeValue,
+    getCasterTypeValue,
+    getTraditionValue,
     parseSpellcastingFormData,
 } from './CreatureBuilderSpellcasting'
 import {
-    MagicalTradition,
     CasterType,
+    MagicalTradition,
     SpellcastingAttribute,
     Statistics,
 } from './Keys'
@@ -31,12 +31,9 @@ describe('CreatureBuilderSpellcasting', () => {
             [MagicalTradition.divine, 'divine'],
             [MagicalTradition.occult, 'occult'],
             [MagicalTradition.primal, 'primal'],
+            ['unknown', 'arcane'],
         ])('returns %s for %s tradition', (input, expected) => {
             expect(getTraditionValue(input)).toBe(expected)
-        })
-
-        it('defaults to arcane for unknown value', () => {
-            expect(getTraditionValue('unknown')).toBe('arcane')
         })
     })
 
@@ -45,12 +42,9 @@ describe('CreatureBuilderSpellcasting', () => {
             [CasterType.innate, 'innate'],
             [CasterType.prepared, 'prepared'],
             [CasterType.spontaneous, 'spontaneous'],
+            ['unknown', 'innate'],
         ])('returns %s for %s caster type', (input, expected) => {
             expect(getCasterTypeValue(input)).toBe(expected)
-        })
-
-        it('defaults to innate for unknown value', () => {
-            expect(getCasterTypeValue('unknown')).toBe('innate')
         })
     })
 
@@ -62,12 +56,9 @@ describe('CreatureBuilderSpellcasting', () => {
             [SpellcastingAttribute.int, 'int'],
             [SpellcastingAttribute.wis, 'wis'],
             [SpellcastingAttribute.cha, 'cha'],
+            ['unknown', 'cha'],
         ])('returns %s for %s attribute', (input, expected) => {
             expect(getAttributeValue(input)).toBe(expected)
-        })
-
-        it('defaults to cha for unknown value', () => {
-            expect(getAttributeValue('unknown')).toBe('cha')
         })
     })
 
@@ -299,7 +290,6 @@ describe('CreatureBuilderSpellcasting', () => {
             const formData = {
                 [Statistics.spellcastingTradition]: MagicalTradition.divine,
                 [Statistics.spellcastingType]: CasterType.prepared,
-                [Statistics.spellcastingAttribute]: SpellcastingAttribute.wis,
             }
 
             const result = parseSpellcastingFormData(formData)
@@ -307,7 +297,7 @@ describe('CreatureBuilderSpellcasting', () => {
             expect(result).toEqual({
                 tradition: 'divine',
                 casterType: 'prepared',
-                keyAttribute: 'wis',
+                keyAttribute: 'cha', // Always defaults to charisma
             })
         })
 
