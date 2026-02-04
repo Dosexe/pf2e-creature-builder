@@ -3,6 +3,7 @@ import {
     buildSpellcastingEntry,
     buildSpellcastingName,
     detectSpellcasting,
+    expandPreparedSlotsPreservingSpells,
     generateSpellSlots,
     getAttributeValue,
     getCasterTypeValue,
@@ -145,6 +146,60 @@ describe('CreatureBuilderSpellcasting', () => {
 
                 expect(slots.slot0.max).toBe(5)
                 expect(slots.slot1.max).toBe(2)
+            })
+        })
+
+        describe('expandPreparedSlotsPreservingSpells', () => {
+            it('updates max/value for new level but preserves prepared spell IDs', () => {
+                const currentSlots = {
+                    slot0: {
+                        max: 5,
+                        value: 5,
+                        prepared: [
+                            { id: 'spell-a', expended: false },
+                            { id: 'spell-b', expended: true },
+                        ],
+                    },
+                    slot1: {
+                        max: 2,
+                        value: 2,
+                        prepared: [
+                            { id: 'spell-c', expended: false },
+                            { id: null, expended: false },
+                        ],
+                    },
+                }
+                const result = expandPreparedSlotsPreservingSpells(
+                    currentSlots,
+                    '7',
+                )
+                expect(result.slot0.max).toBe(5)
+                expect(result.slot0.value).toBe(5)
+                expect(result.slot0.prepared).toEqual([
+                    { id: 'spell-a', expended: false },
+                    { id: 'spell-b', expended: true },
+                ])
+                expect(result.slot1.prepared).toEqual([
+                    { id: 'spell-c', expended: false },
+                    { id: null, expended: false },
+                ])
+            })
+
+            it('uses empty prepared for new slot levels', () => {
+                const currentSlots = {
+                    slot0: { max: 5, value: 5, prepared: [] },
+                }
+                const result = expandPreparedSlotsPreservingSpells(
+                    currentSlots,
+                    '7',
+                )
+                expect(result.slot4).toBeDefined()
+                expect(result.slot4.max).toBe(2)
+                expect(result.slot4.prepared).toHaveLength(2)
+                expect(result.slot4.prepared).toEqual([
+                    { id: null, expended: false },
+                    { id: null, expended: false },
+                ])
             })
         })
 

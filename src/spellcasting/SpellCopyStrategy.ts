@@ -1,25 +1,15 @@
-import type {
-    SpellCopyContext,
-    SpellCopyResult,
-    SpellSlot,
-} from '@/spellcasting/model/spellcasting'
+import type { SpellSlot } from '@/spellcasting/model/spellcasting'
 
 /**
- * Strategy interface for copying spells from original actor to new one.
- * Different caster types (prepared vs spontaneous) handle spell slots differently.
+ * Strategy for building spell slot structure by caster type.
+ * Used when updating an existing spellcasting entry (e.g. expand slots for new level).
  */
 export interface SpellCopyStrategy {
     /**
-     * Build the initial slots structure for the spellcasting entry.
-     * Called before the entry is created.
+     * Build the slots structure for the spellcasting entry.
      */
     buildInitialSlots(
         detectedSlots: Record<string, SpellSlot>,
         level: string,
     ): Record<string, SpellSlot>
-
-    /**
-     * Whether slot updates are needed after spell creation.
-     */
-    requiresSlotUpdate(): boolean
 }

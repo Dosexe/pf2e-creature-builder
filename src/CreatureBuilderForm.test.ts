@@ -205,6 +205,26 @@ describe('CreatureBuilderForm', () => {
         expect(Item.create).not.toHaveBeenCalled()
     })
 
+    it('deletes existing spellcasting entries when option is none', async () => {
+        const actor = buildActor({
+            items: [
+                { id: 'entry1', type: 'spellcastingEntry' },
+                { id: 'entry2', type: 'spellcastingEntry' },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        form.level = '1'
+
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.none,
+        })
+
+        expect(actor.deleteEmbeddedDocuments).toHaveBeenCalledWith('Item', [
+            'entry1',
+            'entry2',
+        ])
+    })
+
     it('creates a spellcasting item with computed DC', async () => {
         const form = new CreatureBuilderForm(buildActor())
         form.level = '1'
@@ -411,6 +431,47 @@ describe('CreatureBuilderForm', () => {
         )
     })
 
+    it('updates spellcasting entry name when updating existing entry from clone', async () => {
+        const actor = buildActor({
+            system: { details: { level: { value: 5 } } },
+            items: [
+                {
+                    id: 'entry1',
+                    type: 'spellcastingEntry',
+                    name: 'Arcane Prepared Spells',
+                    system: {
+                        spelldc: { dc: 22 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'prepared' },
+                        slots: {
+                            slot0: { max: 5, value: 5, prepared: [] },
+                        },
+                    },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        form.level = '5'
+
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingTradition]: MagicalTradition.divine,
+            [Statistics.spellcastingType]: CasterType.spontaneous,
+        })
+
+        expect(actor.updateEmbeddedDocuments).toHaveBeenCalledWith(
+            'Item',
+            expect.arrayContaining([
+                expect.objectContaining({
+                    _id: 'entry1',
+                    name: 'Divine Spontaneous loc:PF2EMONSTERMAKER.spells',
+                    'system.tradition.value': 'divine',
+                    'system.prepared.value': 'spontaneous',
+                }),
+            ]),
+        )
+    })
+
     it('generates new slots when no detected slots exist', async () => {
         const actor = buildActor({
             system: {
@@ -488,6 +549,9 @@ describe('CreatureBuilderForm', () => {
         expect(
             (globalThis as any).Handlebars.registerHelper,
         ).toHaveBeenCalledWith('json', expect.any(Function))
+        const jsonHelper = (globalThis as any).Handlebars.registerHelper.mock
+            .calls[0][1]
+        expect(jsonHelper({ foo: 'bar' })).toBe('{"foo":"bar"}')
         expect(data.name).toBe('Hero')
         expect(data.detectedStats).toEqual({
             [Statistics.str]: Options.high,
@@ -516,6 +580,11 @@ describe('CreatureBuilderForm', () => {
         expect(options.id).toBe('creatureBuilderForm')
     })
 
+    it('exposes instance id getter', () => {
+        const form = new CreatureBuilderForm(buildActor())
+        expect(form.id).toMatch(/^creatureBuilderForm-\d+-[a-z0-9]+$/)
+    })
+
     it('activates listeners and initializes the UI', () => {
         const actor = buildActor({
             system: { details: { level: { value: 2 } } },
@@ -533,6 +602,22 @@ describe('CreatureBuilderForm', () => {
         form.activateListeners({} as JQuery)
 
         expect(initSpy).toHaveBeenCalled()
+    })
+
+    it('uses default level in activateListeners when actor has no level', () => {
+        const actor = buildActor({ system: {} })
+        const form = new CreatureBuilderForm(actor)
+        const initSpy = vi
+            .spyOn(CreatureBuilderFormUI.prototype, 'initialize')
+            .mockImplementation(() => {})
+        vi.spyOn(form, 'detectActorStats').mockReturnValue({})
+        vi.spyOn(form, 'detectTraits').mockReturnValue([])
+        vi.spyOn(form, 'detectLoreSkills').mockReturnValue([])
+
+        form.activateListeners({} as JQuery)
+
+        expect(initSpy).toHaveBeenCalled()
+        expect((form as any).formUI).not.toBeNull()
     })
 
     it('uses the default level when requested', () => {
@@ -573,6 +658,41 @@ describe('CreatureBuilderForm', () => {
         })
 
         expect(globalLog).toHaveBeenCalledWith(true, 'Failed to clone actor')
+    })
+
+    it('deletes melee and lore items from clone when updating', async () => {
+        const originalActor = buildActor({
+            system: { details: { level: { value: 1 } } },
+        })
+        const newActor = buildActor({
+            items: [
+                { id: 'strike1', type: 'melee' },
+                { id: 'lore1', type: 'lore' },
+                { id: 'spell1', type: 'spell' },
+            ],
+            deleteEmbeddedDocuments: vi.fn().mockResolvedValue(undefined),
+        })
+        ;(originalActor as any).clone = vi.fn().mockResolvedValue(newActor)
+        const form = new CreatureBuilderForm(originalActor)
+
+        vi.spyOn(form, 'applyHitPoints').mockReturnValue({
+            'system.attributes.hp.value': 20,
+        })
+        vi.spyOn(form, 'applyStrike').mockResolvedValue(undefined)
+        vi.spyOn(form, 'applySpellcasting').mockResolvedValue(undefined)
+        vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
+        vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
+
+        // biome-ignore lint/complexity/useLiteralKeys: protected
+        await form['_updateObject'](undefined as unknown as Event, {
+            [Statistics.name]: 'Test',
+            [Statistics.level]: '1',
+        })
+
+        expect(newActor.deleteEmbeddedDocuments).toHaveBeenCalledWith('Item', [
+            'strike1',
+            'lore1',
+        ])
     })
 
     it('creates a new actor via clone and applies updates', async () => {

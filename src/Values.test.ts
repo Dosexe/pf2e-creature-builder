@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Options, Statistics } from './Keys'
-import { detectHPLevel, detectStatLevel } from './Values'
+import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 
 describe('detectStatLevel', () => {
     describe('ability scores', () => {
@@ -81,6 +81,20 @@ describe('detectStatLevel', () => {
         it('should return moderate for invalid level', () => {
             const result = detectStatLevel(Statistics.str, '999', 10)
             expect(result).toBe(Options.moderate)
+        })
+
+        it('should skip non-numeric table values and return closest match', () => {
+            const levelTable = statisticValues[Statistics.str]['1']
+            const origModerate = levelTable[Options.moderate]
+            levelTable[Options.moderate] = 'not-a-number' as any
+            try {
+                const result = detectStatLevel(Statistics.str, '1', 3)
+                expect([Options.low, Options.high, Options.extreme]).toContain(
+                    result,
+                )
+            } finally {
+                levelTable[Options.moderate] = origModerate
+            }
         })
     })
 })

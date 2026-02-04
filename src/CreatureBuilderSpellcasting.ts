@@ -171,6 +171,31 @@ export function generateSpellSlots(
 }
 
 /**
+ * Expand prepared caster slots for a new level while preserving existing
+ * spell assignments (prepared IDs). Use when updating an existing entry
+ * after clone; do not clear prepared IDs.
+ */
+export function expandPreparedSlotsPreservingSpells(
+    currentSlots: Record<string, SpellSlot>,
+    level: string,
+): Record<string, SpellSlot> {
+    const target = generateSpellSlots('prepared', level)
+    const result: Record<string, SpellSlot> = {}
+    for (const [slotKey, targetSlot] of Object.entries(target)) {
+        const current = currentSlots[slotKey]
+        result[slotKey] = {
+            max: targetSlot.max,
+            value: targetSlot.value,
+            prepared:
+                current?.prepared && current.prepared.length > 0
+                    ? current.prepared
+                    : targetSlot.prepared,
+        }
+    }
+    return result
+}
+
+/**
  * Build the spellcasting entry name from tradition and caster type
  */
 export function buildSpellcastingName(

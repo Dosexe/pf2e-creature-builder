@@ -11,7 +11,9 @@ import CreatureBuilderFormUI, {
 } from './CreatureBuilderFormUI'
 import {
     buildSpellcastingEntry,
+    buildSpellcastingName,
     detectSpellcasting,
+    expandPreparedSlotsPreservingSpells,
     generateSpellSlots,
     parseSpellcastingFormData,
 } from './CreatureBuilderSpellcasting'
@@ -212,17 +214,39 @@ export class CreatureBuilderForm extends FormApplication {
                 existingEntry,
                 'system.slots',
             ) as Record<string, SpellSlot> | undefined
-            const strategy = createSpellCopyStrategy(
-                (casterType ?? 'innate') as SpellcastingCasterType,
-                this.actor,
-            )
+            const resolvedCasterType = (casterType ??
+                'innate') as SpellcastingCasterType
             const updatedSlots =
-                currentSlots && strategy
-                    ? strategy.buildInitialSlots(currentSlots, this.level)
-                    : generateSpellSlots(
-                          (casterType ?? 'innate') as SpellcastingCasterType,
+                currentSlots && resolvedCasterType === 'prepared'
+                    ? expandPreparedSlotsPreservingSpells(
+                          currentSlots,
                           this.level,
                       )
+                    : currentSlots
+                      ? (() => {
+                            const strategy = createSpellCopyStrategy(
+                                resolvedCasterType,
+                                this.actor,
+                            )
+                            return strategy
+                                ? strategy.buildInitialSlots(
+                                      currentSlots,
+                                      this.level,
+                                  )
+                                : generateSpellSlots(
+                                      resolvedCasterType,
+                                      this.level,
+                                  )
+                        })()
+                      : generateSpellSlots(resolvedCasterType, this.level)
+            const spellsLabel = (game as Game).i18n.localize(
+                `${KeyPrefix}.spells`,
+            )
+            const entryName = buildSpellcastingName(
+                tradition,
+                resolvedCasterType,
+                spellsLabel,
+            )
             await (
                 this.actor as {
                     updateEmbeddedDocuments: (
@@ -233,6 +257,7 @@ export class CreatureBuilderForm extends FormApplication {
             ).updateEmbeddedDocuments('Item', [
                 {
                     _id: existingEntry.id,
+                    name: entryName,
                     'system.spelldc.value': spellcastingBonus,
                     'system.spelldc.dc': spellcastingBonus + 8,
                     'system.tradition.value': tradition,
