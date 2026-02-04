@@ -19,12 +19,6 @@ export interface SpellCopyStrategy {
     ): Record<string, SpellSlot>
 
     /**
-     * Process spells after entry creation.
-     * Returns the created spells info and any slot updates needed.
-     */
-    processSpells(context: SpellCopyContext): Promise<SpellCopyResult>
-
-    /**
      * Whether slot updates are needed after spell creation.
      */
     requiresSlotUpdate(): boolean

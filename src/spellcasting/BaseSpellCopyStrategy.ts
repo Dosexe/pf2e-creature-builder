@@ -12,47 +12,10 @@ import type { SpellCopyStrategy } from '@/spellcasting/SpellCopyStrategy'
  * Base class with shared spell creation logic
  */
 export abstract class BaseSpellCopyStrategy implements SpellCopyStrategy {
-    protected readonly parent: BaseActor
-
-    protected constructor(parent: BaseActor) {
-        this.parent = parent
-    }
-
     abstract buildInitialSlots(
         detectedSlots: Record<string, SpellSlot>,
         level: string,
     ): Record<string, SpellSlot>
-
-    async processSpells(context: SpellCopyContext): Promise<SpellCopyResult> {
-        const createdSpells: Array<{
-            newId: string
-            slotKey: string
-            slotIndex: number
-        }> = []
-
-        // For innate casters, we deduplicate spells since the same spell
-        // might appear in multiple slots for prepared casters
-        const uniqueSpells = this.deduplicateSpells(context.detectedSpells)
-
-        // Create each unique spell - just associate with the entry, no slot assignment
-        for (const detectedSpell of uniqueSpells.values()) {
-            const createdSpell = await this.createSpell(
-                detectedSpell,
-                context.newEntryId,
-                this.parent,
-            )
-
-            if (createdSpell) {
-                createdSpells.push({
-                    newId: createdSpell.id,
-                    slotKey: detectedSpell.slotKey,
-                    slotIndex: 0, // Not meaningful for innate
-                })
-            }
-        }
-
-        return { createdSpells }
-    }
 
     abstract requiresSlotUpdate(): boolean
 
@@ -66,14 +29,12 @@ export abstract class BaseSpellCopyStrategy implements SpellCopyStrategy {
     ): Promise<{ id: string } | null> {
         let spellData: Record<string, unknown>
 
-        // Try to get spell from compendium if source is available
         if (detectedSpell.compendiumSource) {
             try {
-                const compendiumSpell = await fromUuid(
+                const compendiumSpell = await (globalThis as any).fromUuid(
                     detectedSpell.compendiumSource,
                 )
                 if (compendiumSpell) {
-                    // Use compendium spell data with updated location
                     const baseData =
                         typeof compendiumSpell.toObject === 'function'
                             ? compendiumSpell.toObject()
@@ -104,9 +65,10 @@ export abstract class BaseSpellCopyStrategy implements SpellCopyStrategy {
             )
         }
 
-        const createdSpell = await Item.create(spellData as ItemData, {
-            parent,
-        })
+        const createdSpell = await (globalThis as any).Item.create(
+            spellData as ItemData,
+            { parent },
+        )
 
         return createdSpell ? { id: createdSpell.id } : null
     }
@@ -121,36 +83,9 @@ export abstract class BaseSpellCopyStrategy implements SpellCopyStrategy {
         return {
             ...detectedSpell.spellData,
             system: {
-                ...(detectedSpell.spellData.system as Record<string, unknown>),
+                ...(detectedSpell.spellData.system as object),
                 location: { value: newEntryId },
             },
         }
-    }
-
-    /**
-     * Deduplicate spells by their compendium source or spell name.
-     * Prepared casters might have the same spell in multiple slots,
-     * but spontaneous casters only need one copy in their repertoire.
-     */
-    private deduplicateSpells(
-        spells: DetectedSpell[],
-    ): Map<string, DetectedSpell> {
-        const spellMap: Map<string, DetectedSpell> = new Map<
-            string,
-            DetectedSpell
-        >()
-
-        for (const spell of spells) {
-            const key =
-                spell.compendiumSource ||
-                (spell.spellData.name as string) ||
-                spell.originalId
-
-            if (!spellMap.has(key)) {
-                spellMap.set(key, spell)
-            }
-        }
-
-        return spellMap
     }
 }

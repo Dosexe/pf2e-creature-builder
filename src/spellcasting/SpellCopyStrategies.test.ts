@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { InnateSpellCopyStrategy } from '@/spellcasting/InnateSpellCopyStrategy'
 import type {
     DetectedSpell,
     SpellSlot,
 } from '@/spellcasting/model/spellcasting'
+import { InnateSpellCopyStrategy } from '@/spellcasting/InnateSpellCopyStrategy'
 import { PreparedSpellCopyStrategy } from '@/spellcasting/PreparedSpellCopyStrategy'
 import { SpontaneousSpellCopyStrategy } from '@/spellcasting/SpontaneousSpellCopyStrategy'
 import { createSpellCopyStrategy } from './SpellCopyStrategies'
@@ -255,12 +255,8 @@ describe('SpellCopyStrategies', () => {
             expect(result.createdSpells[0].newId).toBe('newFireball')
             expect(result.createdSpells[1].newId).toBe('newFireball')
 
-            expect(result.updatedSlots!.slot3.prepared[0].id).toBe(
-                'newFireball',
-            )
-            expect(result.updatedSlots!.slot3.prepared[1].id).toBe(
-                'newFireball',
-            )
+            expect(result.updatedSlots!.slot3.prepared[0].id).toBe('newFireball')
+            expect(result.updatedSlots!.slot3.prepared[1].id).toBe('newFireball')
             expect(result.updatedSlots!.slot3.prepared[2].id).toBeNull()
         })
     })

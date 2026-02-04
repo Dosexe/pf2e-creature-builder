@@ -99,13 +99,9 @@ const $ = (input: string | Element) => {
 const setupModule = async () => {
     hooks = {}
     vi.resetModules()
-    vi.doMock(
-        '@/utils',
-        () => ({
-            globalLog: vi.fn(),
-        }),
-        { virtual: true },
-    )
+    vi.doMock('@/utils', () => ({
+        globalLog: vi.fn(),
+    }))
     vi.doMock('./CreatureBuilderForm', () => ({
         CreatureBuilderForm: CreatureBuilderFormMock,
     }))

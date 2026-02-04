@@ -186,6 +186,7 @@ export function buildSpellcastingName(
  * Build the complete spellcasting entry object for PF2e
  */
 export function buildSpellcastingEntry(config: SpellcastingConfig): ItemData {
+    // Use existing slots if provided (from detected creature), otherwise generate new ones
     const slots =
         config.slots ?? generateSpellSlots(config.casterType, config.level)
 

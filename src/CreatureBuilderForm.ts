@@ -1,7 +1,7 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import type { ItemData } from '@/model/item'
 import type {
-    DetectedSpell,
+    CasterType as SpellcastingCasterType,
     SpellSlot,
 } from '@/spellcasting/model/spellcasting'
 import { createSpellCopyStrategy } from '@/spellcasting/SpellCopyStrategies'
@@ -12,6 +12,7 @@ import CreatureBuilderFormUI, {
 import {
     buildSpellcastingEntry,
     detectSpellcasting,
+    generateSpellSlots,
     parseSpellcastingFormData,
 } from './CreatureBuilderSpellcasting'
 import {
@@ -37,15 +38,6 @@ export class CreatureBuilderForm extends FormApplication {
     private readonly _uniqueId: string
     private readonly useDefaultLevel: boolean
     private formUI: CreatureBuilderFormUI | null = null
-    private detectedSpellSlots?: Record<
-        string,
-        {
-            max: number
-            value: number
-            prepared: { id: string | null; expended: boolean }[]
-        }
-    >
-    private detectedSpells?: DetectedSpell[]
 
     constructor(object: any, options?: any) {
         super(object, options)
@@ -181,7 +173,18 @@ export class CreatureBuilderForm extends FormApplication {
 
     async applySpellcasting(formData: object) {
         const spellcastingOption = formData[Statistics.spellcasting]
+        const { tradition, casterType, keyAttribute } =
+            parseSpellcastingFormData(formData)
+
         if (spellcastingOption === Options.none) {
+            const entryIds = (
+                this.actor.items as unknown as { type: string; id: string }[]
+            )
+                .filter((i) => i.type === 'spellcastingEntry')
+                .map((i) => i.id)
+            if (entryIds.length > 0) {
+                await this.actor.deleteEmbeddedDocuments('Item', entryIds)
+            }
             return
         }
 
@@ -192,58 +195,65 @@ export class CreatureBuilderForm extends FormApplication {
             10,
         )
 
-        const { tradition, casterType, keyAttribute } =
-            parseSpellcastingFormData(formData)
-
-        // Get the appropriate spell copy strategy for this caster type
-        const strategy = createSpellCopyStrategy(casterType, this.actor)
-
-        // Build initial slots for the entry based on caster type
-        let slotsForEntry: Record<string, SpellSlot> | undefined
-        if (this.detectedSpellSlots && strategy) {
-            slotsForEntry = strategy.buildInitialSlots(
-                this.detectedSpellSlots,
-                this.level,
-            )
+        // Clone already has spellcasting entry + spells; we only update or create
+        let existingEntry: { type: string; id: string } | null = null
+        for (const item of this.actor.items as unknown as Iterable<{
+            type: string
+            id: string
+        }>) {
+            if (item.type === 'spellcastingEntry') {
+                existingEntry = item
+                break
+            }
         }
 
+        if (existingEntry) {
+            const currentSlots = foundry.utils.getProperty(
+                existingEntry,
+                'system.slots',
+            ) as Record<string, SpellSlot> | undefined
+            const strategy = createSpellCopyStrategy(
+                (casterType ?? 'innate') as SpellcastingCasterType,
+                this.actor,
+            )
+            const updatedSlots =
+                currentSlots && strategy
+                    ? strategy.buildInitialSlots(currentSlots, this.level)
+                    : generateSpellSlots(
+                          (casterType ?? 'innate') as SpellcastingCasterType,
+                          this.level,
+                      )
+            await (
+                this.actor as {
+                    updateEmbeddedDocuments: (
+                        embeddedName: string,
+                        updates: object[],
+                    ) => Promise<unknown>
+                }
+            ).updateEmbeddedDocuments('Item', [
+                {
+                    _id: existingEntry.id,
+                    'system.spelldc.value': spellcastingBonus,
+                    'system.spelldc.dc': spellcastingBonus + 8,
+                    'system.tradition.value': tradition,
+                    'system.prepared.value': casterType,
+                    'system.ability.value': keyAttribute,
+                    'system.slots': updatedSlots,
+                },
+            ])
+            return existingEntry
+        }
+
+        // New creature: create entry with generated slots only
         const spellcasting = buildSpellcastingEntry({
             tradition,
             casterType,
             keyAttribute,
             spellcastingBonus,
             level: this.level,
-            slots: slotsForEntry,
+            slots: generateSpellSlots(casterType, this.level),
         })
-
-        // Create the spellcasting entry first
-        const createdEntry = await Item.create(spellcasting, {
-            parent: this.actor,
-        })
-
-        // If we have detected spells, a strategy, and successfully created the entry, process spells
-        if (
-            createdEntry &&
-            this.detectedSpells?.length &&
-            this.detectedSpellSlots &&
-            strategy
-        ) {
-            const result = await strategy.processSpells({
-                detectedSpells: this.detectedSpells,
-                detectedSlots: this.detectedSpellSlots,
-                newEntryId: createdEntry.id,
-                level: this.level,
-            })
-
-            // Update slots if the strategy requires it (prepared casters need this)
-            if (strategy.requiresSlotUpdate() && result.updatedSlots) {
-                await createdEntry.update({
-                    'system.slots': result.updatedSlots,
-                })
-            }
-        }
-
-        return createdEntry
+        return Item.create(spellcasting, { parent: this.actor })
     }
 
     async applySkills(formData: object) {
@@ -322,17 +332,8 @@ export class CreatureBuilderForm extends FormApplication {
                 : DefaultCreatureLevel
             globalLog(false, 'Form data:', formData)
 
-            const newActorData = {
-                name: formData[Statistics.name] || 'New Monster',
-                type: 'npc',
-            }
-            const newActor = await Actor.create(newActorData)
-            if (!newActor) {
-                globalLog(true, 'Failed to create new actor')
-                return
-            }
-
-            const updateData = {}
+            // Build overrides: clone() merges these with the original actor's data
+            const updateData: Record<string, unknown> = {}
             for (const key of Object.keys(formData)) {
                 if (actorFields[key]) {
                     const actorField = actorFields[key]
@@ -351,7 +352,7 @@ export class CreatureBuilderForm extends FormApplication {
             Object.assign(updateData, this.applyName(formData))
             Object.assign(updateData, this.applyLevel())
             Object.assign(updateData, this.applyTraits(formData))
-
+            Object.assign(updateData, this.applyHitPoints(formData))
             Object.assign(
                 updateData,
                 this.applySenses(
@@ -367,12 +368,35 @@ export class CreatureBuilderForm extends FormApplication {
                     foundry.utils.getProperty(this.actor, 'system.movement'),
                 ),
             )
-            await newActor.update(updateData)
+
+            // Clone original actor with overrides (copies all data + items; save to world)
+            const cloneResult = this.actor.clone(updateData, { save: true })
+            const newActor = await (Promise.resolve(cloneResult) as Promise<
+                Actor | undefined
+            >)
+            if (!newActor) {
+                globalLog(true, 'Failed to clone actor')
+                return
+            }
 
             const originalActor = this.actor
             this.actor = newActor
+
+            // Remove only strike and lore; clone already has spellcasting entry + spells
+            const toDelete: string[] = []
+            for (const item of newActor.items) {
+                if (
+                    item.id &&
+                    (item.type === 'melee' || item.type === 'lore')
+                ) {
+                    toDelete.push(item.id)
+                }
+            }
+            if (toDelete.length > 0) {
+                await newActor.deleteEmbeddedDocuments('Item', toDelete)
+            }
+
             await Promise.all([
-                this.actor.update(this.applyHitPoints(formData)),
                 this.applyStrike(formData),
                 this.applySpellcasting(formData),
                 this.applySkills(formData),
@@ -504,14 +528,6 @@ export class CreatureBuilderForm extends FormApplication {
             if (spellcastingData.casterType) {
                 detected[Statistics.spellcastingType] =
                     spellcastingData.casterType
-            }
-            // Store detected spell slots for use when applying spellcasting
-            if (spellcastingData.slots) {
-                this.detectedSpellSlots = spellcastingData.slots
-            }
-            // Store detected spells for copying to new actor
-            if (spellcastingData.spells) {
-                this.detectedSpells = spellcastingData.spells
             }
         }
 

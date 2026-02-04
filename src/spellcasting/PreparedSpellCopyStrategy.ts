@@ -14,9 +14,11 @@ import type {
  * When the same spell appears in multiple slots, we create one item and assign it to all.
  */
 export class PreparedSpellCopyStrategy extends BaseSpellCopyStrategy {
-    // biome-ignore lint/complexity/noUselessConstructor: abstract class constructor is protected
+    private readonly parent: BaseActor
+
     constructor(parent: BaseActor) {
-        super(parent)
+        super()
+        this.parent = parent
     }
 
     buildInitialSlots(
@@ -47,6 +49,7 @@ export class PreparedSpellCopyStrategy extends BaseSpellCopyStrategy {
             slotIndex: number
         }> = []
 
+        // Group by spell identity: same spell in multiple slots → create once, assign to all
         const groups = this.groupBySpellIdentity(context.detectedSpells)
 
         for (const { representative, positions } of groups) {
@@ -98,16 +101,12 @@ export class PreparedSpellCopyStrategy extends BaseSpellCopyStrategy {
      * Group detected spells by identity (compendium source, name, or originalId).
      * One representative per group; collect all (slotKey, slotIndex) for that spell.
      */
-    private groupBySpellIdentity(spells: DetectedSpell[]): Array<{
-        representative: DetectedSpell
-        positions: Array<{ slotKey: string; slotIndex: number }>
-    }> {
+    private groupBySpellIdentity(
+        spells: DetectedSpell[],
+    ): Array<{ representative: DetectedSpell; positions: Array<{ slotKey: string; slotIndex: number }> }> {
         const byKey = new Map<
             string,
-            {
-                representative: DetectedSpell
-                positions: Array<{ slotKey: string; slotIndex: number }>
-            }
+            { representative: DetectedSpell; positions: Array<{ slotKey: string; slotIndex: number }> }
         >()
 
         for (const spell of spells) {
