@@ -155,19 +155,19 @@ export enum SpellcastingAttribute {
 // ============================================================================
 
 /** Internal roadmap format - maps Statistics keys to Options values */
-export type Roadmap = { [key: string]: Options }
+export type Roadmap = Record<string, Options>
 
 /** Collection of roadmaps keyed by their internal name (e.g., 'PF2EMONSTERMAKER.brute') */
-export type RoadmapCollection = { [key: string]: Roadmap }
+export type RoadmapCollection = Record<string, Roadmap>
 
 /** User-friendly roadmap format for JSON files */
 export interface UserFriendlyRoadmap {
     name: string
-    statistics: { [key: string]: string }
+    statistics: Record<string, string>
 }
 
 /** User-friendly statistic names mapped to internal Statistics enum values */
-export const STAT_KEY_MAP: { [key: string]: string } = {
+export const STAT_KEY_MAP: Record<string, string> = {
     // Ability Scores
     strength: Statistics.str,
     dexterity: Statistics.dex,
@@ -206,7 +206,7 @@ export const STAT_KEY_MAP: { [key: string]: string } = {
 }
 
 /** User-friendly option values mapped to internal Options enum values */
-export const OPTION_MAP: { [key: string]: Options } = {
+export const OPTION_MAP: Record<string, Options> = {
     extreme: Options.extreme,
     high: Options.high,
     moderate: Options.moderate,

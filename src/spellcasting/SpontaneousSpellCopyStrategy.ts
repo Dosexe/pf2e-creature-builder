@@ -43,7 +43,7 @@ export class SpontaneousSpellCopyStrategy extends BaseSpellCopyStrategy {
         const uniqueSpells = this.deduplicateSpells(context.detectedSpells)
 
         // Create each unique spell - just associate with the entry, no slot assignment
-        for (const detectedSpell of uniqueSpells) {
+        for (const detectedSpell of uniqueSpells.values()) {
             const createdSpell = await this.createSpell(
                 detectedSpell,
                 context.newEntryId,
@@ -59,7 +59,6 @@ export class SpontaneousSpellCopyStrategy extends BaseSpellCopyStrategy {
             }
         }
 
-        // No slot updates needed - spontaneous casters don't track spells in slots
         return { createdSpells }
     }
 
@@ -72,23 +71,20 @@ export class SpontaneousSpellCopyStrategy extends BaseSpellCopyStrategy {
      * Prepared casters might have the same spell in multiple slots,
      * but spontaneous casters only need one copy in their repertoire.
      */
-    private deduplicateSpells(spells: DetectedSpell[]): DetectedSpell[] {
-        const seen = new Set<string>()
-        const unique: DetectedSpell[] = []
+    private deduplicateSpells(spells: DetectedSpell[]): Map<string, DetectedSpell>  {
+        const spellMap: Map<string, DetectedSpell> = new Map<string, DetectedSpell>
 
         for (const spell of spells) {
-            // Use compendium source as primary key, fall back to spell name
             const key =
                 spell.compendiumSource ||
                 (spell.spellData.name as string) ||
                 spell.originalId
 
-            if (!seen.has(key)) {
-                seen.add(key)
-                unique.push(spell)
+            if (!spellMap.has(key)) {
+                spellMap.set(key, spell)
             }
         }
 
-        return unique
+        return spellMap
     }
 }
