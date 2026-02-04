@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { InnateSpellCopyStrategy } from '@/spellcasting/InnateSpellCopyStrategy'
 import type {
     DetectedSpell,
     SpellSlot,
@@ -34,9 +35,9 @@ describe('SpellCopyStrategies', () => {
             expect(strategy).toBeInstanceOf(SpontaneousSpellCopyStrategy)
         })
 
-        it('returns null for innate caster', () => {
+        it('returns InnateSpellCopyStrategy for innate caster', () => {
             const strategy = createSpellCopyStrategy('innate', mockParent)
-            expect(strategy).toBeNull()
+            expect(strategy).toBeInstanceOf(InnateSpellCopyStrategy)
         })
     })
 
@@ -345,6 +346,174 @@ describe('SpellCopyStrategies', () => {
             // Should only create one spell since both have the same name
             expect(mockItemCreate).toHaveBeenCalledTimes(1)
             expect(result.createdSpells).toHaveLength(1)
+        })
+    })
+
+    describe('InnateSpellCopyStrategy', () => {
+        it('buildInitialSlots generates innate slots (all zeros)', () => {
+            const strategy = new InnateSpellCopyStrategy(mockParent)
+            const detectedSlots: Record<string, SpellSlot> = {
+                slot0: { max: 10, value: 10, prepared: [] },
+                slot1: { max: 10, value: 10, prepared: [] },
+            }
+
+            const result = strategy.buildInitialSlots(detectedSlots, '5')
+
+            // Innate slots are all zeros
+            expect(result.slot0.max).toBe(0)
+            expect(result.slot1.max).toBe(0)
+            expect(result.slot2.max).toBe(0)
+
+            // Innate prepared arrays should be empty
+            expect(result.slot0.prepared).toEqual([])
+            expect(result.slot1.prepared).toEqual([])
+        })
+
+        it('requiresSlotUpdate returns false', () => {
+            const strategy = new InnateSpellCopyStrategy(mockParent)
+            expect(strategy.requiresSlotUpdate()).toBe(false)
+        })
+
+        it('processSpells creates spells without slot updates', async () => {
+            const strategy = new InnateSpellCopyStrategy(mockParent)
+
+            mockItemCreate
+                .mockResolvedValueOnce({ id: 'newSpell1' })
+                .mockResolvedValueOnce({ id: 'newSpell2' })
+
+            const detectedSpells: DetectedSpell[] = [
+                {
+                    originalId: 'oldSpell1',
+                    slotKey: 'slot1',
+                    slotIndex: 0,
+                    spellData: { name: 'Fireball', system: {} },
+                },
+                {
+                    originalId: 'oldSpell2',
+                    slotKey: 'slot2',
+                    slotIndex: 0,
+                    spellData: { name: 'Invisibility', system: {} },
+                },
+            ]
+
+            const detectedSlots: Record<string, SpellSlot> = {
+                slot1: { max: 0, value: 0, prepared: [] },
+                slot2: { max: 0, value: 0, prepared: [] },
+            }
+
+            const result = await strategy.processSpells({
+                detectedSpells,
+                detectedSlots,
+                newEntryId: 'newEntry123',
+                level: '5',
+            })
+
+            expect(result.createdSpells).toHaveLength(2)
+            expect(result.updatedSlots).toBeUndefined()
+        })
+
+        it('processSpells deduplicates spells by compendium source', async () => {
+            const strategy = new InnateSpellCopyStrategy(mockParent)
+
+            mockItemCreate.mockResolvedValue({ id: 'newSpell1' })
+
+            const detectedSpells: DetectedSpell[] = [
+                {
+                    originalId: 'oldSpell1',
+                    slotKey: 'slot1',
+                    slotIndex: 0,
+                    spellData: { name: 'Fireball', system: {} },
+                    compendiumSource: 'Compendium.pf2e.spells.fireball',
+                },
+                {
+                    originalId: 'oldSpell2',
+                    slotKey: 'slot1',
+                    slotIndex: 1,
+                    spellData: { name: 'Fireball', system: {} },
+                    compendiumSource: 'Compendium.pf2e.spells.fireball',
+                },
+            ]
+
+            const detectedSlots: Record<string, SpellSlot> = {
+                slot1: { max: 0, value: 0, prepared: [] },
+            }
+
+            const result = await strategy.processSpells({
+                detectedSpells,
+                detectedSlots,
+                newEntryId: 'newEntry123',
+                level: '5',
+            })
+
+            // Should only create one spell since both have the same compendium source
+            expect(mockItemCreate).toHaveBeenCalledTimes(1)
+            expect(result.createdSpells).toHaveLength(1)
+        })
+
+        it('processSpells deduplicates spells by name when no compendium source', async () => {
+            const strategy = new InnateSpellCopyStrategy(mockParent)
+
+            mockItemCreate.mockResolvedValue({ id: 'newSpell1' })
+
+            const detectedSpells: DetectedSpell[] = [
+                {
+                    originalId: 'oldSpell1',
+                    slotKey: 'slot1',
+                    slotIndex: 0,
+                    spellData: { name: 'Fireball', system: {} },
+                },
+                {
+                    originalId: 'oldSpell2',
+                    slotKey: 'slot1',
+                    slotIndex: 1,
+                    spellData: { name: 'Fireball', system: {} },
+                },
+            ]
+
+            const detectedSlots: Record<string, SpellSlot> = {
+                slot1: { max: 0, value: 0, prepared: [] },
+            }
+
+            const result = await strategy.processSpells({
+                detectedSpells,
+                detectedSlots,
+                newEntryId: 'newEntry123',
+                level: '5',
+            })
+
+            // Should only create one spell since both have the same name
+            expect(mockItemCreate).toHaveBeenCalledTimes(1)
+            expect(result.createdSpells).toHaveLength(1)
+        })
+
+        it('handles Item.create returning null', async () => {
+            const strategy = new InnateSpellCopyStrategy(mockParent)
+
+            mockItemCreate.mockResolvedValue(null)
+
+            const detectedSpells: DetectedSpell[] = [
+                {
+                    originalId: 'oldSpell1',
+                    slotKey: 'slot1',
+                    slotIndex: 0,
+                    spellData: { name: 'Failed Spell', system: {} },
+                },
+            ]
+
+            const detectedSlots: Record<string, SpellSlot> = {
+                slot1: { max: 0, value: 0, prepared: [] },
+            }
+
+            const result = await strategy.processSpells({
+                detectedSpells,
+                detectedSlots,
+                newEntryId: 'newEntry123',
+                level: '5',
+            })
+
+            // Should not include failed spell in results
+            expect(result.createdSpells).toHaveLength(0)
+            expect(result.updatedSlots).toBeUndefined()
         })
     })
 

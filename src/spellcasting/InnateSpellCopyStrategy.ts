@@ -4,11 +4,11 @@ import { BaseSpellCopyStrategy } from '@/spellcasting/BaseSpellCopyStrategy'
 import type { SpellSlot } from '@/spellcasting/model/spellcasting'
 
 /**
- * Strategy for spontaneous casters.
- * Spontaneous casters use max/value for slot counts but spells are NOT assigned
+ * Strategy for innate casters.
+ * Innate casters work similarly to spontaneous - spells are NOT assigned
  * to specific slots. Spells are simply added to the spellcasting entry's repertoire.
  */
-export class SpontaneousSpellCopyStrategy extends BaseSpellCopyStrategy {
+export class InnateSpellCopyStrategy extends BaseSpellCopyStrategy {
     // biome-ignore lint/complexity/noUselessConstructor: abstract class constructor is protected
     constructor(parent: BaseActor) {
         super(parent)
@@ -18,10 +18,9 @@ export class SpontaneousSpellCopyStrategy extends BaseSpellCopyStrategy {
         _detectedSlots: Record<string, SpellSlot>,
         level: string,
     ): Record<string, SpellSlot> {
-        // For spontaneous casters, generate fresh slots based on level
-        // The slots define max/value (how many spells of each level can be cast)
-        // but prepared[] stays empty - spells are not slotted
-        return generateSpellSlots('spontaneous', level)
+        // For innate casters, generate fresh slots based on level
+        // The slots define max/value but prepared[] stays empty - spells are not slotted
+        return generateSpellSlots('innate', level)
     }
 
     requiresSlotUpdate(): boolean {

@@ -1,4 +1,5 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
+import { InnateSpellCopyStrategy } from '@/spellcasting/InnateSpellCopyStrategy'
 import type { CasterType } from '@/spellcasting/model/spellcasting'
 import { PreparedSpellCopyStrategy } from '@/spellcasting/PreparedSpellCopyStrategy'
 import type { SpellCopyStrategy } from '@/spellcasting/SpellCopyStrategy'
@@ -17,8 +18,7 @@ export function createSpellCopyStrategy(
         case 'spontaneous':
             return new SpontaneousSpellCopyStrategy(parent)
         case 'innate':
-            // Innate casters don't use slots the same way - could be extended later
-            return null
+            return new InnateSpellCopyStrategy(parent)
         default:
             return null
     }
