@@ -1,6 +1,7 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import { BaseSpellCopyStrategy } from '@/spellcasting/BaseSpellCopyStrategy'
 import type {
+    DetectedSpell,
     SpellCopyContext,
     SpellCopyResult,
     SpellSlot,
@@ -10,13 +11,12 @@ import type {
  * Strategy for prepared casters.
  * Prepared casters use the prepared[] array where each slot has an {id, expended} entry
  * pointing to a specific spell. Spells must be assigned to specific slot positions.
+ * When the same spell appears in multiple slots, we create one item and assign it to all.
  */
 export class PreparedSpellCopyStrategy extends BaseSpellCopyStrategy {
-    private readonly parent: BaseActor
-
+    // biome-ignore lint/complexity/noUselessConstructor: abstract class constructor is protected
     constructor(parent: BaseActor) {
-        super()
-        this.parent = parent
+        super(parent)
     }
 
     buildInitialSlots(
@@ -47,20 +47,23 @@ export class PreparedSpellCopyStrategy extends BaseSpellCopyStrategy {
             slotIndex: number
         }> = []
 
-        // Create each spell and track its position
-        for (const detectedSpell of context.detectedSpells) {
+        const groups = this.groupBySpellIdentity(context.detectedSpells)
+
+        for (const { representative, positions } of groups) {
             const createdSpell = await this.createSpell(
-                detectedSpell,
+                representative,
                 context.newEntryId,
                 this.parent,
             )
 
             if (createdSpell) {
-                createdSpells.push({
-                    newId: createdSpell.id,
-                    slotKey: detectedSpell.slotKey,
-                    slotIndex: detectedSpell.slotIndex,
-                })
+                for (const { slotKey, slotIndex } of positions) {
+                    createdSpells.push({
+                        newId: createdSpell.id,
+                        slotKey,
+                        slotIndex,
+                    })
+                }
             }
         }
 
@@ -89,5 +92,46 @@ export class PreparedSpellCopyStrategy extends BaseSpellCopyStrategy {
 
     requiresSlotUpdate(): boolean {
         return true
+    }
+
+    /**
+     * Group detected spells by identity (compendium source, name, or originalId).
+     * One representative per group; collect all (slotKey, slotIndex) for that spell.
+     */
+    private groupBySpellIdentity(spells: DetectedSpell[]): Array<{
+        representative: DetectedSpell
+        positions: Array<{ slotKey: string; slotIndex: number }>
+    }> {
+        const byKey = new Map<
+            string,
+            {
+                representative: DetectedSpell
+                positions: Array<{ slotKey: string; slotIndex: number }>
+            }
+        >()
+
+        for (const spell of spells) {
+            const key =
+                spell.compendiumSource ||
+                (spell.spellData.name as string) ||
+                spell.originalId
+
+            const existing = byKey.get(key)
+            if (existing) {
+                existing.positions.push({
+                    slotKey: spell.slotKey,
+                    slotIndex: spell.slotIndex,
+                })
+            } else {
+                byKey.set(key, {
+                    representative: spell,
+                    positions: [
+                        { slotKey: spell.slotKey, slotIndex: spell.slotIndex },
+                    ],
+                })
+            }
+        }
+
+        return Array.from(byKey.values())
     }
 }

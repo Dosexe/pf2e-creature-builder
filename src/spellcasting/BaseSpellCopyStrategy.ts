@@ -12,7 +12,7 @@ import type { SpellCopyStrategy } from '@/spellcasting/SpellCopyStrategy'
  * Base class with shared spell creation logic
  */
 export abstract class BaseSpellCopyStrategy implements SpellCopyStrategy {
-    private readonly parent: BaseActor
+    protected readonly parent: BaseActor
 
     protected constructor(parent: BaseActor) {
         this.parent = parent

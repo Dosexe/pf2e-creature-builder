@@ -207,6 +207,62 @@ describe('SpellCopyStrategies', () => {
             expect(result.updatedSlots!.slot1.prepared[1].id).toBe('newSpell2')
             expect(result.updatedSlots!.slot1.prepared[2].id).toBeNull()
         })
+
+        it('same spell in multiple slots: create once, assign to all', async () => {
+            const strategy = new PreparedSpellCopyStrategy(mockParent)
+
+            mockItemCreate.mockResolvedValueOnce({ id: 'newFireball' })
+
+            const detectedSpells: DetectedSpell[] = [
+                {
+                    originalId: 'oldSpell1',
+                    slotKey: 'slot3',
+                    slotIndex: 0,
+                    spellData: { name: 'Fireball', system: {} },
+                    compendiumSource: 'Compendium.pf2e.spells.fireball',
+                },
+                {
+                    originalId: 'oldSpell2',
+                    slotKey: 'slot3',
+                    slotIndex: 1,
+                    spellData: { name: 'Fireball', system: {} },
+                    compendiumSource: 'Compendium.pf2e.spells.fireball',
+                },
+            ]
+
+            const detectedSlots: Record<string, SpellSlot> = {
+                slot3: {
+                    max: 3,
+                    value: 3,
+                    prepared: [
+                        { id: 'oldSpell1', expended: false },
+                        { id: 'oldSpell2', expended: false },
+                        { id: null, expended: false },
+                    ],
+                },
+            }
+
+            const result = await strategy.processSpells({
+                detectedSpells,
+                detectedSlots,
+                newEntryId: 'newEntry123',
+                level: '5',
+            })
+
+            // One spell created, same id in both slot positions
+            expect(mockItemCreate).toHaveBeenCalledTimes(1)
+            expect(result.createdSpells).toHaveLength(2)
+            expect(result.createdSpells[0].newId).toBe('newFireball')
+            expect(result.createdSpells[1].newId).toBe('newFireball')
+
+            expect(result.updatedSlots!.slot3.prepared[0].id).toBe(
+                'newFireball',
+            )
+            expect(result.updatedSlots!.slot3.prepared[1].id).toBe(
+                'newFireball',
+            )
+            expect(result.updatedSlots!.slot3.prepared[2].id).toBeNull()
+        })
     })
 
     describe('SpontaneousSpellCopyStrategy', () => {
