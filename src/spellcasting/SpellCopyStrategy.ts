@@ -2,7 +2,7 @@ import type {
     SpellCopyContext,
     SpellCopyResult,
     SpellSlot,
-} from '@/model/spellcasting'
+} from '@/spellcasting/model/spellcasting'
 
 /**
  * Strategy interface for copying spells from original actor to new one.

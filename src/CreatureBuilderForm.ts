@@ -1,5 +1,10 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import type { ItemData } from '@/model/item'
+import type {
+    DetectedSpell,
+    SpellSlot,
+} from '@/spellcasting/model/spellcasting'
+import { createSpellCopyStrategy } from '@/spellcasting/SpellCopyStrategies'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
@@ -23,8 +28,6 @@ import {
 } from './Keys'
 import { RoadMapRegistry } from './RoadMapRegistry'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
-import type { DetectedSpell, SpellSlot } from '@/model/spellcasting'
-import { createSpellCopyStrategy } from '@/spellcasting/SpellCopyStrategies'
 
 type DetectedStatValue = Options | MagicalTradition | CasterType
 
@@ -36,7 +39,11 @@ export class CreatureBuilderForm extends FormApplication {
     private formUI: CreatureBuilderFormUI | null = null
     private detectedSpellSlots?: Record<
         string,
-        { max: number; value: number; prepared: { id: string | null; expended: boolean }[] }
+        {
+            max: number
+            value: number
+            prepared: { id: string | null; expended: boolean }[]
+        }
     >
     private detectedSpells?: DetectedSpell[]
 

@@ -1,12 +1,12 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import { generateSpellSlots } from '@/CreatureBuilderSpellcasting'
+import { BaseSpellCopyStrategy } from '@/spellcasting/BaseSpellCopyStrategy'
 import type {
     DetectedSpell,
     SpellCopyContext,
     SpellCopyResult,
     SpellSlot,
-} from '@/model/spellcasting'
-import { BaseSpellCopyStrategy } from '@/spellcasting/BaseSpellCopyStrategy'
+} from '@/spellcasting/model/spellcasting'
 
 /**
  * Strategy for spontaneous casters.

@@ -6,7 +6,7 @@ import type {
     SpellcastingConfig,
     SpellSlot,
     Tradition,
-} from '@/model/spellcasting'
+} from '@/spellcasting/model/spellcasting'
 import {
     CasterType as CasterTypeEnum,
     KeyPrefix,
@@ -142,7 +142,6 @@ export function generateSpellSlots(
 ): Record<string, SpellSlot> {
     const slots: Record<string, SpellSlot> = {}
 
-    // Innate casters don't use spell slots
     if (casterType === 'innate') {
         for (let i = 0; i <= 11; i++) {
             slots[`slot${i}`] = { max: 0, value: 0, prepared: [] }
@@ -158,14 +157,12 @@ export function generateSpellSlots(
         const count = i <= 10 ? slotCounts[i] : 0
 
         if (casterType === 'prepared') {
-            // Prepared casters use prepared array with {id: null, expended: false}
             const prepared: { id: null; expended: boolean }[] = []
             for (let j = 0; j < count; j++) {
                 prepared.push({ id: null, expended: false })
             }
             slots[`slot${i}`] = { max: count, value: count, prepared }
         } else {
-            // Spontaneous casters use max/value for slots, empty prepared array
             slots[`slot${i}`] = { max: count, value: count, prepared: [] }
         }
     }
@@ -341,7 +338,6 @@ export function detectSpellcasting(
             }
         }
 
-        // Find spell items and store their data
         for (const item of itemsArray) {
             if (item.type === 'spell' && item.id) {
                 const spellLocation = foundry.utils.getProperty(
@@ -349,25 +345,20 @@ export function detectSpellcasting(
                     'system.location.value',
                 ) as string | undefined
 
-                // Check if this spell belongs to our spellcasting entry
                 if (spellLocation === detected.spellcastingEntryId) {
-                    // Clone the spell data without id
                     const { id, ...spellDataWithoutId } = item
 
-                    // Get compendium source if available
                     const compendiumSource = foundry.utils.getProperty(
                         item,
                         '_stats.compendiumSource',
                     ) as string | undefined
 
-                    // Get spell level for spontaneous casters
                     const spellLevel = foundry.utils.getProperty(
                         item,
                         'system.level.value',
                     ) as number | undefined
 
                     if (isPreparedCaster) {
-                        // For prepared casters, only include spells that are in slots
                         const slotInfo = spellIdToSlot.get(item.id)
                         if (slotInfo) {
                             spells.push({

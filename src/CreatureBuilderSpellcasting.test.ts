@@ -601,16 +601,12 @@ describe('CreatureBuilderSpellcasting', () => {
                             slot0: {
                                 max: 5,
                                 value: 5,
-                                prepared: [
-                                    { id: spell1Id, expended: false },
-                                ],
+                                prepared: [{ id: spell1Id, expended: false }],
                             },
                             slot1: {
                                 max: 3,
                                 value: 3,
-                                prepared: [
-                                    { id: spell2Id, expended: false },
-                                ],
+                                prepared: [{ id: spell2Id, expended: false }],
                             },
                         },
                     },

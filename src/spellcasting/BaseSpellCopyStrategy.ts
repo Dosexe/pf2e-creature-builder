@@ -5,7 +5,7 @@ import type {
     SpellCopyContext,
     SpellCopyResult,
     SpellSlot,
-} from '@/model/spellcasting'
+} from '@/spellcasting/model/spellcasting'
 import type { SpellCopyStrategy } from '@/spellcasting/SpellCopyStrategy'
 
 /**

@@ -27,17 +27,11 @@ export interface DetectedSpell {
     compendiumSource?: string // UUID for creating from compendium
 }
 
-/**
- * Result of spell creation for a caster
- */
 export interface SpellCopyResult {
     createdSpells: Array<{ newId: string; slotKey: string; slotIndex: number }>
     updatedSlots?: Record<string, SpellSlot>
 }
 
-/**
- * Context for spell copy operations
- */
 export interface SpellCopyContext {
     detectedSpells: DetectedSpell[]
     detectedSlots: Record<string, SpellSlot>

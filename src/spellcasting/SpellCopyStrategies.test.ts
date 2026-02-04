@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { DetectedSpell, SpellSlot } from '@/model/spellcasting'
+import type {
+    DetectedSpell,
+    SpellSlot,
+} from '@/spellcasting/model/spellcasting'
 import { PreparedSpellCopyStrategy } from '@/spellcasting/PreparedSpellCopyStrategy'
 import { SpontaneousSpellCopyStrategy } from '@/spellcasting/SpontaneousSpellCopyStrategy'
 import { createSpellCopyStrategy } from './SpellCopyStrategies'

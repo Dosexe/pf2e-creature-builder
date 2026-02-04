@@ -1,10 +1,10 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
+import { BaseSpellCopyStrategy } from '@/spellcasting/BaseSpellCopyStrategy'
 import type {
     SpellCopyContext,
     SpellCopyResult,
     SpellSlot,
-} from '@/model/spellcasting'
-import { BaseSpellCopyStrategy } from '@/spellcasting/BaseSpellCopyStrategy'
+} from '@/spellcasting/model/spellcasting'
 
 /**
  * Strategy for prepared casters.
@@ -64,7 +64,6 @@ export class PreparedSpellCopyStrategy extends BaseSpellCopyStrategy {
             }
         }
 
-        // Build updated slots with new spell IDs at correct positions
         const updatedSlots: Record<string, SpellSlot> = {}
 
         for (const [slotKey, slot] of Object.entries(context.detectedSlots)) {
@@ -78,7 +77,6 @@ export class PreparedSpellCopyStrategy extends BaseSpellCopyStrategy {
             }
         }
 
-        // Populate with new spell IDs at correct positions
         for (const spellInfo of createdSpells) {
             const slot = updatedSlots[spellInfo.slotKey]
             if (slot?.prepared[spellInfo.slotIndex]) {
