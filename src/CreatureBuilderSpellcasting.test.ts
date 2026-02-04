@@ -4,6 +4,7 @@ import {
     buildSpellcastingName,
     detectSpellcasting,
     expandPreparedSlotsPreservingSpells,
+    expandSpontaneousSlotsPreservingValues,
     generateSpellSlots,
     getAttributeValue,
     getCasterTypeValue,
@@ -150,19 +151,19 @@ describe('CreatureBuilderSpellcasting', () => {
         })
 
         describe('expandPreparedSlotsPreservingSpells', () => {
-            it('updates max/value for new level but preserves prepared spell IDs', () => {
+            it('keeps existing slots with prepared spells entirely unchanged', () => {
                 const currentSlots = {
                     slot0: {
-                        max: 5,
-                        value: 5,
+                        max: 7, // custom value, not from table
+                        value: 7,
                         prepared: [
                             { id: 'spell-a', expended: false },
                             { id: 'spell-b', expended: true },
                         ],
                     },
                     slot1: {
-                        max: 2,
-                        value: 2,
+                        max: 4, // custom value, not from table
+                        value: 4,
                         prepared: [
                             { id: 'spell-c', expended: false },
                             { id: null, expended: false },
@@ -173,12 +174,14 @@ describe('CreatureBuilderSpellcasting', () => {
                     currentSlots,
                     '7',
                 )
-                expect(result.slot0.max).toBe(5)
-                expect(result.slot0.value).toBe(5)
+                // Existing slots are kept entirely unchanged (max, value, prepared)
+                expect(result.slot0.max).toBe(7) // preserved, not overridden
+                expect(result.slot0.value).toBe(7)
                 expect(result.slot0.prepared).toEqual([
                     { id: 'spell-a', expended: false },
                     { id: 'spell-b', expended: true },
                 ])
+                expect(result.slot1.max).toBe(4) // preserved, not overridden
                 expect(result.slot1.prepared).toEqual([
                     { id: 'spell-c', expended: false },
                     { id: null, expended: false },
@@ -200,6 +203,157 @@ describe('CreatureBuilderSpellcasting', () => {
                     { id: null, expended: false },
                     { id: null, expended: false },
                 ])
+            })
+
+            it('preserves existing slots entirely unchanged when cloning at same level', () => {
+                // A caster with custom slot counts that differ from the table:
+                // slot0: 7 cantrips (table says 5), slot1: 4 spells (table says 3), slot2: 3 spells (table says 2)
+                const currentSlots = {
+                    slot0: {
+                        max: 7,
+                        value: 7,
+                        prepared: [
+                            { id: 'cantrip-1', expended: false },
+                            { id: 'cantrip-2', expended: false },
+                            { id: 'cantrip-3', expended: false },
+                            { id: 'cantrip-4', expended: false },
+                            { id: 'cantrip-5', expended: false },
+                            { id: 'cantrip-6', expended: false },
+                            { id: 'cantrip-7', expended: false },
+                        ],
+                    },
+                    slot1: {
+                        max: 4,
+                        value: 4,
+                        prepared: [
+                            { id: 'spell-1a', expended: false },
+                            { id: 'spell-1b', expended: false },
+                            { id: 'spell-1c', expended: true },
+                            { id: 'spell-1d', expended: false },
+                        ],
+                    },
+                    slot2: {
+                        max: 3,
+                        value: 3,
+                        prepared: [
+                            { id: 'spell-2a', expended: false },
+                            { id: 'spell-2b', expended: false },
+                            { id: 'spell-2c', expended: false },
+                        ],
+                    },
+                }
+
+                // Level 3 table: [5, 3, 2, 0, ...]
+                // Existing slots with prepared spells are kept ENTIRELY UNCHANGED
+                const result = expandPreparedSlotsPreservingSpells(
+                    currentSlots,
+                    '3',
+                )
+
+                // slot0: kept unchanged (max=7, not overridden to 5)
+                expect(result.slot0.max).toBe(7) // preserved
+                expect(result.slot0.value).toBe(7)
+                expect(result.slot0.prepared).toHaveLength(7)
+                expect(result.slot0.prepared[0].id).toBe('cantrip-1')
+                expect(result.slot0.prepared[6].id).toBe('cantrip-7')
+
+                // slot1: kept unchanged (max=4, not overridden to 3)
+                expect(result.slot1.max).toBe(4) // preserved
+                expect(result.slot1.value).toBe(4)
+                expect(result.slot1.prepared).toHaveLength(4)
+                expect(result.slot1.prepared[0].id).toBe('spell-1a')
+                expect(result.slot1.prepared[2].expended).toBe(true)
+
+                // slot2: kept unchanged (max=3, not overridden to 2)
+                expect(result.slot2.max).toBe(3) // preserved
+                expect(result.slot2.value).toBe(3)
+                expect(result.slot2.prepared).toHaveLength(3)
+                expect(result.slot2.prepared[0].id).toBe('spell-2a')
+            })
+
+            it('when raising level: preserves existing slots unchanged, adds new slots from table', () => {
+                // A level 3 caster with slots 0-2 populated
+                const currentSlots = {
+                    slot0: {
+                        max: 5,
+                        value: 5,
+                        prepared: [
+                            { id: 'cantrip-1', expended: false },
+                            { id: 'cantrip-2', expended: false },
+                            { id: 'cantrip-3', expended: false },
+                            { id: 'cantrip-4', expended: false },
+                            { id: 'cantrip-5', expended: false },
+                        ],
+                    },
+                    slot1: {
+                        max: 3,
+                        value: 3,
+                        prepared: [
+                            { id: 'spell-1a', expended: false },
+                            { id: 'spell-1b', expended: false },
+                            { id: 'spell-1c', expended: false },
+                        ],
+                    },
+                    slot2: {
+                        max: 2,
+                        value: 2,
+                        prepared: [
+                            { id: 'spell-2a', expended: false },
+                            { id: 'spell-2b', expended: true },
+                        ],
+                    },
+                }
+
+                // Raise to level 5: table [5, 3, 3, 2, 0, ...]
+                // Existing slots with prepared spells are kept UNCHANGED
+                // NEW slots (slot3) are added from table
+                const result = expandPreparedSlotsPreservingSpells(
+                    currentSlots,
+                    '5',
+                )
+
+                // slot0: kept entirely unchanged
+                expect(result.slot0.max).toBe(5)
+                expect(result.slot0.value).toBe(5)
+                expect(result.slot0.prepared).toHaveLength(5)
+                expect(result.slot0.prepared.map((p) => p.id)).toEqual([
+                    'cantrip-1',
+                    'cantrip-2',
+                    'cantrip-3',
+                    'cantrip-4',
+                    'cantrip-5',
+                ])
+
+                // slot1: kept entirely unchanged
+                expect(result.slot1.max).toBe(3)
+                expect(result.slot1.value).toBe(3)
+                expect(result.slot1.prepared).toHaveLength(3)
+                expect(result.slot1.prepared.map((p) => p.id)).toEqual([
+                    'spell-1a',
+                    'spell-1b',
+                    'spell-1c',
+                ])
+
+                // slot2: kept entirely unchanged (max stays 2, NOT changed to 3)
+                expect(result.slot2.max).toBe(2) // preserved, not changed to 3
+                expect(result.slot2.value).toBe(2)
+                expect(result.slot2.prepared).toHaveLength(2)
+                expect(result.slot2.prepared[0].id).toBe('spell-2a')
+                expect(result.slot2.prepared[1].id).toBe('spell-2b')
+                expect(result.slot2.prepared[1].expended).toBe(true)
+
+                // slot3: NEW slot at level 5 - added from table (max=2)
+                expect(result.slot3.max).toBe(2)
+                expect(result.slot3.value).toBe(2)
+                expect(result.slot3.prepared).toHaveLength(2)
+                expect(result.slot3.prepared).toEqual([
+                    { id: null, expended: false },
+                    { id: null, expended: false },
+                ])
+
+                // slot4+: from table (max=0, empty)
+                expect(result.slot4.max).toBe(0)
+                expect(result.slot4.prepared).toHaveLength(0)
             })
         })
 
@@ -242,6 +396,114 @@ describe('CreatureBuilderSpellcasting', () => {
                 for (let i = 0; i <= 11; i++) {
                     expect(slots[`slot${i}`].prepared).toHaveLength(0)
                 }
+            })
+
+            describe('expandSpontaneousSlotsPreservingValues', () => {
+                it('keeps existing slots with max > 0 entirely unchanged', () => {
+                    // A spontaneous caster with custom slot counts that differ from the table
+                    // Table for level 5: [5, 4, 4, 3, 0, ...]
+                    const currentSlots = {
+                        slot0: { max: 7, value: 7, prepared: [] }, // custom: 7 cantrips (table says 5)
+                        slot1: { max: 6, value: 6, prepared: [] }, // custom: 6 slots (table says 4)
+                        slot2: { max: 5, value: 5, prepared: [] }, // custom: 5 slots (table says 4)
+                    }
+
+                    const result = expandSpontaneousSlotsPreservingValues(
+                        currentSlots,
+                        '5',
+                    )
+
+                    // Existing slots are kept entirely unchanged
+                    expect(result.slot0.max).toBe(7) // preserved, not overridden to 5
+                    expect(result.slot0.value).toBe(7)
+                    expect(result.slot1.max).toBe(6) // preserved, not overridden to 4
+                    expect(result.slot1.value).toBe(6)
+                    expect(result.slot2.max).toBe(5) // preserved, not overridden to 4
+                    expect(result.slot2.value).toBe(5)
+                })
+
+                it('preserves existing slots entirely unchanged when cloning at same level', () => {
+                    // A level 3 spontaneous caster with custom slot counts
+                    // Table for level 3: [5, 4, 3, 0, ...]
+                    const currentSlots = {
+                        slot0: { max: 8, value: 8, prepared: [] }, // 8 cantrips (table says 5)
+                        slot1: { max: 5, value: 5, prepared: [] }, // 5 slots (table says 4)
+                        slot2: { max: 4, value: 4, prepared: [] }, // 4 slots (table says 3)
+                    }
+
+                    const result = expandSpontaneousSlotsPreservingValues(
+                        currentSlots,
+                        '3',
+                    )
+
+                    // All existing slots kept unchanged
+                    expect(result.slot0.max).toBe(8) // preserved
+                    expect(result.slot0.value).toBe(8)
+                    expect(result.slot1.max).toBe(5) // preserved
+                    expect(result.slot1.value).toBe(5)
+                    expect(result.slot2.max).toBe(4) // preserved
+                    expect(result.slot2.value).toBe(4)
+
+                    // slot3+ from table (max=0)
+                    expect(result.slot3.max).toBe(0)
+                })
+
+                it('when raising level: preserves existing slots unchanged, adds new slots from table', () => {
+                    // A level 3 spontaneous caster with slots 0-2 populated
+                    // Table for level 3: [5, 4, 3, 0, ...]
+                    const currentSlots = {
+                        slot0: { max: 5, value: 5, prepared: [] },
+                        slot1: { max: 4, value: 4, prepared: [] },
+                        slot2: { max: 3, value: 3, prepared: [] },
+                    }
+
+                    // Raise to level 5: table [5, 4, 4, 3, 0, ...]
+                    const result = expandSpontaneousSlotsPreservingValues(
+                        currentSlots,
+                        '5',
+                    )
+
+                    // Existing slots kept entirely unchanged
+                    expect(result.slot0.max).toBe(5) // preserved
+                    expect(result.slot0.value).toBe(5)
+                    expect(result.slot1.max).toBe(4) // preserved
+                    expect(result.slot1.value).toBe(4)
+                    expect(result.slot2.max).toBe(3) // preserved, NOT changed to 4
+                    expect(result.slot2.value).toBe(3)
+
+                    // slot3: NEW slot at level 5 - added from table (max=3)
+                    expect(result.slot3.max).toBe(3)
+                    expect(result.slot3.value).toBe(3)
+                    expect(result.slot3.prepared).toHaveLength(0)
+
+                    // slot4+: from table (max=0)
+                    expect(result.slot4.max).toBe(0)
+                })
+
+                it('uses table values for slots with max=0', () => {
+                    // A caster with some empty slots (max=0)
+                    const currentSlots = {
+                        slot0: { max: 5, value: 5, prepared: [] },
+                        slot1: { max: 0, value: 0, prepared: [] }, // empty slot
+                        slot2: { max: 0, value: 0, prepared: [] }, // empty slot
+                    }
+
+                    // Level 5 table: [5, 4, 4, 3, 0, ...]
+                    const result = expandSpontaneousSlotsPreservingValues(
+                        currentSlots,
+                        '5',
+                    )
+
+                    // slot0: preserved (max > 0)
+                    expect(result.slot0.max).toBe(5)
+
+                    // slot1, slot2: were empty, now use table values
+                    expect(result.slot1.max).toBe(4) // from table
+                    expect(result.slot2.max).toBe(4) // from table
+
+                    // slot3: from table
+                    expect(result.slot3.max).toBe(3)
+                })
             })
         })
 

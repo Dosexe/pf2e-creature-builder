@@ -172,8 +172,9 @@ export function generateSpellSlots(
 
 /**
  * Expand prepared caster slots for a new level while preserving existing
- * spell assignments (prepared IDs). Use when updating an existing entry
- * after clone; do not clear prepared IDs.
+ * slots entirely. Use when updating an existing entry after clone.
+ * - Existing slots with prepared spells are kept unchanged (max, value, prepared)
+ * - New slots (for higher spell levels) are added from the table
  */
 export function expandPreparedSlotsPreservingSpells(
     currentSlots: Record<string, SpellSlot>,
@@ -183,13 +184,33 @@ export function expandPreparedSlotsPreservingSpells(
     const result: Record<string, SpellSlot> = {}
     for (const [slotKey, targetSlot] of Object.entries(target)) {
         const current = currentSlots[slotKey]
-        result[slotKey] = {
-            max: targetSlot.max,
-            value: targetSlot.value,
-            prepared:
-                current?.prepared && current.prepared.length > 0
-                    ? current.prepared
-                    : targetSlot.prepared,
+        if (current?.prepared && current.prepared.length > 0) {
+            result[slotKey] = current
+        } else {
+            result[slotKey] = targetSlot
+        }
+    }
+    return result
+}
+
+/**
+ * Expand spontaneous caster slots for a new level while preserving existing
+ * slots entirely. Use when updating an existing entry after clone.
+ * - Existing slots with max > 0 are kept unchanged (max, value, prepared)
+ * - New slots (for higher spell levels) are added from the table
+ */
+export function expandSpontaneousSlotsPreservingValues(
+    currentSlots: Record<string, SpellSlot>,
+    level: string,
+): Record<string, SpellSlot> {
+    const target = generateSpellSlots('spontaneous', level)
+    const result: Record<string, SpellSlot> = {}
+    for (const [slotKey, targetSlot] of Object.entries(target)) {
+        const current = currentSlots[slotKey]
+        if (current && current.max > 0) {
+            result[slotKey] = current
+        } else {
+            result[slotKey] = targetSlot
         }
     }
     return result

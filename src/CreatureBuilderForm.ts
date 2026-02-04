@@ -14,6 +14,7 @@ import {
     buildSpellcastingName,
     detectSpellcasting,
     expandPreparedSlotsPreservingSpells,
+    expandSpontaneousSlotsPreservingValues,
     generateSpellSlots,
     parseSpellcastingFormData,
 } from './CreatureBuilderSpellcasting'
@@ -216,29 +217,31 @@ export class CreatureBuilderForm extends FormApplication {
             ) as Record<string, SpellSlot> | undefined
             const resolvedCasterType = (casterType ??
                 'innate') as SpellcastingCasterType
-            const updatedSlots =
-                currentSlots && resolvedCasterType === 'prepared'
-                    ? expandPreparedSlotsPreservingSpells(
-                          currentSlots,
-                          this.level,
-                      )
-                    : currentSlots
-                      ? (() => {
-                            const strategy = createSpellCopyStrategy(
-                                resolvedCasterType,
-                                this.actor,
-                            )
-                            return strategy
-                                ? strategy.buildInitialSlots(
-                                      currentSlots,
-                                      this.level,
-                                  )
-                                : generateSpellSlots(
-                                      resolvedCasterType,
-                                      this.level,
-                                  )
-                        })()
-                      : generateSpellSlots(resolvedCasterType, this.level)
+            const updatedSlots = (() => {
+                if (!currentSlots) {
+                    return generateSpellSlots(resolvedCasterType, this.level)
+                }
+                if (resolvedCasterType === 'prepared') {
+                    return expandPreparedSlotsPreservingSpells(
+                        currentSlots,
+                        this.level,
+                    )
+                }
+                if (resolvedCasterType === 'spontaneous') {
+                    return expandSpontaneousSlotsPreservingValues(
+                        currentSlots,
+                        this.level,
+                    )
+                }
+                // innate: use strategy or generate new slots
+                const strategy = createSpellCopyStrategy(
+                    resolvedCasterType,
+                    this.actor,
+                )
+                return strategy
+                    ? strategy.buildInitialSlots(currentSlots, this.level)
+                    : generateSpellSlots(resolvedCasterType, this.level)
+            })()
             const spellsLabel = (game as Game).i18n.localize(
                 `${KeyPrefix}.spells`,
             )
@@ -395,10 +398,10 @@ export class CreatureBuilderForm extends FormApplication {
             )
 
             // Clone original actor with overrides (copies all data + items; save to world)
-            const cloneResult = this.actor.clone(updateData, { save: true })
-            const newActor = await (Promise.resolve(cloneResult) as Promise<
-                Actor | undefined
-            >)
+            const newActor: BaseActor | undefined = await this.actor.clone(
+                updateData,
+                { save: true },
+            )
             if (!newActor) {
                 globalLog(true, 'Failed to clone actor')
                 return
@@ -429,7 +432,7 @@ export class CreatureBuilderForm extends FormApplication {
             ])
             this.actor = originalActor
 
-            newActor.sheet?.render(true)
+            ;(newActor as Actor).sheet?.render(true)
         }
     }
 
