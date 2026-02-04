@@ -653,6 +653,61 @@ describe('CreatureBuilderSpellcasting', () => {
             expect(mmSpell?.spellData.name).toBe('Magic Missile')
         })
 
+        it('detects same spell in multiple slots (prepared caster)', () => {
+            const spellcastingEntryId = 'entry123'
+            const fireballId = 'fireball'
+
+            const items = [
+                {
+                    id: spellcastingEntryId,
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'prepared' },
+                        slots: {
+                            slot3: {
+                                max: 3,
+                                value: 3,
+                                prepared: [
+                                    { id: fireballId, expended: false },
+                                    { id: fireballId, expended: false },
+                                    { id: null, expended: false },
+                                ],
+                            },
+                        },
+                    },
+                },
+                {
+                    id: fireballId,
+                    type: 'spell',
+                    name: 'Fireball',
+                    system: {
+                        location: { value: spellcastingEntryId },
+                        level: { value: 3 },
+                    },
+                },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '1')
+
+            expect(result.spellcastingEntryId).toBe(spellcastingEntryId)
+            expect(result.spells).toHaveLength(2)
+
+            const slot0 = result.spells?.find(
+                (s) => s.slotKey === 'slot3' && s.slotIndex === 0,
+            )
+            const slot1 = result.spells?.find(
+                (s) => s.slotKey === 'slot3' && s.slotIndex === 1,
+            )
+            expect(slot0).toBeDefined()
+            expect(slot1).toBeDefined()
+            expect(slot0?.originalId).toBe(fireballId)
+            expect(slot1?.originalId).toBe(fireballId)
+            expect(slot0?.spellData.name).toBe('Fireball')
+            expect(slot1?.spellData.name).toBe('Fireball')
+        })
+
         it('ignores spells not in slots', () => {
             const spellcastingEntryId = 'entry123'
             const spellInSlotId = 'spell1'

@@ -222,7 +222,7 @@ describe('SpellCopyStrategies', () => {
                     compendiumSource: 'Compendium.pf2e.spells.fireball',
                 },
                 {
-                    originalId: 'oldSpell2',
+                    originalId: 'oldSpell1',
                     slotKey: 'slot3',
                     slotIndex: 1,
                     spellData: { name: 'Fireball', system: {} },
@@ -236,7 +236,7 @@ describe('SpellCopyStrategies', () => {
                     value: 3,
                     prepared: [
                         { id: 'oldSpell1', expended: false },
-                        { id: 'oldSpell2', expended: false },
+                        { id: 'oldSpell1', expended: false },
                         { id: null, expended: false },
                     ],
                 },

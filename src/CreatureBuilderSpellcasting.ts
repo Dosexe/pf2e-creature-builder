@@ -186,7 +186,6 @@ export function buildSpellcastingName(
  * Build the complete spellcasting entry object for PF2e
  */
 export function buildSpellcastingEntry(config: SpellcastingConfig): ItemData {
-    // Use existing slots if provided (from detected creature), otherwise generate new ones
     const slots =
         config.slots ?? generateSpellSlots(config.casterType, config.level)
 
@@ -315,10 +314,11 @@ export function detectSpellcasting(
     if (detected.spellcastingEntryId) {
         const spells: DetectedSpell[] = []
 
-        // For prepared casters, build a map of spell ID to slot location
-        const spellIdToSlot = new Map<
+        // For prepared casters, build a map of spell ID to all slot locations
+        // (same spell can be in multiple slots)
+        const spellIdToSlots = new Map<
             string,
-            { slotKey: string; slotIndex: number }
+            Array<{ slotKey: string; slotIndex: number }>
         >()
 
         const isPreparedCaster = detected.casterType === CasterTypeEnum.prepared
@@ -328,10 +328,12 @@ export function detectSpellcasting(
                 if (slot.prepared) {
                     slot.prepared.forEach((preparedSpell, index) => {
                         if (preparedSpell.id) {
-                            spellIdToSlot.set(preparedSpell.id, {
-                                slotKey,
-                                slotIndex: index,
-                            })
+                            let positions = spellIdToSlots.get(preparedSpell.id)
+                            if (!positions) {
+                                positions = []
+                                spellIdToSlots.set(preparedSpell.id, positions)
+                            }
+                            positions.push({ slotKey, slotIndex: index })
                         }
                     })
                 }
@@ -359,18 +361,20 @@ export function detectSpellcasting(
                     ) as number | undefined
 
                     if (isPreparedCaster) {
-                        const slotInfo = spellIdToSlot.get(item.id)
-                        if (slotInfo) {
-                            spells.push({
-                                originalId: id,
-                                slotKey: slotInfo.slotKey,
-                                slotIndex: slotInfo.slotIndex,
-                                spellData: spellDataWithoutId as Record<
-                                    string,
-                                    unknown
-                                >,
-                                compendiumSource,
-                            })
+                        const positions = spellIdToSlots.get(item.id)
+                        if (positions) {
+                            for (const { slotKey, slotIndex } of positions) {
+                                spells.push({
+                                    originalId: id,
+                                    slotKey,
+                                    slotIndex,
+                                    spellData: spellDataWithoutId as Record<
+                                        string,
+                                        unknown
+                                    >,
+                                    compendiumSource,
+                                })
+                            }
                         }
                     } else {
                         // For spontaneous/innate casters, include all spells
