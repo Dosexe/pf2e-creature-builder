@@ -1,0 +1,941 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Options, RoadMaps, Statistics } from './Keys'
+
+vi.mock('@/utils', () => ({ globalLog: vi.fn() }))
+
+// Import after mocking
+import { globalLog } from '@/utils'
+import { RoadMapRegistry } from './RoadMapRegistry'
+
+describe('RoadMapRegistry', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        RoadMapRegistry.resetInstance()
+        // Clear global mocks
+        vi.unstubAllGlobals()
+    })
+
+    describe('Singleton Pattern', () => {
+        it('returns the same instance on multiple calls', () => {
+            const instance1 = RoadMapRegistry.getInstance()
+            const instance2 = RoadMapRegistry.getInstance()
+            expect(instance1).toBe(instance2)
+        })
+
+        it('creates a new instance after reset', () => {
+            const instance1 = RoadMapRegistry.getInstance()
+            RoadMapRegistry.resetInstance()
+            const instance2 = RoadMapRegistry.getInstance()
+            expect(instance1).not.toBe(instance2)
+        })
+    })
+
+    describe('Built-in Roadmaps', () => {
+        it('returns built-in roadmaps immediately', () => {
+            const registry = RoadMapRegistry.getInstance()
+            const builtIn = registry.getBuiltInRoadmaps()
+
+            expect(Object.keys(builtIn).length).toBeGreaterThan(0)
+            expect(builtIn['PF2EMONSTERMAKER.brute']).toBeDefined()
+            expect(builtIn['PF2EMONSTERMAKER.soldier']).toBeDefined()
+        })
+
+        it('returns a copy of built-in roadmaps to prevent mutation', () => {
+            const registry = RoadMapRegistry.getInstance()
+            const builtIn1 = registry.getBuiltInRoadmaps()
+            const builtIn2 = registry.getBuiltInRoadmaps()
+
+            expect(builtIn1).not.toBe(builtIn2)
+            expect(builtIn1).toEqual(builtIn2)
+        })
+
+        it('correctly identifies built-in roadmaps', () => {
+            const registry = RoadMapRegistry.getInstance()
+
+            expect(registry.isBuiltIn('PF2EMONSTERMAKER.brute')).toBe(true)
+            expect(registry.isBuiltIn('PF2EMONSTERMAKER.soldier')).toBe(true)
+            expect(registry.isBuiltIn('PF2EMONSTERMAKER.custom.tank')).toBe(
+                false,
+            )
+            expect(registry.isBuiltIn('nonexistent')).toBe(false)
+        })
+
+        it('getRoadmap returns correct roadmap for built-in key', () => {
+            const registry = RoadMapRegistry.getInstance()
+            const brute = registry.getRoadmap('PF2EMONSTERMAKER.brute')
+
+            expect(brute).toBeDefined()
+            expect(brute).toEqual(RoadMaps['PF2EMONSTERMAKER.brute'])
+        })
+
+        it('getRoadmap returns undefined for nonexistent key', () => {
+            const registry = RoadMapRegistry.getInstance()
+            const result = registry.getRoadmap('nonexistent')
+
+            expect(result).toBeUndefined()
+        })
+    })
+
+    describe('Custom Roadmaps Loading', () => {
+        it('sets isReady to false initially', () => {
+            const registry = RoadMapRegistry.getInstance()
+            expect(registry.isReady).toBe(false)
+        })
+
+        it('sets isReady to true after loading when FilePicker is not available', async () => {
+            const registry = RoadMapRegistry.getInstance()
+
+            await registry.loadCustomRoadmaps()
+
+            expect(registry.isReady).toBe(true)
+            expect(globalLog).toHaveBeenCalledWith(
+                false,
+                'FilePicker not available, skipping custom roadmaps',
+            )
+        })
+
+        it('does not reload if already ready', async () => {
+            const registry = RoadMapRegistry.getInstance()
+
+            await registry.loadCustomRoadmaps()
+            vi.clearAllMocks()
+            await registry.loadCustomRoadmaps()
+
+            expect(globalLog).toHaveBeenCalledWith(
+                false,
+                'Custom roadmaps already loaded',
+            )
+        })
+
+        it('handles missing custom roadmaps folder gracefully', async () => {
+            vi.stubGlobal('FilePicker', {
+                browse: vi
+                    .fn()
+                    .mockRejectedValue(new Error('Folder not found')),
+            })
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            expect(registry.isReady).toBe(true)
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                false,
+                expect.stringContaining('Custom roadmaps folder not found'),
+            )
+        })
+
+        it('handles empty custom roadmaps folder', async () => {
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({ files: [] }),
+            })
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            expect(registry.isReady).toBe(true)
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                false,
+                'No custom roadmap files found',
+            )
+        })
+
+        it('loads a single custom roadmap from JSON file', async () => {
+            const customRoadmap = {
+                name: 'Tank',
+                statistics: {
+                    strength: 'high',
+                    constitution: 'extreme',
+                    armorClass: 'high',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/tank.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            expect(Object.keys(custom)).toHaveLength(1)
+            expect(custom['PF2EMONSTERMAKER.custom.tank']).toBeDefined()
+            expect(custom['PF2EMONSTERMAKER.custom.tank'][Statistics.str]).toBe(
+                Options.high,
+            )
+            expect(custom['PF2EMONSTERMAKER.custom.tank'][Statistics.con]).toBe(
+                Options.extreme,
+            )
+            expect(custom['PF2EMONSTERMAKER.custom.tank'][Statistics.ac]).toBe(
+                Options.high,
+            )
+        })
+
+        it('loads multiple roadmaps from array JSON file', async () => {
+            const customRoadmaps = [
+                {
+                    name: 'Glass Cannon',
+                    statistics: {
+                        strength: 'extreme',
+                        hitPoints: 'low',
+                    },
+                },
+                {
+                    name: 'Defender',
+                    statistics: {
+                        armorClass: 'extreme',
+                        fortitude: 'high',
+                    },
+                },
+            ]
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/presets.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmaps),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            expect(Object.keys(custom)).toHaveLength(2)
+            expect(custom['PF2EMONSTERMAKER.custom.glass_cannon']).toBeDefined()
+            expect(custom['PF2EMONSTERMAKER.custom.defender']).toBeDefined()
+        })
+
+        it('filters non-JSON files', async () => {
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/readme.txt',
+                        'pf2e-creature-builder/custom-roadmaps/tank.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () =>
+                        Promise.resolve({
+                            name: 'Tank',
+                            statistics: { strength: 'high' },
+                        }),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            // Should only fetch the JSON file
+            expect(fetch).toHaveBeenCalledTimes(1)
+            expect(fetch).toHaveBeenCalledWith(
+                'pf2e-creature-builder/custom-roadmaps/tank.json',
+            )
+        })
+
+        it('handles fetch errors gracefully', async () => {
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/broken.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: false,
+                    status: 404,
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            expect(registry.isReady).toBe(true)
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('Failed to fetch'),
+            )
+        })
+
+        it('handles JSON parse errors gracefully', async () => {
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/invalid.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.reject(new Error('Invalid JSON')),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            expect(registry.isReady).toBe(true)
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('Error loading roadmap file'),
+                expect.any(Error),
+            )
+        })
+    })
+
+    describe('Roadmap Translation', () => {
+        it('translates all ability score keys correctly', async () => {
+            const customRoadmap = {
+                name: 'Ability Test',
+                statistics: {
+                    strength: 'high',
+                    dexterity: 'moderate',
+                    constitution: 'extreme',
+                    intelligence: 'low',
+                    wisdom: 'terrible',
+                    charisma: 'abysmal',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap =
+                registry.getCustomRoadmaps()[
+                    'PF2EMONSTERMAKER.custom.ability_test'
+                ]
+            expect(roadmap[Statistics.str]).toBe(Options.high)
+            expect(roadmap[Statistics.dex]).toBe(Options.moderate)
+            expect(roadmap[Statistics.con]).toBe(Options.extreme)
+            expect(roadmap[Statistics.int]).toBe(Options.low)
+            expect(roadmap[Statistics.wis]).toBe(Options.terrible)
+            expect(roadmap[Statistics.cha]).toBe(Options.abysmal)
+        })
+
+        it('translates defence and combat keys correctly', async () => {
+            const customRoadmap = {
+                name: 'Combat Test',
+                statistics: {
+                    hitPoints: 'high',
+                    perception: 'extreme',
+                    armorClass: 'high',
+                    fortitude: 'high',
+                    reflex: 'moderate',
+                    will: 'low',
+                    strikeBonus: 'high',
+                    strikeDamage: 'extreme',
+                    spellcasting: 'moderate',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap =
+                registry.getCustomRoadmaps()[
+                    'PF2EMONSTERMAKER.custom.combat_test'
+                ]
+            expect(roadmap[Statistics.hp]).toBe(Options.high)
+            expect(roadmap[Statistics.per]).toBe(Options.extreme)
+            expect(roadmap[Statistics.ac]).toBe(Options.high)
+            expect(roadmap[Statistics.fort]).toBe(Options.high)
+            expect(roadmap[Statistics.ref]).toBe(Options.moderate)
+            expect(roadmap[Statistics.wil]).toBe(Options.low)
+            expect(roadmap[Statistics.strikeBonus]).toBe(Options.high)
+            expect(roadmap[Statistics.strikeDamage]).toBe(Options.extreme)
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.moderate)
+        })
+
+        it('translates skill keys correctly', async () => {
+            const customRoadmap = {
+                name: 'Skill Test',
+                statistics: {
+                    acrobatics: 'high',
+                    arcana: 'extreme',
+                    athletics: 'high',
+                    stealth: 'extreme',
+                    thievery: 'moderate',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap =
+                registry.getCustomRoadmaps()[
+                    'PF2EMONSTERMAKER.custom.skill_test'
+                ]
+            expect(roadmap[Statistics.acrobatics]).toBe(Options.high)
+            expect(roadmap[Statistics.arcana]).toBe(Options.extreme)
+            expect(roadmap[Statistics.athletics]).toBe(Options.high)
+            expect(roadmap[Statistics.stealth]).toBe(Options.extreme)
+            expect(roadmap[Statistics.thievery]).toBe(Options.moderate)
+        })
+
+        it('handles case-insensitive option values', async () => {
+            const customRoadmap = {
+                name: 'Case Test',
+                statistics: {
+                    strength: 'HIGH',
+                    dexterity: 'Moderate',
+                    constitution: 'EXTREME',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap =
+                registry.getCustomRoadmaps()[
+                    'PF2EMONSTERMAKER.custom.case_test'
+                ]
+            expect(roadmap[Statistics.str]).toBe(Options.high)
+            expect(roadmap[Statistics.dex]).toBe(Options.moderate)
+            expect(roadmap[Statistics.con]).toBe(Options.extreme)
+        })
+
+        it('skips unknown statistic keys with warning', async () => {
+            const customRoadmap = {
+                name: 'Unknown Key Test',
+                statistics: {
+                    strength: 'high',
+                    unknownStat: 'extreme',
+                    invalidKey: 'moderate',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap =
+                registry.getCustomRoadmaps()[
+                    'PF2EMONSTERMAKER.custom.unknown_key_test'
+                ]
+            expect(roadmap[Statistics.str]).toBe(Options.high)
+            expect(Object.keys(roadmap)).toHaveLength(1)
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('Unknown statistic "unknownStat"'),
+            )
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('Unknown statistic "invalidKey"'),
+            )
+        })
+
+        it('skips unknown option values with warning', async () => {
+            const customRoadmap = {
+                name: 'Unknown Value Test',
+                statistics: {
+                    strength: 'high',
+                    dexterity: 'superstrong',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap =
+                registry.getCustomRoadmaps()[
+                    'PF2EMONSTERMAKER.custom.unknown_value_test'
+                ]
+            expect(roadmap[Statistics.str]).toBe(Options.high)
+            expect(roadmap[Statistics.dex]).toBeUndefined()
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('Unknown option value "superstrong"'),
+            )
+        })
+    })
+
+    describe('Roadmap Validation', () => {
+        it('skips roadmaps without name', async () => {
+            const customRoadmap = {
+                statistics: {
+                    strength: 'high',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('missing required "name" field'),
+            )
+        })
+
+        it('skips roadmaps with empty name', async () => {
+            const customRoadmap = {
+                name: '   ',
+                statistics: {
+                    strength: 'high',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('missing required "name" field'),
+            )
+        })
+
+        it('skips roadmaps without statistics object', async () => {
+            const customRoadmap = {
+                name: 'No Stats',
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('missing required "statistics" object'),
+            )
+        })
+
+        it('skips roadmaps with statistics as array', async () => {
+            const customRoadmap = {
+                name: 'Array Stats',
+                statistics: ['strength', 'high'],
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('missing required "statistics" object'),
+            )
+        })
+
+        it('skips roadmaps with no valid statistics', async () => {
+            const customRoadmap = {
+                name: 'All Invalid',
+                statistics: {
+                    unknownStat1: 'high',
+                    unknownStat2: 'moderate',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('has no valid statistics'),
+            )
+        })
+
+        it('skips duplicate custom roadmap names', async () => {
+            const customRoadmaps = [
+                { name: 'Duplicate', statistics: { strength: 'high' } },
+                { name: 'Duplicate', statistics: { strength: 'extreme' } },
+            ]
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmaps),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            expect(Object.keys(custom)).toHaveLength(1)
+            // First one should be loaded
+            expect(
+                custom['PF2EMONSTERMAKER.custom.duplicate'][Statistics.str],
+            ).toBe(Options.high)
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('Duplicate custom roadmap name'),
+            )
+        })
+    })
+
+    describe('Built-in Protection', () => {
+        it('cannot override built-in roadmaps with custom ones', async () => {
+            // Try to create a custom roadmap with a name that would conflict
+            // Note: The internal key is generated as PF2EMONSTERMAKER.custom.<name>
+            // So we can't actually override built-in roadmaps by name alone
+            // But we test the protection mechanism anyway
+            const customRoadmap = {
+                name: 'Tank',
+                statistics: {
+                    strength: 'extreme',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            // Custom roadmap should be added (since key is PF2EMONSTERMAKER.custom.tank)
+            expect(
+                registry.getCustomRoadmaps()['PF2EMONSTERMAKER.custom.tank'],
+            ).toBeDefined()
+
+            // Built-in brute should remain unchanged
+            const brute = registry.getRoadmap('PF2EMONSTERMAKER.brute')
+            expect(brute).toEqual(RoadMaps['PF2EMONSTERMAKER.brute'])
+        })
+    })
+
+    describe('Name Sanitization', () => {
+        it('sanitizes names with special characters', async () => {
+            const customRoadmap = {
+                name: 'Tank & Healer (v2.0)',
+                statistics: {
+                    strength: 'high',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            expect(
+                custom['PF2EMONSTERMAKER.custom.tank_healer_v2_0'],
+            ).toBeDefined()
+        })
+
+        it('sanitizes names with leading/trailing whitespace', async () => {
+            const customRoadmap = {
+                name: '  My Tank  ',
+                statistics: {
+                    strength: 'high',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            expect(custom['PF2EMONSTERMAKER.custom.my_tank']).toBeDefined()
+        })
+    })
+
+    describe('getAllRoadmaps', () => {
+        it('returns built-in roadmaps when no custom loaded', () => {
+            const registry = RoadMapRegistry.getInstance()
+            const all = registry.getAllRoadmaps()
+
+            expect(all['PF2EMONSTERMAKER.brute']).toBeDefined()
+            expect(all['PF2EMONSTERMAKER.soldier']).toBeDefined()
+        })
+
+        it('merges built-in and custom roadmaps', async () => {
+            const customRoadmap = {
+                name: 'Custom Tank',
+                statistics: {
+                    strength: 'extreme',
+                    constitution: 'high',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/tank.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const all = registry.getAllRoadmaps()
+
+            // Should have built-in
+            expect(all['PF2EMONSTERMAKER.brute']).toBeDefined()
+            expect(all['PF2EMONSTERMAKER.soldier']).toBeDefined()
+
+            // Should have custom
+            expect(all['PF2EMONSTERMAKER.custom.custom_tank']).toBeDefined()
+            expect(
+                all['PF2EMONSTERMAKER.custom.custom_tank'][Statistics.str],
+            ).toBe(Options.extreme)
+        })
+
+        it('returns a copy to prevent mutation', async () => {
+            const registry = RoadMapRegistry.getInstance()
+            const all1 = registry.getAllRoadmaps()
+            const all2 = registry.getAllRoadmaps()
+
+            expect(all1).not.toBe(all2)
+            expect(all1).toEqual(all2)
+        })
+    })
+
+    describe('getRoadmap with custom roadmaps', () => {
+        it('returns custom roadmap when requested', async () => {
+            const customRoadmap = {
+                name: 'My Custom',
+                statistics: {
+                    strength: 'extreme',
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/custom.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap = registry.getRoadmap(
+                'PF2EMONSTERMAKER.custom.my_custom',
+            )
+            expect(roadmap).toBeDefined()
+            expect(roadmap?.[Statistics.str]).toBe(Options.extreme)
+        })
+
+        it('prioritizes built-in over custom for same key (if it could happen)', () => {
+            const registry = RoadMapRegistry.getInstance()
+
+            // Built-in should always be found first due to implementation
+            const brute = registry.getRoadmap('PF2EMONSTERMAKER.brute')
+            expect(brute).toEqual(RoadMaps['PF2EMONSTERMAKER.brute'])
+        })
+    })
+})

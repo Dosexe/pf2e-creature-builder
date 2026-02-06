@@ -2,10 +2,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const renderSpy = vi.fn()
-const CreatureBuilderFormMock = vi.fn(function (this: any, actor: unknown) {
+const CreatureBuilderFormMock = vi.fn(function (
+    this: any,
+    actor: unknown,
+    options?: unknown,
+) {
     this.actor = actor
+    this.options = options
     this.render = renderSpy
 })
+
+const loadCustomRoadmapsSpy = vi.fn().mockResolvedValue(undefined)
+const RoadMapRegistryMock = {
+    getInstance: vi.fn(() => ({
+        loadCustomRoadmaps: loadCustomRoadmapsSpy,
+    })),
+}
 
 type HookCallback = (...args: any[]) => void
 let hooks: Record<string, HookCallback[]> = {}
@@ -87,18 +99,19 @@ const $ = (input: string | Element) => {
 const setupModule = async () => {
     hooks = {}
     vi.resetModules()
-    vi.doMock(
-        '@/utils',
-        () => ({
-            globalLog: vi.fn(),
-        }),
-        { virtual: true },
-    )
+    vi.doMock('@/utils', () => ({
+        globalLog: vi.fn(),
+    }))
     vi.doMock('./CreatureBuilderForm', () => ({
         CreatureBuilderForm: CreatureBuilderFormMock,
     }))
+    vi.doMock('./RoadMapRegistry', () => ({
+        RoadMapRegistry: RoadMapRegistryMock,
+    }))
     CreatureBuilderFormMock.mockClear()
     renderSpy.mockClear()
+    loadCustomRoadmapsSpy.mockClear()
+    RoadMapRegistryMock.getInstance.mockClear()
 
     ;(globalThis as any).Hooks = {
         on: vi.fn((event: string, callback: HookCallback) => {
@@ -114,7 +127,9 @@ const setupModule = async () => {
         },
         user: {},
     }
-    ;(globalThis as any).Actor = { create: vi.fn() }
+    ;(globalThis as any).Actor = vi.fn(function (this: any, data: any) {
+        Object.assign(this, data)
+    })
     ;(globalThis as any).$ = $
 
     await import('./index')
@@ -139,7 +154,7 @@ beforeEach(async () => {
 })
 
 describe('index hooks', () => {
-    it('registers settings on init', async () => {
+    it('registers settings and initializes RoadMapRegistry on init', async () => {
         await hooks.init?.[0]?.()
         const register = (globalThis as any).game.settings.register
         expect(register).toHaveBeenCalledTimes(2)
@@ -153,6 +168,12 @@ describe('index hooks', () => {
             'abbreviateName',
             expect.objectContaining({ type: Boolean, default: false }),
         )
+        expect(RoadMapRegistryMock.getInstance).toHaveBeenCalled()
+    })
+
+    it('loads custom roadmaps on ready hook', async () => {
+        await hooks.ready?.[0]?.()
+        expect(loadCustomRoadmapsSpy).toHaveBeenCalled()
     })
 
     it('adds the Creature Builder button to npc sheets and opens form', () => {
@@ -173,6 +194,32 @@ describe('index hooks', () => {
         button.click()
         expect(CreatureBuilderFormMock).toHaveBeenCalledWith(actor)
         expect(renderSpy).toHaveBeenCalledWith(true)
+    })
+
+    it('skips non-npc actor sheets', () => {
+        const actor = {
+            type: 'character',
+            canUserModify: vi.fn().mockReturnValue(true),
+        }
+        const html = $('#sheet')
+
+        hooks.renderActorSheet?.[0]?.({ object: actor }, html)
+
+        const button = document.querySelector('.window-header .popout')
+        expect(button).toBeNull()
+    })
+
+    it('skips sheets when user cannot modify actor', () => {
+        const actor = {
+            type: 'npc',
+            canUserModify: vi.fn().mockReturnValue(false),
+        }
+        const html = $('#sheet')
+
+        hooks.renderActorSheet?.[0]?.({ object: actor }, html)
+
+        const button = document.querySelector('.window-header .popout')
+        expect(button).toBeNull()
     })
 
     it('uses abbreviated label when setting is enabled', () => {
@@ -198,5 +245,33 @@ describe('index hooks', () => {
             '#actors .directory-footer.action-buttons button',
         )
         expect(buttons.length).toBe(1)
+    })
+
+    it('creates a new actor and opens form when directory button is clicked', () => {
+        hooks.renderActorDirectory?.[0]?.()
+
+        const button = document.querySelector(
+            '#actors .directory-footer.action-buttons button',
+        ) as HTMLElement
+        expect(button).toBeTruthy()
+
+        button.click()
+
+        expect((globalThis as any).Actor).toHaveBeenCalledWith({
+            name: 'Monster',
+            type: 'npc',
+            system: {
+                details: {
+                    level: {
+                        value: '-1',
+                    },
+                },
+            },
+        })
+        expect(CreatureBuilderFormMock).toHaveBeenCalledWith(
+            expect.objectContaining({ name: 'Monster', type: 'npc' }),
+            { useDefaultLevel: true },
+        )
+        expect(renderSpy).toHaveBeenCalledWith(true)
     })
 })

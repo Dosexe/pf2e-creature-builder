@@ -1,7 +1,11 @@
 import { DefaultCreatureLevel } from '@/Keys'
 import { CreatureBuilderForm } from './CreatureBuilderForm'
+import { RoadMapRegistry } from './RoadMapRegistry'
 
 Hooks.on('init', async () => {
+    // Initialize the RoadMapRegistry singleton (built-in roadmaps available immediately)
+    RoadMapRegistry.getInstance()
+
     // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
     await game['settings'].register(
         'foundryvtt-pf2e-creature-builder',
@@ -23,6 +27,12 @@ Hooks.on('init', async () => {
         type: Boolean,
         default: false,
     })
+})
+
+// Load custom roadmaps asynchronously after the game is ready
+// This ensures built-in roadmaps are available immediately and doesn't slow down initialization
+Hooks.on('ready', async () => {
+    await RoadMapRegistry.getInstance().loadCustomRoadmaps()
 })
 
 function getMonsterManualLabel() {
@@ -76,13 +86,6 @@ Hooks.on('renderActorDirectory', () => {
             new CreatureBuilderForm(actor, {
                 useDefaultLevel: true,
             }).render(true)
-            // Actor.create(monsterData, { temporary: true }).then((actor) => {
-            //     if (actor) {
-            //         new CreatureBuilderForm(actor, {
-            //             useDefaultLevel: true,
-            //         }).render(true)
-            //     }
-            // })
         })
     }
 })

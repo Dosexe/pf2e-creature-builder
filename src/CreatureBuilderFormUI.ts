@@ -7,6 +7,7 @@
 interface StatisticEntry {
     name: string
     availableOptions?: string[]
+    defaultValue?: string
 }
 
 interface CreatureStatistic {
@@ -270,9 +271,11 @@ class CreatureBuilderFormUI {
         this.initializeTraits()
         this.initializeLoreSkills()
         this.initCollapsibleSections()
+        this.setupSpellcastingVisibility()
 
         setTimeout(() => {
             this.setDetectedStats()
+            this.updateSpellcastingOptionsVisibility()
         }, 0)
     }
 
@@ -363,6 +366,93 @@ class CreatureBuilderFormUI {
     }
 
     /**
+     * Setup event listeners for spellcasting dropdowns to toggle visibility and defaults
+     */
+    private setupSpellcastingVisibility(): void {
+        const spellcastingSelect = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellcasting',
+        ) as HTMLSelectElement
+        if (spellcastingSelect) {
+            spellcastingSelect.addEventListener('change', () => {
+                this.updateSpellcastingOptionsVisibility()
+            })
+        }
+
+        // Add listener for caster type to auto-update key attribute default
+        const casterTypeSelect = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellcastingType',
+        ) as HTMLSelectElement
+        if (casterTypeSelect) {
+            casterTypeSelect.addEventListener('change', () => {
+                this.updateKeyAttributeDefault()
+            })
+        }
+    }
+
+    /**
+     * Update the key attribute default based on caster type selection
+     * Innate/Spontaneous -> Charisma, Prepared -> Intelligence
+     */
+    private updateKeyAttributeDefault(): void {
+        const casterTypeSelect = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellcastingType',
+        ) as HTMLSelectElement
+        const attributeSelect = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellcastingAttribute',
+        ) as HTMLSelectElement
+
+        if (!casterTypeSelect || !attributeSelect) return
+
+        const casterType = casterTypeSelect.value
+
+        if (casterType === 'PF2EMONSTERMAKER.casterPrepared') {
+            attributeSelect.value = 'PF2EMONSTERMAKER.attrInt'
+        } else {
+            attributeSelect.value = 'PF2EMONSTERMAKER.attrCha'
+        }
+    }
+
+    /**
+     * Update visibility of spellcasting tradition, type, and attribute options based on spellcasting value
+     */
+    private updateSpellcastingOptionsVisibility(): void {
+        const spellcastingSelect = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellcasting',
+        ) as HTMLSelectElement
+        const traditionSelect = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellcastingTradition',
+        ) as HTMLSelectElement
+        const typeSelect = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellcastingType',
+        ) as HTMLSelectElement
+        const attributeSelect = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellcastingAttribute',
+        ) as HTMLSelectElement
+
+        if (!spellcastingSelect) return
+
+        const isNone = spellcastingSelect.value === 'PF2EMONSTERMAKER.none'
+
+        const traditionRow = traditionSelect?.closest('.form-group')
+        const typeRow = typeSelect?.closest('.form-group')
+        const attributeRow = attributeSelect?.closest('.form-group')
+
+        if (traditionRow) {
+            ;(traditionRow as HTMLElement).style.display = isNone
+                ? 'none'
+                : 'flex'
+        }
+        if (typeRow) {
+            ;(typeRow as HTMLElement).style.display = isNone ? 'none' : 'flex'
+        }
+        if (attributeRow) {
+            ;(attributeRow as HTMLElement).style.display = isNone
+                ? 'none'
+                : 'flex'
+        }
+    }
+
+    /**
      * Set defaults for all statistics
      */
     private setDefaults(): void {
@@ -372,7 +462,8 @@ class CreatureBuilderFormUI {
                     `creatureBuilder${statistic.name}`,
                 ) as HTMLSelectElement
                 if (element) {
-                    element.value = category.defaultValue
+                    element.value =
+                        statistic.defaultValue ?? category.defaultValue
                 }
             }
         }
@@ -431,6 +522,7 @@ class CreatureBuilderFormUI {
                 }
             }
         }
+        this.updateSpellcastingOptionsVisibility()
     }
 
     /**
@@ -836,6 +928,8 @@ class CreatureBuilderFormUI {
             entry.remove()
         })
         this.loreCounter = 0
+
+        this.updateSpellcastingOptionsVisibility()
     }
 
     /**

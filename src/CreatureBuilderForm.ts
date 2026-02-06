@@ -1,20 +1,39 @@
 import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
+import type { ItemData } from '@/model/item'
+import type {
+    CasterType as SpellcastingCasterType,
+    SpellSlot,
+} from '@/spellcasting/model/spellcasting'
+import { createSpellCopyStrategy } from '@/spellcasting/SpellCopyStrategies'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
 } from './CreatureBuilderFormUI'
 import {
+    buildSpellcastingEntry,
+    buildSpellcastingName,
+    detectSpellcasting,
+    expandPreparedSlotsPreservingSpells,
+    expandSpontaneousSlotsPreservingValues,
+    generateSpellSlots,
+    parseSpellcastingFormData,
+} from './CreatureBuilderSpellcasting'
+import {
     actorFields,
+    type CasterType,
     DefaultCreatureLevel,
     DefaultCreatureStatistics,
     KeyPrefix,
     Levels,
+    type MagicalTradition,
     Options,
-    RoadMaps,
     Skills,
     Statistics,
 } from './Keys'
+import { RoadMapRegistry } from './RoadMapRegistry'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
+
+type DetectedStatValue = Options | MagicalTradition | CasterType
 
 export class CreatureBuilderForm extends FormApplication {
     data = DefaultCreatureStatistics
@@ -71,7 +90,7 @@ export class CreatureBuilderForm extends FormApplication {
 
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
-            creatureRoadmaps: RoadMaps,
+            creatureRoadmaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
             detectedStats: this.useDefaultLevel ? {} : this.detectActorStats(),
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
@@ -135,7 +154,7 @@ export class CreatureBuilderForm extends FormApplication {
             statisticValues[Statistics.strikeDamage][this.level][
                 strikeDamageOption
             ]
-        const strike = {
+        const strike: ItemData = {
             // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
             name: game['i18n'].localize(`${KeyPrefix}.strike`),
             type: 'melee',
@@ -155,35 +174,113 @@ export class CreatureBuilderForm extends FormApplication {
         return Item.create(strike, { parent: this.actor })
     }
 
-    applySpellcasting(formData: object) {
+    async applySpellcasting(formData: object) {
         const spellcastingOption = formData[Statistics.spellcasting]
+        const { tradition, casterType, keyAttribute } =
+            parseSpellcastingFormData(formData)
+
         if (spellcastingOption === Options.none) {
+            const entryIds = (
+                this.actor.items as unknown as { type: string; id: string }[]
+            )
+                .filter((i) => i.type === 'spellcastingEntry')
+                .map((i) => i.id)
+            if (entryIds.length > 0) {
+                await this.actor.deleteEmbeddedDocuments('Item', entryIds)
+            }
             return
         }
+
         const spellcastingBonus = parseInt(
             statisticValues[Statistics.spellcasting][this.level][
                 spellcastingOption
             ],
             10,
         )
-        const spellcasting = {
-            // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-            name: game['i18n'].localize(`${KeyPrefix}.spellcasting`),
-            type: 'spellcastingEntry',
-            system: {
-                spelldc: {
-                    value: spellcastingBonus,
-                    dc: spellcastingBonus + 8,
-                },
-                tradition: {
-                    value: 'arcane',
-                },
-                prepared: {
-                    value: 'innate',
-                },
-                showUnpreparedSpells: { value: true },
-            },
+
+        // Clone already has spellcasting entry + spells; we only update or create
+        let existingEntry: { type: string; id: string } | null = null
+        for (const item of this.actor.items as unknown as Iterable<{
+            type: string
+            id: string
+        }>) {
+            if (item.type === 'spellcastingEntry') {
+                existingEntry = item
+                break
+            }
         }
+
+        if (existingEntry) {
+            const currentSlots = foundry.utils.getProperty(
+                existingEntry,
+                'system.slots',
+            ) as Record<string, SpellSlot> | undefined
+            const resolvedCasterType = (casterType ??
+                'innate') as SpellcastingCasterType
+            const updatedSlots = (() => {
+                if (!currentSlots) {
+                    return generateSpellSlots(resolvedCasterType, this.level)
+                }
+                if (resolvedCasterType === 'prepared') {
+                    return expandPreparedSlotsPreservingSpells(
+                        currentSlots,
+                        this.level,
+                    )
+                }
+                if (resolvedCasterType === 'spontaneous') {
+                    return expandSpontaneousSlotsPreservingValues(
+                        currentSlots,
+                        this.level,
+                    )
+                }
+                // innate: use strategy or generate new slots
+                const strategy = createSpellCopyStrategy(
+                    resolvedCasterType,
+                    this.actor,
+                )
+                return strategy
+                    ? strategy.buildInitialSlots(currentSlots, this.level)
+                    : generateSpellSlots(resolvedCasterType, this.level)
+            })()
+            const spellsLabel = (game as Game).i18n.localize(
+                `${KeyPrefix}.spells`,
+            )
+            const entryName = buildSpellcastingName(
+                tradition,
+                resolvedCasterType,
+                spellsLabel,
+            )
+            await (
+                this.actor as {
+                    updateEmbeddedDocuments: (
+                        embeddedName: string,
+                        updates: object[],
+                    ) => Promise<unknown>
+                }
+            ).updateEmbeddedDocuments('Item', [
+                {
+                    _id: existingEntry.id,
+                    name: entryName,
+                    'system.spelldc.value': spellcastingBonus,
+                    'system.spelldc.dc': spellcastingBonus + 8,
+                    'system.tradition.value': tradition,
+                    'system.prepared.value': casterType,
+                    'system.ability.value': keyAttribute,
+                    'system.slots': updatedSlots,
+                },
+            ])
+            return existingEntry
+        }
+
+        // New creature: create entry with generated slots only
+        const spellcasting = buildSpellcastingEntry({
+            tradition,
+            casterType,
+            keyAttribute,
+            spellcastingBonus,
+            level: this.level,
+            slots: generateSpellSlots(casterType, this.level),
+        })
         return Item.create(spellcasting, { parent: this.actor })
     }
 
@@ -226,7 +323,7 @@ export class CreatureBuilderForm extends FormApplication {
                 statisticValues[Statistics.acrobatics][this.level][lore.option],
                 10,
             )
-            const loreItem = {
+            const loreItem: ItemData = {
                 name: `${lore.name} Lore`,
                 type: 'lore',
                 system: {
@@ -263,17 +360,7 @@ export class CreatureBuilderForm extends FormApplication {
                 : DefaultCreatureLevel
             globalLog(false, 'Form data:', formData)
 
-            const newActorData = {
-                name: formData[Statistics.name] || 'New Monster',
-                type: 'npc',
-            }
-            const newActor = await Actor.create(newActorData)
-            if (!newActor) {
-                globalLog(true, 'Failed to create new actor')
-                return
-            }
-
-            const updateData = {}
+            const updateData: Record<string, unknown> = {}
             for (const key of Object.keys(formData)) {
                 if (actorFields[key]) {
                     const actorField = actorFields[key]
@@ -292,7 +379,7 @@ export class CreatureBuilderForm extends FormApplication {
             Object.assign(updateData, this.applyName(formData))
             Object.assign(updateData, this.applyLevel())
             Object.assign(updateData, this.applyTraits(formData))
-
+            Object.assign(updateData, this.applyHitPoints(formData))
             Object.assign(
                 updateData,
                 this.applySenses(
@@ -308,12 +395,33 @@ export class CreatureBuilderForm extends FormApplication {
                     foundry.utils.getProperty(this.actor, 'system.movement'),
                 ),
             )
-            await newActor.update(updateData)
+
+            const newActor: BaseActor | undefined = await this.actor.clone(
+                updateData,
+                { save: true },
+            )
+            if (!newActor) {
+                globalLog(true, 'Failed to clone actor')
+                return
+            }
 
             const originalActor = this.actor
             this.actor = newActor
+
+            const toDelete: string[] = []
+            for (const item of newActor.items) {
+                if (
+                    item.id &&
+                    (item.type === 'melee' || item.type === 'lore')
+                ) {
+                    toDelete.push(item.id)
+                }
+            }
+            if (toDelete.length > 0) {
+                await newActor.deleteEmbeddedDocuments('Item', toDelete)
+            }
+
             await Promise.all([
-                this.actor.update(this.applyHitPoints(formData)),
                 this.applyStrike(formData),
                 this.applySpellcasting(formData),
                 this.applySkills(formData),
@@ -321,12 +429,12 @@ export class CreatureBuilderForm extends FormApplication {
             ])
             this.actor = originalActor
 
-            newActor.sheet?.render(true)
+            ;(newActor as Actor).sheet?.render(true)
         }
     }
 
-    detectActorStats(): { [key: string]: Options } {
-        const detected: { [key: string]: Options } = {}
+    detectActorStats(): Record<string, DetectedStatValue> {
+        const detected: Record<string, DetectedStatValue> = {}
 
         const actorLevel = String(
             foundry.utils.getProperty(
@@ -433,22 +541,18 @@ export class CreatureBuilderForm extends FormApplication {
         // Detect Spellcasting (check if actor has any spellcasting entries)
         const items = this.actor.items
         if (items) {
-            for (const item of items) {
-                if (item.type === 'spellcastingEntry') {
-                    const spellDC =
-                        foundry.utils.getProperty(item, 'system.spelldc.dc') ??
-                        foundry.utils.getProperty(item, 'system.spelldc.value')
-                    if (spellDC) {
-                        // DC is typically attack + 8, so we check the attack value
-                        const attackValue = Number(spellDC) - 8
-                        detected[Statistics.spellcasting] = detectStatLevel(
-                            Statistics.spellcasting,
-                            clampedLevel,
-                            attackValue,
-                        )
-                        break
-                    }
-                }
+            const spellcastingData = detectSpellcasting(items, clampedLevel)
+            if (spellcastingData.spellcastingLevel) {
+                detected[Statistics.spellcasting] =
+                    spellcastingData.spellcastingLevel
+            }
+            if (spellcastingData.tradition) {
+                detected[Statistics.spellcastingTradition] =
+                    spellcastingData.tradition
+            }
+            if (spellcastingData.casterType) {
+                detected[Statistics.spellcastingType] =
+                    spellcastingData.casterType
             }
         }
 
@@ -530,7 +634,7 @@ export class CreatureBuilderForm extends FormApplication {
         return {
             CreatureStatistics: JSON.parse(JSON.stringify(this.data)),
             Levels: Levels,
-            RoadMaps: RoadMaps,
+            RoadMaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
             name: this.actor.name,
             detectedStats: detectedStats,
             detectedTraits: detectedTraits,
