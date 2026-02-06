@@ -15,12 +15,12 @@ export default defineConfig({
             provider: 'v8',
             reporter: ['text', 'json', 'html'],
             include: ['src/**/*.ts'],
-            exclude: ['src/**/*.test.ts', 'src/index.ts'],
+            exclude: ['src/**/*.test.ts'],
             thresholds: {
-                lines: 80,
-                functions: 80,
-                branches: 80,
-                statements: 80,
+                lines: 95,
+                functions: 92,
+                branches: 82,
+                statements: 95,
             },
         }
     }
