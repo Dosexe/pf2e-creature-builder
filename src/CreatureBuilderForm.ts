@@ -335,22 +335,6 @@ export class CreatureBuilderForm extends FormApplication {
         }
     }
 
-    applySenses(senses: Array<object>) {
-        if (!senses || senses.length === 0) {
-            return {}
-        }
-
-        return { 'system.perception.senses': senses }
-    }
-
-    applyMovement(movement: object) {
-        if (!movement || Object.keys(movement).length === 0) {
-            return {}
-        }
-
-        return { 'system.movement': movement }
-    }
-
     protected async _updateObject(_event: Event, formData?: object) {
         if (formData) {
             const formLevel = String(formData[Statistics.level])
@@ -359,7 +343,6 @@ export class CreatureBuilderForm extends FormApplication {
                 : DefaultCreatureLevel
             globalLog(false, 'Form data:', formData)
 
-            // Build overrides: clone() merges these with the original actor's data
             const updateData: Record<string, unknown> = {}
             for (const key of Object.keys(formData)) {
                 if (actorFields[key]) {
@@ -380,24 +363,6 @@ export class CreatureBuilderForm extends FormApplication {
             Object.assign(updateData, this.applyLevel())
             Object.assign(updateData, this.applyTraits(formData))
             Object.assign(updateData, this.applyHitPoints(formData))
-            Object.assign(
-                updateData,
-                this.applySenses(
-                    foundry.utils.getProperty(
-                        this.actor,
-                        'system.perception.senses',
-                    ) as object[],
-                ),
-            )
-            Object.assign(
-                updateData,
-                this.applyMovement(
-                    foundry.utils.getProperty(
-                        this.actor,
-                        'system.movement',
-                    ) as object,
-                ),
-            )
 
             // Clone original actor with overrides (copies all data + items; save to world)
             const newActor: Actor | undefined = await this.actor.clone(

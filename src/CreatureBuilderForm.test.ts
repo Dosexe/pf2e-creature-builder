@@ -306,24 +306,6 @@ describe('CreatureBuilderForm', () => {
         expect(options).toEqual({ parent: form.actor })
     })
 
-    it('returns empty data for missing senses or movement', () => {
-        const form = new CreatureBuilderForm(buildActor())
-        expect(form.applySenses([])).toEqual({})
-        expect(form.applyMovement({})).toEqual({})
-    })
-
-    it('returns senses and movement when provided', () => {
-        const form = new CreatureBuilderForm(buildActor())
-        const senses = [{ type: 'darkvision' }]
-        const movement = { land: 25 }
-        expect(form.applySenses(senses)).toEqual({
-            'system.perception.senses': senses,
-        })
-        expect(form.applyMovement(movement)).toEqual({
-            'system.movement': movement,
-        })
-    })
-
     it('detects actor stats, skills, and spellcasting', () => {
         const actor = buildActor({
             system: {
@@ -739,8 +721,6 @@ describe('CreatureBuilderForm', () => {
                 'system.abilities.str.mod': expectedStr,
                 'system.details.level.value': 1,
                 'system.traits.value': ['undead', 'fiend'],
-                'system.perception.senses': [{ type: 'darkvision' }],
-                'system.movement': { land: 25 },
                 'system.attributes.hp.value': 123,
             }),
             { save: true },
