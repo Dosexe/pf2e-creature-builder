@@ -27,6 +27,8 @@ export const Levels: string[] = [
     '24',
 ]
 
+export const KeyPrefix = 'PF2EMONSTERMAKER'
+
 export enum Statistics {
     name = 'PF2EMONSTERMAKER.name',
     level = 'PF2EMONSTERMAKER.level',
@@ -53,6 +55,9 @@ export enum Statistics {
     strikeBonus = 'PF2EMONSTERMAKER.strikeBonus',
     strikeDamage = 'PF2EMONSTERMAKER.strikeDamage',
     spellcasting = 'PF2EMONSTERMAKER.spellcasting',
+    spellcastingTradition = 'PF2EMONSTERMAKER.spellcastingTradition',
+    spellcastingType = 'PF2EMONSTERMAKER.spellcastingType',
+    spellcastingAttribute = 'PF2EMONSTERMAKER.spellcastingAttribute',
 
     // Skills
     acrobatics = 'PF2EMONSTERMAKER.acrobatics',
@@ -123,7 +128,99 @@ export enum Options {
     none = 'PF2EMONSTERMAKER.none',
 }
 
-export const RoadMaps = {
+export enum MagicalTradition {
+    arcane = 'PF2EMONSTERMAKER.traditionArcane',
+    divine = 'PF2EMONSTERMAKER.traditionDivine',
+    occult = 'PF2EMONSTERMAKER.traditionOccult',
+    primal = 'PF2EMONSTERMAKER.traditionPrimal',
+}
+
+export enum CasterType {
+    innate = 'PF2EMONSTERMAKER.casterInnate',
+    prepared = 'PF2EMONSTERMAKER.casterPrepared',
+    spontaneous = 'PF2EMONSTERMAKER.casterSpontaneous',
+}
+
+export enum SpellcastingAttribute {
+    str = 'PF2EMONSTERMAKER.attrStr',
+    dex = 'PF2EMONSTERMAKER.attrDex',
+    con = 'PF2EMONSTERMAKER.attrCon',
+    int = 'PF2EMONSTERMAKER.attrInt',
+    wis = 'PF2EMONSTERMAKER.attrWis',
+    cha = 'PF2EMONSTERMAKER.attrCha',
+}
+
+// ============================================================================
+// Roadmap Types
+// ============================================================================
+
+/** Internal roadmap format - maps Statistics keys to Options values */
+export type Roadmap = Record<string, Options>
+
+/** Collection of roadmaps keyed by their internal name (e.g., 'PF2EMONSTERMAKER.brute') */
+export type RoadmapCollection = Record<string, Roadmap>
+
+/** User-friendly roadmap format for JSON files */
+export interface UserFriendlyRoadmap {
+    name: string
+    statistics: Record<string, string>
+}
+
+/** User-friendly statistic names mapped to internal Statistics enum values */
+export const STAT_KEY_MAP: Record<string, string> = {
+    // Ability Scores
+    strength: Statistics.str,
+    dexterity: Statistics.dex,
+    constitution: Statistics.con,
+    intelligence: Statistics.int,
+    wisdom: Statistics.wis,
+    charisma: Statistics.cha,
+    // Defence & Perception
+    hitPoints: Statistics.hp,
+    perception: Statistics.per,
+    armorClass: Statistics.ac,
+    fortitude: Statistics.fort,
+    reflex: Statistics.ref,
+    will: Statistics.wil,
+    // Strikes & Spellcasting
+    strikeBonus: Statistics.strikeBonus,
+    strikeDamage: Statistics.strikeDamage,
+    spellcasting: Statistics.spellcasting,
+    // Skills
+    acrobatics: Statistics.acrobatics,
+    arcana: Statistics.arcana,
+    athletics: Statistics.athletics,
+    crafting: Statistics.crafting,
+    deception: Statistics.deception,
+    diplomacy: Statistics.diplomacy,
+    intimidation: Statistics.intimidation,
+    medicine: Statistics.medicine,
+    nature: Statistics.nature,
+    occultism: Statistics.occultism,
+    performance: Statistics.performance,
+    religion: Statistics.religion,
+    society: Statistics.society,
+    stealth: Statistics.stealth,
+    survival: Statistics.survival,
+    thievery: Statistics.thievery,
+}
+
+/** User-friendly option values mapped to internal Options enum values */
+export const OPTION_MAP: Record<string, Options> = {
+    extreme: Options.extreme,
+    high: Options.high,
+    moderate: Options.moderate,
+    low: Options.low,
+    terrible: Options.terrible,
+    abysmal: Options.abysmal,
+    none: Options.none,
+}
+
+// ============================================================================
+// Built-in Roadmaps
+// ============================================================================
+
+export const RoadMaps: RoadmapCollection = {
     'PF2EMONSTERMAKER.brute': {
         [Statistics.per]: Options.low,
         [Statistics.str]: Options.extreme,
@@ -373,13 +470,32 @@ export const RoadMaps = {
 
 export class CreatureStatistic {
     name: string
-    availableOptions?: Options[]
+    availableOptions?: (
+        | Options
+        | MagicalTradition
+        | CasterType
+        | SpellcastingAttribute
+    )[]
+    defaultValue?:
+        | Options
+        | MagicalTradition
+        | CasterType
+        | SpellcastingAttribute
 }
 
 export class CreatureStatisticCategory {
     name: string
-    availableOptions: Options[]
-    defaultValue: Options
+    availableOptions: (
+        | Options
+        | MagicalTradition
+        | CasterType
+        | SpellcastingAttribute
+    )[]
+    defaultValue:
+        | Options
+        | MagicalTradition
+        | CasterType
+        | SpellcastingAttribute
     statisticEntries: CreatureStatistic[]
 }
 
@@ -387,7 +503,7 @@ export const DefaultCreatureLevel = '-1'
 
 export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
     {
-        name: 'PF2EMONSTERMAKER.abilityScores',
+        name: `${KeyPrefix}.abilityScores`,
         availableOptions: [
             Options.abysmal,
             Options.terrible,
@@ -457,7 +573,7 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
         ],
     },
     {
-        name: 'PF2EMONSTERMAKER.strikes',
+        name: `${KeyPrefix}.strikes`,
         availableOptions: [
             Options.low,
             Options.moderate,
@@ -487,10 +603,29 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
             {
                 name: Statistics.spellcasting,
             },
+            {
+                name: Statistics.spellcastingTradition,
+                availableOptions: [
+                    MagicalTradition.arcane,
+                    MagicalTradition.divine,
+                    MagicalTradition.occult,
+                    MagicalTradition.primal,
+                ],
+                defaultValue: MagicalTradition.arcane,
+            },
+            {
+                name: Statistics.spellcastingType,
+                availableOptions: [
+                    CasterType.innate,
+                    CasterType.prepared,
+                    CasterType.spontaneous,
+                ],
+                defaultValue: CasterType.innate,
+            },
         ],
     },
     {
-        name: 'PF2EMONSTERMAKER.skills',
+        name: `${KeyPrefix}.skills`,
         defaultValue: Options.none,
         availableOptions: [
             Options.none,

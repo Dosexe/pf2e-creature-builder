@@ -19,7 +19,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@biomejs/biome": "^2.3.12",
+    "@biomejs/biome": "^2.3.13",
     "@league-of-foundry-developers/foundry-vtt-types": "^13.345.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
@@ -29,6 +29,6 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@yaireo/tagify": "^4.16.4"
+    "@yaireo/tagify": "^4.36.0"
   }
 }
