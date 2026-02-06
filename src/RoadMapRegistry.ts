@@ -27,7 +27,6 @@ export class RoadMapRegistry {
     private _isReady: boolean = false
 
     private constructor() {
-        // Clone built-in roadmaps to prevent mutation
         this.builtInRoadmaps = { ...RoadMaps }
     }
 
@@ -105,7 +104,6 @@ export class RoadMapRegistry {
         try {
             globalLog(false, 'Loading custom roadmaps...')
 
-            // Check if FilePicker is available (FoundryVTT API)
             if (typeof FilePicker === 'undefined') {
                 globalLog(
                     false,
@@ -115,7 +113,6 @@ export class RoadMapRegistry {
                 return
             }
 
-            // Try to browse the custom roadmaps folder
             let files: string[] = []
             try {
                 const result = await FilePicker.browse(
@@ -126,7 +123,6 @@ export class RoadMapRegistry {
                     result.files?.filter((f: string) => f.endsWith('.json')) ||
                     []
             } catch {
-                // Folder doesn't exist or is inaccessible - this is fine
                 globalLog(
                     false,
                     `Custom roadmaps folder not found at ${CUSTOM_ROADMAPS_FOLDER} - no custom roadmaps will be loaded`,
@@ -143,7 +139,6 @@ export class RoadMapRegistry {
 
             globalLog(false, `Found ${files.length} custom roadmap file(s)`)
 
-            // Load each JSON file
             for (const filePath of files) {
                 await this.loadRoadmapFile(filePath)
             }
@@ -173,7 +168,6 @@ export class RoadMapRegistry {
 
             const data = await response.json()
 
-            // Support both single roadmap and array of roadmaps
             const roadmaps: UserFriendlyRoadmap[] = Array.isArray(data)
                 ? data
                 : [data]
@@ -193,16 +187,13 @@ export class RoadMapRegistry {
         data: UserFriendlyRoadmap,
         sourceFile: string,
     ): void {
-        // Validate required fields
         if (!this.validateRoadmap(data)) {
             globalLog(true, `Invalid roadmap format in ${sourceFile}:`, data)
             return
         }
 
-        // Generate internal key from name
         const internalKey = `${KeyPrefix}.custom.${this.sanitizeName(data.name)}`
 
-        // Check if this key would override a built-in roadmap
         if (this.isBuiltIn(internalKey)) {
             globalLog(
                 true,
@@ -211,7 +202,6 @@ export class RoadMapRegistry {
             return
         }
 
-        // Check if this key already exists in custom roadmaps
         if (internalKey in this.customRoadmaps) {
             globalLog(
                 true,
@@ -220,7 +210,6 @@ export class RoadMapRegistry {
             return
         }
 
-        // Translate to internal format
         const translated = this.translateUserFriendlyRoadmap(data)
         if (translated) {
             this.customRoadmaps[internalKey] = translated
@@ -265,7 +254,6 @@ export class RoadMapRegistry {
         let hasValidStats = false
 
         for (const [userKey, userValue] of Object.entries(data.statistics)) {
-            // Look up the internal statistic key
             const statKey = STAT_KEY_MAP[userKey]
             if (!statKey) {
                 globalLog(
@@ -275,7 +263,6 @@ export class RoadMapRegistry {
                 continue
             }
 
-            // Look up the internal option value
             const optionValue = OPTION_MAP[userValue.toLowerCase()]
             if (!optionValue) {
                 globalLog(
