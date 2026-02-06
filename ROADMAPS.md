@@ -1,4 +1,4 @@
-## Custom Roadmaps
+## Custom Roadmaps [BETA]
 
 You can add your own custom roadmaps by placing JSON files in a specific folder. Custom roadmaps will appear in the roadmap dropdown alongside the built-in ones.
 
