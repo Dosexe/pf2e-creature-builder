@@ -24,3 +24,9 @@ declare global {
 }
 
 export {}
+
+declare module 'fvtt-types/configuration' {
+    interface AssumeHookRan {
+        ready: never
+    }
+}

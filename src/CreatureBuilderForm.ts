@@ -241,7 +241,7 @@ export class CreatureBuilderForm extends FormApplication {
                     ? strategy.buildInitialSlots(currentSlots, this.level)
                     : generateSpellSlots(resolvedCasterType, this.level)
             })()
-            const spellsLabel = game!.i18n!.localize(`${KeyPrefix}.spells`)
+            const spellsLabel = game.i18n!.localize(`${KeyPrefix}.spells`)
             const entryName = buildSpellcastingName(
                 tradition,
                 resolvedCasterType,
