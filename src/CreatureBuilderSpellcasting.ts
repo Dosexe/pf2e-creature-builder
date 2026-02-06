@@ -310,7 +310,6 @@ export function detectSpellcasting(
     const detected: DetectedSpellcasting = { spellcastingEntryId: null }
     const itemsArray = Array.from(items)
 
-    // First pass: find the spellcasting entry
     for (const item of itemsArray) {
         if (item.type === 'spellcastingEntry') {
             const spellDC =
@@ -318,7 +317,6 @@ export function detectSpellcasting(
                 foundry.utils.getProperty(item, 'system.spelldc.value')
 
             if (spellDC) {
-                // Store the spellcasting entry ID for spell lookup
                 detected.spellcastingEntryId = item.id
 
                 // DC is typically attack + 8, so we check the attack value
@@ -357,7 +355,6 @@ export function detectSpellcasting(
         }
     }
 
-    // Second pass: find spells that belong to this spellcasting entry
     if (detected.spellcastingEntryId) {
         const spells: DetectedSpell[] = []
 

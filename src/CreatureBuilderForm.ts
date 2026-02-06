@@ -360,7 +360,6 @@ export class CreatureBuilderForm extends FormApplication {
                 : DefaultCreatureLevel
             globalLog(false, 'Form data:', formData)
 
-            // Build overrides: clone() merges these with the original actor's data
             const updateData: Record<string, unknown> = {}
             for (const key of Object.keys(formData)) {
                 if (actorFields[key]) {
@@ -397,7 +396,6 @@ export class CreatureBuilderForm extends FormApplication {
                 ),
             )
 
-            // Clone original actor with overrides (copies all data + items; save to world)
             const newActor: BaseActor | undefined = await this.actor.clone(
                 updateData,
                 { save: true },
@@ -410,7 +408,6 @@ export class CreatureBuilderForm extends FormApplication {
             const originalActor = this.actor
             this.actor = newActor
 
-            // Remove only strike and lore; clone already has spellcasting entry + spells
             const toDelete: string[] = []
             for (const item of newActor.items) {
                 if (
