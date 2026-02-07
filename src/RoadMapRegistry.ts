@@ -6,7 +6,7 @@ import {
     type Roadmap,
     type RoadmapCollection,
     STAT_KEY_MAP,
-    type UserFriendlyRoadmap,
+    type RoadmapConfigFile,
 } from './Keys'
 
 /** Path to custom roadmaps folder relative to FoundryVTT Data directory */
@@ -27,7 +27,6 @@ export class RoadMapRegistry {
     private _isReady: boolean = false
 
     private constructor() {
-        // Clone built-in roadmaps to prevent mutation
         this.builtInRoadmaps = { ...RoadMaps }
     }
 
@@ -174,7 +173,7 @@ export class RoadMapRegistry {
             const data = await response.json()
 
             // Support both single roadmap and array of roadmaps
-            const roadmaps: UserFriendlyRoadmap[] = Array.isArray(data)
+            const roadmaps: RoadmapConfigFile[] = Array.isArray(data)
                 ? data
                 : [data]
 
@@ -190,7 +189,7 @@ export class RoadMapRegistry {
      * Process and validate a single roadmap from JSON data
      */
     private processRoadmap(
-        data: UserFriendlyRoadmap,
+        data: RoadmapConfigFile,
         sourceFile: string,
     ): void {
         // Validate required fields
@@ -231,7 +230,7 @@ export class RoadMapRegistry {
     /**
      * Validate that a roadmap object has the required structure
      */
-    private validateRoadmap(data: unknown): data is UserFriendlyRoadmap {
+    private validateRoadmap(data: unknown): data is RoadmapConfigFile {
         if (!data || typeof data !== 'object') {
             return false
         }
@@ -243,29 +242,63 @@ export class RoadMapRegistry {
             return false
         }
 
-        if (
-            !roadmap.statistics ||
-            typeof roadmap.statistics !== 'object' ||
-            Array.isArray(roadmap.statistics)
-        ) {
-            globalLog(true, 'Roadmap missing required "statistics" object')
+        const hasStats =
+            roadmap.stats &&
+            typeof roadmap.stats === 'object' &&
+            !Array.isArray(roadmap.stats)
+
+        if (!hasStats) {
+            globalLog(true, 'Roadmap missing required "stats" object')
             return false
         }
 
         return true
     }
 
+    private normalizeStatistics(
+        data: RoadmapConfigFile,
+    ): Record<string, string> {
+        const flattened: Record<string, string> = {}
+
+        for (const [groupName, groupValues] of Object.entries(data.stats)) {
+            if (
+                !groupValues ||
+                typeof groupValues !== 'object' ||
+                Array.isArray(groupValues)
+            ) {
+                globalLog(
+                    true,
+                    `Invalid group "${groupName}" in roadmap "${data.name}" - skipping group`,
+                )
+                continue
+            }
+
+            for (const [statKey, value] of Object.entries(groupValues)) {
+                if (statKey in flattened) {
+                    globalLog(
+                        true,
+                        `Duplicate statistic "${statKey}" in roadmap "${data.name}" - keeping first value`,
+                    )
+                    continue
+                }
+                flattened[statKey] = value
+            }
+        }
+
+        return flattened
+    }
+
     /**
      * Translate a user-friendly roadmap to the internal format
      */
     private translateUserFriendlyRoadmap(
-        data: UserFriendlyRoadmap,
+        data: RoadmapConfigFile,
     ): Roadmap | null {
         const translated: Roadmap = {}
         let hasValidStats = false
 
-        for (const [userKey, userValue] of Object.entries(data.statistics)) {
-            // Look up the internal statistic key
+        const statistics = this.normalizeStatistics(data)
+        for (const [userKey, userValue] of Object.entries(statistics)) {
             const statKey = STAT_KEY_MAP[userKey]
             if (!statKey) {
                 globalLog(
@@ -275,7 +308,6 @@ export class RoadMapRegistry {
                 continue
             }
 
-            // Look up the internal option value
             const optionValue = OPTION_MAP[userValue.toLowerCase()]
             if (!optionValue) {
                 globalLog(

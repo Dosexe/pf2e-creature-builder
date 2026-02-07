@@ -398,7 +398,6 @@ export class CreatureBuilderForm extends FormApplication {
                 this.applyLoreSkills(formData),
             ])
             this.actor = originalActor
-
             ;(newActor as Actor).sheet?.render(true)
         }
     }
@@ -559,12 +558,10 @@ export class CreatureBuilderForm extends FormApplication {
                         item.name
                             ?.replace(' Lore', '')
                             .replace(/ \(.*\)$/, '') || 'Unknown'
-                    const modValue =
-                        (foundry.utils.getProperty(
-                            item,
-                            'system.mod.value',
-                        ) as number) ?? 0
-                    if (modValue > 0) {
+                    const modValue = Number(
+                        foundry.utils.getProperty(item, 'system.mod.value'),
+                    )
+                    if (Number.isFinite(modValue) && modValue > 0) {
                         const level = detectStatLevel(
                             Statistics.acrobatics,
                             clampedLevel,

@@ -160,10 +160,53 @@ export type Roadmap = Record<string, Options>
 /** Collection of roadmaps keyed by their internal name (e.g., 'PF2EMONSTERMAKER.brute') */
 export type RoadmapCollection = Record<string, Roadmap>
 
-/** User-friendly roadmap format for JSON files */
-export interface UserFriendlyRoadmap {
+export interface RoadmapConfigFile {
     name: string
-    statistics: Record<string, string>
+    stats: {
+        abilityScores: {
+            strength: string
+            dexterity: string
+            constitution: string
+            intelligence: string
+            wisdom: string
+            charisma: string
+        }
+        defenseAndPerception: {
+            hitPoints: string
+            perception: string
+            armorClass: string
+            fortitude: string
+            reflex: string
+            will: string
+        }
+        strikes: {
+            strikeBonus: string
+            strikeDamage: string
+        }
+        spellcasting: {
+            spellcasting: string
+            tradition: string
+            type: string
+        }
+        skills: {
+            acrobatics: string
+            arcana: string
+            athletics: string
+            crafting: string
+            deception: string
+            diplomacy: string
+            intimidation: string
+            medicine: string
+            nature: string
+            occultism: string
+            performance: string
+            religion: string
+            society: string
+            stealth: string
+            survival: string
+            thievery: string
+        }
+    }
 }
 
 /** User-friendly statistic names mapped to internal Statistics enum values */

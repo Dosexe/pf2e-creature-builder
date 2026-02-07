@@ -144,10 +144,14 @@ describe('RoadMapRegistry', () => {
         it('loads a single custom roadmap from JSON file', async () => {
             const customRoadmap = {
                 name: 'Tank',
-                statistics: {
-                    strength: 'high',
-                    constitution: 'extreme',
-                    armorClass: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                        constitution: 'extreme',
+                    },
+                    defenceAndPerception: {
+                        armorClass: 'high',
+                    },
                 },
             }
 
@@ -185,16 +189,22 @@ describe('RoadMapRegistry', () => {
             const customRoadmaps = [
                 {
                     name: 'Glass Cannon',
-                    statistics: {
-                        strength: 'extreme',
-                        hitPoints: 'low',
+                    stats: {
+                        abilityScores: {
+                            strength: 'extreme',
+                        },
+                        defenceAndPerception: {
+                            hitPoints: 'low',
+                        },
                     },
                 },
                 {
                     name: 'Defender',
-                    statistics: {
-                        armorClass: 'extreme',
-                        fortitude: 'high',
+                    stats: {
+                        defenceAndPerception: {
+                            armorClass: 'extreme',
+                            fortitude: 'high',
+                        },
                     },
                 },
             ]
@@ -239,7 +249,9 @@ describe('RoadMapRegistry', () => {
                     json: () =>
                         Promise.resolve({
                             name: 'Tank',
-                            statistics: { strength: 'high' },
+                            stats: {
+                                abilityScores: { strength: 'high' },
+                            },
                         }),
                 }),
             )
@@ -314,13 +326,15 @@ describe('RoadMapRegistry', () => {
         it('translates all ability score keys correctly', async () => {
             const customRoadmap = {
                 name: 'Ability Test',
-                statistics: {
-                    strength: 'high',
-                    dexterity: 'moderate',
-                    constitution: 'extreme',
-                    intelligence: 'low',
-                    wisdom: 'terrible',
-                    charisma: 'abysmal',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                        dexterity: 'moderate',
+                        constitution: 'extreme',
+                        intelligence: 'low',
+                        wisdom: 'terrible',
+                        charisma: 'abysmal',
+                    },
                 },
             }
 
@@ -355,16 +369,22 @@ describe('RoadMapRegistry', () => {
         it('translates defence and combat keys correctly', async () => {
             const customRoadmap = {
                 name: 'Combat Test',
-                statistics: {
-                    hitPoints: 'high',
-                    perception: 'extreme',
-                    armorClass: 'high',
-                    fortitude: 'high',
-                    reflex: 'moderate',
-                    will: 'low',
-                    strikeBonus: 'high',
-                    strikeDamage: 'extreme',
-                    spellcasting: 'moderate',
+                stats: {
+                    defenceAndPerception: {
+                        hitPoints: 'high',
+                        perception: 'extreme',
+                        armorClass: 'high',
+                        fortitude: 'high',
+                        reflex: 'moderate',
+                        will: 'low',
+                    },
+                    strikes: {
+                        strikeBonus: 'high',
+                        strikeDamage: 'extreme',
+                    },
+                    spellcasting: {
+                        spellcasting: 'moderate',
+                    },
                 },
             }
 
@@ -402,12 +422,14 @@ describe('RoadMapRegistry', () => {
         it('translates skill keys correctly', async () => {
             const customRoadmap = {
                 name: 'Skill Test',
-                statistics: {
-                    acrobatics: 'high',
-                    arcana: 'extreme',
-                    athletics: 'high',
-                    stealth: 'extreme',
-                    thievery: 'moderate',
+                stats: {
+                    skills: {
+                        acrobatics: 'high',
+                        arcana: 'extreme',
+                        athletics: 'high',
+                        stealth: 'extreme',
+                        thievery: 'moderate',
+                    },
                 },
             }
 
@@ -441,10 +463,12 @@ describe('RoadMapRegistry', () => {
         it('handles case-insensitive option values', async () => {
             const customRoadmap = {
                 name: 'Case Test',
-                statistics: {
-                    strength: 'HIGH',
-                    dexterity: 'Moderate',
-                    constitution: 'EXTREME',
+                stats: {
+                    abilityScores: {
+                        strength: 'HIGH',
+                        dexterity: 'Moderate',
+                        constitution: 'EXTREME',
+                    },
                 },
             }
 
@@ -473,13 +497,93 @@ describe('RoadMapRegistry', () => {
             expect(roadmap[Statistics.con]).toBe(Options.extreme)
         })
 
+        it('skips invalid stat groups but keeps valid ones', async () => {
+            const customRoadmap = {
+                name: 'Group Validity',
+                stats: {
+                    abilityScores: 'not-an-object',
+                    strikes: {
+                        strikeBonus: 'moderate',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap =
+                registry.getCustomRoadmaps()[
+                    'PF2EMONSTERMAKER.custom.group_validity'
+                ]
+            expect(roadmap[Statistics.strikeBonus]).toBe(Options.moderate)
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('Invalid group "abilityScores"'),
+            )
+        })
+
+        it('keeps the first value when stats are duplicated across groups', async () => {
+            const customRoadmap = {
+                name: 'Duplicate Stat',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
+                    strikes: {
+                        strength: 'extreme',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap =
+                registry.getCustomRoadmaps()[
+                    'PF2EMONSTERMAKER.custom.duplicate_stat'
+                ]
+            expect(roadmap[Statistics.str]).toBe(Options.high)
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('Duplicate statistic "strength"'),
+            )
+        })
+
         it('skips unknown statistic keys with warning', async () => {
             const customRoadmap = {
                 name: 'Unknown Key Test',
-                statistics: {
-                    strength: 'high',
-                    unknownStat: 'extreme',
-                    invalidKey: 'moderate',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                        unknownStat: 'extreme',
+                        invalidKey: 'moderate',
+                    },
                 },
             }
 
@@ -518,9 +622,11 @@ describe('RoadMapRegistry', () => {
         it('skips unknown option values with warning', async () => {
             const customRoadmap = {
                 name: 'Unknown Value Test',
-                statistics: {
-                    strength: 'high',
-                    dexterity: 'superstrong',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                        dexterity: 'superstrong',
+                    },
                 },
             }
 
@@ -556,8 +662,10 @@ describe('RoadMapRegistry', () => {
     describe('Roadmap Validation', () => {
         it('skips roadmaps without name', async () => {
             const customRoadmap = {
-                statistics: {
-                    strength: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
                 },
             }
 
@@ -587,8 +695,10 @@ describe('RoadMapRegistry', () => {
         it('skips roadmaps with empty name', async () => {
             const customRoadmap = {
                 name: '   ',
-                statistics: {
-                    strength: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
                 },
             }
 
@@ -615,7 +725,7 @@ describe('RoadMapRegistry', () => {
             )
         })
 
-        it('skips roadmaps without statistics object', async () => {
+        it('skips roadmaps without stats object', async () => {
             const customRoadmap = {
                 name: 'No Stats',
             }
@@ -639,14 +749,14 @@ describe('RoadMapRegistry', () => {
             expect(registry.getCustomRoadmaps()).toEqual({})
             expect(globalLog).toHaveBeenCalledWith(
                 true,
-                expect.stringContaining('missing required "statistics" object'),
+                expect.stringContaining('missing required "stats" object'),
             )
         })
 
-        it('skips roadmaps with statistics as array', async () => {
+        it('skips roadmaps with stats as array', async () => {
             const customRoadmap = {
                 name: 'Array Stats',
-                statistics: ['strength', 'high'],
+                stats: ['strength', 'high'],
             }
 
             vi.stubGlobal('FilePicker', {
@@ -668,16 +778,18 @@ describe('RoadMapRegistry', () => {
             expect(registry.getCustomRoadmaps()).toEqual({})
             expect(globalLog).toHaveBeenCalledWith(
                 true,
-                expect.stringContaining('missing required "statistics" object'),
+                expect.stringContaining('missing required "stats" object'),
             )
         })
 
         it('skips roadmaps with no valid statistics', async () => {
             const customRoadmap = {
                 name: 'All Invalid',
-                statistics: {
-                    unknownStat1: 'high',
-                    unknownStat2: 'moderate',
+                stats: {
+                    abilityScores: {
+                        unknownStat1: 'high',
+                        unknownStat2: 'moderate',
+                    },
                 },
             }
 
@@ -706,8 +818,14 @@ describe('RoadMapRegistry', () => {
 
         it('skips duplicate custom roadmap names', async () => {
             const customRoadmaps = [
-                { name: 'Duplicate', statistics: { strength: 'high' } },
-                { name: 'Duplicate', statistics: { strength: 'extreme' } },
+                {
+                    name: 'Duplicate',
+                    stats: { abilityScores: { strength: 'high' } },
+                },
+                {
+                    name: 'Duplicate',
+                    stats: { abilityScores: { strength: 'extreme' } },
+                },
             ]
 
             vi.stubGlobal('FilePicker', {
@@ -747,8 +865,10 @@ describe('RoadMapRegistry', () => {
             // But we test the protection mechanism anyway
             const customRoadmap = {
                 name: 'Tank',
-                statistics: {
-                    strength: 'extreme',
+                stats: {
+                    abilityScores: {
+                        strength: 'extreme',
+                    },
                 },
             }
 
@@ -783,8 +903,10 @@ describe('RoadMapRegistry', () => {
         it('sanitizes names with special characters', async () => {
             const customRoadmap = {
                 name: 'Tank & Healer (v2.0)',
-                statistics: {
-                    strength: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
                 },
             }
 
@@ -813,8 +935,10 @@ describe('RoadMapRegistry', () => {
         it('sanitizes names with leading/trailing whitespace', async () => {
             const customRoadmap = {
                 name: '  My Tank  ',
-                statistics: {
-                    strength: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
                 },
             }
 
@@ -851,9 +975,11 @@ describe('RoadMapRegistry', () => {
         it('merges built-in and custom roadmaps', async () => {
             const customRoadmap = {
                 name: 'Custom Tank',
-                statistics: {
-                    strength: 'extreme',
-                    constitution: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'extreme',
+                        constitution: 'high',
+                    },
                 },
             }
 
@@ -900,8 +1026,10 @@ describe('RoadMapRegistry', () => {
         it('returns custom roadmap when requested', async () => {
             const customRoadmap = {
                 name: 'My Custom',
-                statistics: {
-                    strength: 'extreme',
+                stats: {
+                    abilityScores: {
+                        strength: 'extreme',
+                    },
                 },
             }
 
