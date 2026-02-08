@@ -1,12 +1,15 @@
 import { globalLog } from '@/utils'
 import {
+    CASTER_TYPE_MAP,
     KeyPrefix,
     OPTION_MAP,
     RoadMaps,
     type Roadmap,
     type RoadmapCollection,
-    STAT_KEY_MAP,
     type RoadmapConfigFile,
+    STAT_KEY_MAP,
+    Statistics,
+    TRADITION_MAP,
 } from './Keys'
 
 /** Path to custom roadmaps folder relative to FoundryVTT Data directory */
@@ -188,20 +191,14 @@ export class RoadMapRegistry {
     /**
      * Process and validate a single roadmap from JSON data
      */
-    private processRoadmap(
-        data: RoadmapConfigFile,
-        sourceFile: string,
-    ): void {
-        // Validate required fields
+    private processRoadmap(data: RoadmapConfigFile, sourceFile: string): void {
         if (!this.validateRoadmap(data)) {
             globalLog(true, `Invalid roadmap format in ${sourceFile}:`, data)
             return
         }
 
-        // Generate internal key from name
         const internalKey = `${KeyPrefix}.custom.${this.sanitizeName(data.name)}`
 
-        // Check if this key would override a built-in roadmap
         if (this.isBuiltIn(internalKey)) {
             globalLog(
                 true,
@@ -210,7 +207,6 @@ export class RoadMapRegistry {
             return
         }
 
-        // Check if this key already exists in custom roadmaps
         if (internalKey in this.customRoadmaps) {
             globalLog(
                 true,
@@ -219,10 +215,9 @@ export class RoadMapRegistry {
             return
         }
 
-        // Translate to internal format
-        const translated = this.translateUserFriendlyRoadmap(data)
-        if (translated) {
-            this.customRoadmaps[internalKey] = translated
+        const internalRoadmap = this.transformRoadmapConfigFile(data)
+        if (internalRoadmap) {
+            this.customRoadmaps[internalKey] = internalRoadmap
             globalLog(false, `Loaded custom roadmap: ${data.name}`)
         }
     }
@@ -288,10 +283,7 @@ export class RoadMapRegistry {
         return flattened
     }
 
-    /**
-     * Translate a user-friendly roadmap to the internal format
-     */
-    private translateUserFriendlyRoadmap(
+    private transformRoadmapConfigFile(
         data: RoadmapConfigFile,
     ): Roadmap | null {
         const translated: Roadmap = {}
@@ -308,7 +300,16 @@ export class RoadMapRegistry {
                 continue
             }
 
-            const optionValue = OPTION_MAP[userValue.toLowerCase()]
+            const normalizedValue = userValue.toLowerCase()
+            let optionValue: Roadmap[keyof Roadmap] | undefined
+
+            if (statKey === Statistics.spellcastingTradition) {
+                optionValue = TRADITION_MAP[normalizedValue]
+            } else if (statKey === Statistics.spellcastingType) {
+                optionValue = CASTER_TYPE_MAP[normalizedValue]
+            } else {
+                optionValue = OPTION_MAP[normalizedValue]
+            }
             if (!optionValue) {
                 globalLog(
                     true,

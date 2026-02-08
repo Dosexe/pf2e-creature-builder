@@ -154,10 +154,15 @@ export enum SpellcastingAttribute {
 // Roadmap Types
 // ============================================================================
 
-/** Internal roadmap format - maps Statistics keys to Options values */
-export type Roadmap = Record<string, Options>
+export type RoadmapValue =
+    | Options
+    | MagicalTradition
+    | CasterType
+    | SpellcastingAttribute
 
-/** Collection of roadmaps keyed by their internal name (e.g., 'PF2EMONSTERMAKER.brute') */
+/** Internal roadmap format - maps Statistics keys to options or spellcasting enums */
+export type Roadmap = Record<string, RoadmapValue>
+
 export type RoadmapCollection = Record<string, Roadmap>
 
 export interface RoadmapConfigFile {
@@ -209,7 +214,6 @@ export interface RoadmapConfigFile {
     }
 }
 
-/** User-friendly statistic names mapped to internal Statistics enum values */
 export const STAT_KEY_MAP: Record<string, string> = {
     // Ability Scores
     strength: Statistics.str,
@@ -229,6 +233,8 @@ export const STAT_KEY_MAP: Record<string, string> = {
     strikeBonus: Statistics.strikeBonus,
     strikeDamage: Statistics.strikeDamage,
     spellcasting: Statistics.spellcasting,
+    tradition: Statistics.spellcastingTradition,
+    type: Statistics.spellcastingType,
     // Skills
     acrobatics: Statistics.acrobatics,
     arcana: Statistics.arcana,
@@ -248,7 +254,6 @@ export const STAT_KEY_MAP: Record<string, string> = {
     thievery: Statistics.thievery,
 }
 
-/** User-friendly option values mapped to internal Options enum values */
 export const OPTION_MAP: Record<string, Options> = {
     extreme: Options.extreme,
     high: Options.high,
@@ -257,6 +262,19 @@ export const OPTION_MAP: Record<string, Options> = {
     terrible: Options.terrible,
     abysmal: Options.abysmal,
     none: Options.none,
+}
+
+export const TRADITION_MAP: Record<string, MagicalTradition> = {
+    arcane: MagicalTradition.arcane,
+    divine: MagicalTradition.divine,
+    occult: MagicalTradition.occult,
+    primal: MagicalTradition.primal,
+}
+
+export const CASTER_TYPE_MAP: Record<string, CasterType> = {
+    innate: CasterType.innate,
+    prepared: CasterType.prepared,
+    spontaneous: CasterType.spontaneous,
 }
 
 // ============================================================================

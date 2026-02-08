@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Options, RoadMaps, Statistics } from './Keys'
+import {
+    CasterType,
+    MagicalTradition,
+    Options,
+    RoadMaps,
+    Statistics,
+} from './Keys'
 
 vi.mock('@/utils', () => ({ globalLog: vi.fn() }))
 
@@ -458,6 +464,119 @@ describe('RoadMapRegistry', () => {
             expect(roadmap[Statistics.athletics]).toBe(Options.high)
             expect(roadmap[Statistics.stealth]).toBe(Options.extreme)
             expect(roadmap[Statistics.thievery]).toBe(Options.moderate)
+        })
+
+        it('covers all RoadmapConfigFile fields', async () => {
+            const customRoadmap = {
+                name: 'Full Config Coverage',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                        dexterity: 'moderate',
+                        constitution: 'low',
+                        intelligence: 'extreme',
+                        wisdom: 'terrible',
+                        charisma: 'abysmal',
+                    },
+                    defenseAndPerception: {
+                        hitPoints: 'high',
+                        perception: 'extreme',
+                        armorClass: 'high',
+                        fortitude: 'low',
+                        reflex: 'moderate',
+                        will: 'terrible',
+                    },
+                    strikes: {
+                        strikeBonus: 'high',
+                        strikeDamage: 'extreme',
+                    },
+                    spellcasting: {
+                        spellcasting: 'moderate',
+                        tradition: 'arcane',
+                        type: 'prepared',
+                    },
+                    skills: {
+                        acrobatics: 'high',
+                        arcana: 'high',
+                        athletics: 'high',
+                        crafting: 'high',
+                        deception: 'high',
+                        diplomacy: 'high',
+                        intimidation: 'high',
+                        medicine: 'high',
+                        nature: 'high',
+                        occultism: 'high',
+                        performance: 'high',
+                        religion: 'high',
+                        society: 'high',
+                        stealth: 'high',
+                        survival: 'high',
+                        thievery: 'high',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap =
+                registry.getCustomRoadmaps()[
+                    'PF2EMONSTERMAKER.custom.full_config_coverage'
+                ]
+
+            expect(roadmap[Statistics.str]).toBe(Options.high)
+            expect(roadmap[Statistics.dex]).toBe(Options.moderate)
+            expect(roadmap[Statistics.con]).toBe(Options.low)
+            expect(roadmap[Statistics.int]).toBe(Options.extreme)
+            expect(roadmap[Statistics.wis]).toBe(Options.terrible)
+            expect(roadmap[Statistics.cha]).toBe(Options.abysmal)
+
+            expect(roadmap[Statistics.hp]).toBe(Options.high)
+            expect(roadmap[Statistics.per]).toBe(Options.extreme)
+            expect(roadmap[Statistics.ac]).toBe(Options.high)
+            expect(roadmap[Statistics.fort]).toBe(Options.low)
+            expect(roadmap[Statistics.ref]).toBe(Options.moderate)
+            expect(roadmap[Statistics.wil]).toBe(Options.terrible)
+
+            expect(roadmap[Statistics.strikeBonus]).toBe(Options.high)
+            expect(roadmap[Statistics.strikeDamage]).toBe(Options.extreme)
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.moderate)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(
+                MagicalTradition.arcane,
+            )
+            expect(roadmap[Statistics.spellcastingType]).toBe(
+                CasterType.prepared,
+            )
+
+            expect(roadmap[Statistics.acrobatics]).toBe(Options.high)
+            expect(roadmap[Statistics.arcana]).toBe(Options.high)
+            expect(roadmap[Statistics.athletics]).toBe(Options.high)
+            expect(roadmap[Statistics.crafting]).toBe(Options.high)
+            expect(roadmap[Statistics.deception]).toBe(Options.high)
+            expect(roadmap[Statistics.diplomacy]).toBe(Options.high)
+            expect(roadmap[Statistics.intimidation]).toBe(Options.high)
+            expect(roadmap[Statistics.medicine]).toBe(Options.high)
+            expect(roadmap[Statistics.nature]).toBe(Options.high)
+            expect(roadmap[Statistics.occultism]).toBe(Options.high)
+            expect(roadmap[Statistics.performance]).toBe(Options.high)
+            expect(roadmap[Statistics.religion]).toBe(Options.high)
+            expect(roadmap[Statistics.society]).toBe(Options.high)
+            expect(roadmap[Statistics.stealth]).toBe(Options.high)
+            expect(roadmap[Statistics.survival]).toBe(Options.high)
+            expect(roadmap[Statistics.thievery]).toBe(Options.high)
         })
 
         it('handles case-insensitive option values', async () => {
