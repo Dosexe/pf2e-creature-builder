@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as SpellCopyStrategies from '@/spellcasting/SpellCopyStrategies'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
 import {
@@ -543,6 +544,176 @@ describe('CreatureBuilderForm', () => {
             { name: 'Sailing', level: Options.moderate },
         ])
         expect(data.actorLevel).toBe('1')
+    })
+
+    it('formats roadmap labels for custom keys', () => {
+        const form = new CreatureBuilderForm(buildActor())
+        form.getData()
+
+        const roadmapLabelHelper = (
+            globalThis as any
+        ).Handlebars.registerHelper.mock.calls.find(
+            (call: [string, unknown]) => call[0] === 'roadmapLabel',
+        )?.[1] as (key: string) => string
+
+        expect(roadmapLabelHelper('PF2EMONSTERMAKER.custom.tank')).toBe('Tank')
+        expect(
+            roadmapLabelHelper('PF2EMONSTERMAKER.custom.tank-healer_v2_0'),
+        ).toBe('Tank Healer V2 0')
+        expect(roadmapLabelHelper('PF2EMONSTERMAKER.custom._')).toBe(
+            'PF2EMONSTERMAKER.custom._',
+        )
+        expect(roadmapLabelHelper(null as unknown as string)).toBe('')
+        expect(roadmapLabelHelper('PF2EMONSTERMAKER.brute')).toBe(
+            'loc:PF2EMONSTERMAKER.brute',
+        )
+    })
+
+    it('updates existing spellcasting entry when slots are missing', async () => {
+        const actor = buildActor({
+            items: [
+                {
+                    id: 'entry1',
+                    type: 'spellcastingEntry',
+                    system: { spelldc: { dc: 18 } },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        form.level = '1'
+
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingType]: CasterType.prepared,
+        })
+
+        expect(actor.updateEmbeddedDocuments).toHaveBeenCalledWith(
+            'Item',
+            expect.arrayContaining([
+                expect.objectContaining({
+                    _id: 'entry1',
+                    'system.slots': expect.any(Object),
+                }),
+            ]),
+        )
+    })
+
+    it('uses innate spell copy strategy when updating existing entry', async () => {
+        const actor = buildActor({
+            items: [
+                {
+                    id: 'entry1',
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 18 },
+                        slots: { slot0: { max: 1, value: 1, prepared: [] } },
+                    },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        form.level = '1'
+
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingType]: CasterType.innate,
+        })
+
+        expect(actor.updateEmbeddedDocuments).toHaveBeenCalledWith(
+            'Item',
+            expect.arrayContaining([
+                expect.objectContaining({
+                    _id: 'entry1',
+                    'system.slots': expect.any(Object),
+                }),
+            ]),
+        )
+    })
+
+    it('falls back to generated slots when no spell copy strategy is available', async () => {
+        const strategySpy = vi
+            .spyOn(SpellCopyStrategies, 'createSpellCopyStrategy')
+            .mockReturnValue(null)
+
+        const actor = buildActor({
+            items: [
+                {
+                    id: 'entry1',
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 18 },
+                        slots: { slot0: { max: 1, value: 1, prepared: [] } },
+                    },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        form.level = '1'
+
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingType]: CasterType.innate,
+        })
+
+        expect(strategySpy).toHaveBeenCalled()
+        expect(actor.updateEmbeddedDocuments).toHaveBeenCalledWith(
+            'Item',
+            expect.arrayContaining([
+                expect.objectContaining({
+                    _id: 'entry1',
+                    'system.slots': expect.any(Object),
+                }),
+            ]),
+        )
+
+        strategySpy.mockRestore()
+    })
+
+    it('detects stats with clamped level and skill value fallback', () => {
+        const actor = buildActor({
+            system: {
+                details: { level: { value: 999 } },
+                skills: { acrobatics: { value: 6 } },
+            },
+            items: undefined,
+        })
+        const form = new CreatureBuilderForm(actor)
+
+        const detected = form.detectActorStats()
+        expect(detected[Statistics.acrobatics]).toBeDefined()
+    })
+
+    it('detects lore skills with unknown names and skips invalid entries', () => {
+        const actor = buildActor({
+            system: { details: { level: { value: 1 } } },
+            items: [
+                {
+                    type: 'lore',
+                    name: undefined,
+                    system: { mod: { value: 6 } },
+                },
+                {
+                    type: 'lore',
+                    name: 'Zero Lore',
+                    system: { mod: { value: 0 } },
+                },
+                {
+                    type: 'spell',
+                    name: 'Not Lore',
+                    system: { mod: { value: 10 } },
+                },
+                {
+                    type: 'lore',
+                    name: 'NaN Lore',
+                    system: { mod: { value: 'NaN' } },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        const detected = form.detectLoreSkills()
+
+        expect(detected).toHaveLength(1)
+        expect(detected[0]?.name).toBe('Unknown')
     })
 
     it('returns default level in getData when requested', () => {

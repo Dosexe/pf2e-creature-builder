@@ -587,6 +587,29 @@ export class CreatureBuilderForm extends FormApplication {
         // )
 
         Handlebars.registerHelper('json', (context) => JSON.stringify(context))
+        Handlebars.registerHelper('roadmapLabel', (key) => {
+            if (typeof key !== 'string') {
+                return ''
+            }
+
+            const prefix = `${KeyPrefix}.custom.`
+            if (key.startsWith(prefix)) {
+                const raw = key.slice(prefix.length)
+                const normalized = raw
+                    .replace(/[_-]+/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                if (!normalized) {
+                    return key
+                }
+                return normalized
+                    .split(' ')
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ')
+            }
+
+            return game.i18n?.localize(key) ?? key
+        })
 
         const detectedStats = this.detectActorStats()
         const detectedTraits = this.detectTraits()

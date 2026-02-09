@@ -326,6 +326,24 @@ describe('RoadMapRegistry', () => {
                 expect.any(Error),
             )
         })
+
+        it('logs unexpected errors during loading', async () => {
+            const registry = RoadMapRegistry.getInstance()
+            ;(
+                globalLog as unknown as { mockImplementationOnce: (x) => void }
+            ).mockImplementationOnce(() => {
+                throw new Error('boom')
+            })
+
+            await registry.loadCustomRoadmaps()
+
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Error loading custom roadmaps:',
+                expect.any(Error),
+            )
+            expect(registry.isReady).toBe(true)
+        })
     })
 
     describe('Roadmap Translation', () => {
@@ -779,6 +797,17 @@ describe('RoadMapRegistry', () => {
     })
 
     describe('Roadmap Validation', () => {
+        it('logs invalid format when roadmap is not an object', () => {
+            const registry = RoadMapRegistry.getInstance()
+            ;(registry as any).processRoadmap(null, 'source.json')
+
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining('Invalid roadmap format'),
+                null,
+            )
+        })
+
         it('skips roadmaps without name', async () => {
             const customRoadmap = {
                 stats: {
@@ -1015,6 +1044,28 @@ describe('RoadMapRegistry', () => {
             // Built-in brute should remain unchanged
             const brute = registry.getRoadmap('PF2EMONSTERMAKER.brute')
             expect(brute).toEqual(RoadMaps['PF2EMONSTERMAKER.brute'])
+        })
+
+        it('skips custom roadmaps that collide with built-in keys', () => {
+            const registry = RoadMapRegistry.getInstance()
+            ;(registry as any).builtInRoadmaps['PF2EMONSTERMAKER.custom.tank'] =
+                {}
+
+            ;(registry as any).processRoadmap(
+                {
+                    name: 'Tank',
+                    stats: { abilityScores: { strength: 'high' } },
+                },
+                'source.json',
+            )
+
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining(
+                    'would override built-in roadmap - skipping',
+                ),
+            )
         })
     })
 

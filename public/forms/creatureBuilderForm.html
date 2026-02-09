@@ -24,7 +24,7 @@
         <select id="creatureBuilderRoadmap" class="creatureBuilderFormTextSmall" onchange="setRoadmap(this)">
             <option value="Default" selected>Default</option>
             {{#each RoadMaps}}
-            <option value="{{@key}}">{{localize @key}}</option>
+            <option value="{{@key}}">{{roadmapLabel @key}}</option>
             {{/each}}
         </select>
     </div>
