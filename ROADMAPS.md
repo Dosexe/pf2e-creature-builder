@@ -86,61 +86,61 @@ Each statistic belongs to a specific group in `stats`, and the group names/keys 
 
 #### `abilityScores`
 
-| Statistic Key | Description |
-|----------------|-------------|
-| `strength` | Strength modifier |
-| `dexterity` | Dexterity modifier |
+| Statistic Key  | Description           |
+|----------------|-----------------------|
+| `strength`     | Strength modifier     |
+| `dexterity`    | Dexterity modifier    |
 | `constitution` | Constitution modifier |
 | `intelligence` | Intelligence modifier |
-| `wisdom` | Wisdom modifier |
-| `charisma` | Charisma modifier |
+| `wisdom`       | Wisdom modifier       |
+| `charisma`     | Charisma modifier     |
 
 #### `defenseAndPerception`
 
-| Statistic Key | Description |
-|----------------|-------------|
-| `hitPoints` | Hit Points |
-| `perception` | Perception modifier |
-| `armorClass` | Armor Class |
-| `fortitude` | Fortitude save |
-| `reflex` | Reflex save |
-| `will` | Will save |
+| Statistic Key | Description         |
+|---------------|---------------------|
+| `hitPoints`   | Hit Points          |
+| `perception`  | Perception modifier |
+| `armorClass`  | Armor Class         |
+| `fortitude`   | Fortitude save      |
+| `reflex`      | Reflex save         |
+| `will`        | Will save           |
 
 #### `strikes`
 
-| Statistic Key | Description |
-|----------------|-------------|
-| `strikeBonus` | Strike attack bonus |
-| `strikeDamage` | Strike damage |
+| Statistic Key  | Description         |
+|----------------|---------------------|
+| `strikeBonus`  | Strike attack bonus |
+| `strikeDamage` | Strike damage       |
 
 #### `spellcasting`
 
-| Statistic Key | Description |
-|----------------|-------------|
+| Statistic Key  | Description            |
+|----------------|------------------------|
 | `spellcasting` | Spellcasting DC/attack |
-| `tradition` | Spellcasting tradition |
-| `type` | Spellcasting type |
+| `tradition`    | Spellcasting tradition |
+| `type`         | Spellcasting type      |
 
 #### `skills`
 
-| Statistic Key | Description |
-|----------------|-------------|
-| `acrobatics` | Acrobatics skill |
-| `arcana` | Arcana skill |
-| `athletics` | Athletics skill |
-| `crafting` | Crafting skill |
-| `deception` | Deception skill |
-| `diplomacy` | Diplomacy skill |
+| Statistic Key  | Description        |
+|----------------|--------------------|
+| `acrobatics`   | Acrobatics skill   |
+| `arcana`       | Arcana skill       |
+| `athletics`    | Athletics skill    |
+| `crafting`     | Crafting skill     |
+| `deception`    | Deception skill    |
+| `diplomacy`    | Diplomacy skill    |
 | `intimidation` | Intimidation skill |
-| `medicine` | Medicine skill |
-| `nature` | Nature skill |
-| `occultism` | Occultism skill |
-| `performance` | Performance skill |
-| `religion` | Religion skill |
-| `society` | Society skill |
-| `stealth` | Stealth skill |
-| `survival` | Survival skill |
-| `thievery` | Thievery skill |
+| `medicine`     | Medicine skill     |
+| `nature`       | Nature skill       |
+| `occultism`    | Occultism skill    |
+| `performance`  | Performance skill  |
+| `religion`     | Religion skill     |
+| `society`      | Society skill      |
+| `stealth`      | Stealth skill      |
+| `survival`     | Survival skill     |
+| `thievery`     | Thievery skill     |
 
 ### Available Values
 
