@@ -1,4 +1,3 @@
-import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import { BaseSpellCopyStrategy } from '@/spellcasting/BaseSpellCopyStrategy'
 import type { SpellSlot } from '@/spellcasting/model/spellcasting'
 
@@ -8,7 +7,7 @@ import type { SpellSlot } from '@/spellcasting/model/spellcasting'
  * pointing to a specific spell.
  */
 export class PreparedSpellCopyStrategy extends BaseSpellCopyStrategy {
-    constructor(_parent: BaseActor) {
+    constructor(_parent: Actor) {
         super()
     }
 

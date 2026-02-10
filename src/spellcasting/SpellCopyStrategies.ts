@@ -1,4 +1,3 @@
-import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import { InnateSpellCopyStrategy } from '@/spellcasting/InnateSpellCopyStrategy'
 import type { CasterType } from '@/spellcasting/model/spellcasting'
 import { PreparedSpellCopyStrategy } from '@/spellcasting/PreparedSpellCopyStrategy'
@@ -10,7 +9,7 @@ import { SpontaneousSpellCopyStrategy } from '@/spellcasting/SpontaneousSpellCop
  */
 export function createSpellCopyStrategy(
     casterType: CasterType,
-    parent: BaseActor,
+    parent: Actor,
 ): SpellCopyStrategy | null {
     switch (casterType) {
         case 'prepared':

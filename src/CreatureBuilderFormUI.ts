@@ -405,6 +405,7 @@ class CreatureBuilderFormUI {
 
         const casterType = casterTypeSelect.value
 
+        // Prepared casters default to Intelligence, others to Charisma
         if (casterType === 'PF2EMONSTERMAKER.casterPrepared') {
             attributeSelect.value = 'PF2EMONSTERMAKER.attrInt'
         } else {
@@ -433,6 +434,7 @@ class CreatureBuilderFormUI {
 
         const isNone = spellcastingSelect.value === 'PF2EMONSTERMAKER.none'
 
+        // Get the parent form-group elements to hide/show the entire row
         const traditionRow = traditionSelect?.closest('.form-group')
         const typeRow = typeSelect?.closest('.form-group')
         const attributeRow = attributeSelect?.closest('.form-group')
@@ -462,6 +464,7 @@ class CreatureBuilderFormUI {
                     `creatureBuilder${statistic.name}`,
                 ) as HTMLSelectElement
                 if (element) {
+                    // Use entry's own default if available, otherwise category default
                     element.value =
                         statistic.defaultValue ?? category.defaultValue
                 }

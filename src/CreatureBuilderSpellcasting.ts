@@ -236,8 +236,7 @@ export function buildSpellcastingEntry(config: SpellcastingConfig): ItemData {
     const slots =
         config.slots ?? generateSpellSlots(config.casterType, config.level)
 
-    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    const spellsLabel = game['i18n'].localize(`${KeyPrefix}.spells`)
+    const spellsLabel = game!.i18n!.localize(`${KeyPrefix}.spells`)
     const name = buildSpellcastingName(
         config.tradition,
         config.casterType,
@@ -350,7 +349,7 @@ export function detectSpellcasting(
                     detected.slots = slots
                 }
 
-                break // Use the first spellcasting entry found
+                break
             }
         }
     }
@@ -399,10 +398,14 @@ export function detectSpellcasting(
                         '_stats.compendiumSource',
                     ) as string | undefined
 
-                    const spellLevel = foundry.utils.getProperty(
+                    const spellLevelRaw = foundry.utils.getProperty(
                         item,
                         'system.level.value',
-                    ) as number | undefined
+                    )
+                    const spellLevel = (() => {
+                        const value = Number(spellLevelRaw)
+                        return Number.isFinite(value) ? value : undefined
+                    })()
 
                     if (isPreparedCaster) {
                         const positions = spellIdToSlots.get(item.id)

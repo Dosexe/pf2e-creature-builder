@@ -1,4 +1,3 @@
-import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import { generateSpellSlots } from '@/CreatureBuilderSpellcasting'
 import { BaseSpellCopyStrategy } from '@/spellcasting/BaseSpellCopyStrategy'
 import type { SpellSlot } from '@/spellcasting/model/spellcasting'
@@ -8,7 +7,7 @@ import type { SpellSlot } from '@/spellcasting/model/spellcasting'
  * Spontaneous casters use max/value for slot counts; spells are not assigned to slots.
  */
 export class SpontaneousSpellCopyStrategy extends BaseSpellCopyStrategy {
-    constructor(_parent: BaseActor) {
+    constructor(_parent: Actor) {
         super()
     }
 

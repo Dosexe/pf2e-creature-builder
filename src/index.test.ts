@@ -105,7 +105,7 @@ const setupModule = async () => {
     vi.doMock('./CreatureBuilderForm', () => ({
         CreatureBuilderForm: CreatureBuilderFormMock,
     }))
-    vi.doMock('./RoadMapRegistry', () => ({
+    vi.doMock('@/roadmaps/RoadMapRegistry', () => ({
         RoadMapRegistry: RoadMapRegistryMock,
     }))
     CreatureBuilderFormMock.mockClear()
@@ -155,7 +155,7 @@ beforeEach(async () => {
 
 describe('index hooks', () => {
     it('registers settings and initializes RoadMapRegistry on init', async () => {
-        await hooks.init?.[0]?.()
+        hooks.init?.[0]?.()
         const register = (globalThis as any).game.settings.register
         expect(register).toHaveBeenCalledTimes(2)
         expect(register).toHaveBeenCalledWith(
@@ -172,7 +172,7 @@ describe('index hooks', () => {
     })
 
     it('loads custom roadmaps on ready hook', async () => {
-        await hooks.ready?.[0]?.()
+        hooks.ready?.[0]?.()
         expect(loadCustomRoadmapsSpy).toHaveBeenCalled()
     })
 

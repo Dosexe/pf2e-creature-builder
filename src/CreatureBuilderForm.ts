@@ -1,4 +1,3 @@
-import type { BaseActor } from '@league-of-foundry-developers/foundry-vtt-types/src/foundry/common/documents.mjs'
 import type { ItemData } from '@/model/item'
 import type {
     CasterType as SpellcastingCasterType,
@@ -30,7 +29,7 @@ import {
     Skills,
     Statistics,
 } from './Keys'
-import { RoadMapRegistry } from './RoadMapRegistry'
+import { RoadMapRegistry } from './roadmaps/RoadMapRegistry'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 
 type DetectedStatValue = Options | MagicalTradition | CasterType
@@ -49,11 +48,11 @@ export class CreatureBuilderForm extends FormApplication {
         this._uniqueId = `creatureBuilderForm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
     }
 
-    get actor(): BaseActor {
-        return this.object as BaseActor
+    get actor(): Actor {
+        return this.object as Actor
     }
 
-    set actor(value: BaseActor) {
+    set actor(value: Actor) {
         this.object = value
     }
 
@@ -155,8 +154,7 @@ export class CreatureBuilderForm extends FormApplication {
                 strikeDamageOption
             ]
         const strike: ItemData = {
-            // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-            name: game['i18n'].localize(`${KeyPrefix}.strike`),
+            name: game.i18n!.localize(`${KeyPrefix}.strike`),
             type: 'melee',
             system: {
                 damageRolls: {
@@ -171,6 +169,7 @@ export class CreatureBuilderForm extends FormApplication {
                 },
             },
         }
+
         return Item.create(strike, { parent: this.actor })
     }
 
@@ -242,9 +241,7 @@ export class CreatureBuilderForm extends FormApplication {
                     ? strategy.buildInitialSlots(currentSlots, this.level)
                     : generateSpellSlots(resolvedCasterType, this.level)
             })()
-            const spellsLabel = (game as Game).i18n.localize(
-                `${KeyPrefix}.spells`,
-            )
+            const spellsLabel = game.i18n!.localize(`${KeyPrefix}.spells`)
             const entryName = buildSpellcastingName(
                 tradition,
                 resolvedCasterType,
@@ -281,6 +278,7 @@ export class CreatureBuilderForm extends FormApplication {
             level: this.level,
             slots: generateSpellSlots(casterType, this.level),
         })
+
         return Item.create(spellcasting, { parent: this.actor })
     }
 
@@ -332,24 +330,9 @@ export class CreatureBuilderForm extends FormApplication {
                     },
                 },
             }
+
             await Item.create(loreItem, { parent: this.actor })
         }
-    }
-
-    applySenses(senses: Array<object>) {
-        if (!senses || senses.length === 0) {
-            return {}
-        }
-
-        return { 'system.perception.senses': senses }
-    }
-
-    applyMovement(movement: object) {
-        if (!movement || Object.keys(movement).length === 0) {
-            return {}
-        }
-
-        return { 'system.movement': movement }
     }
 
     protected async _updateObject(_event: Event, formData?: object) {
@@ -380,24 +363,10 @@ export class CreatureBuilderForm extends FormApplication {
             Object.assign(updateData, this.applyLevel())
             Object.assign(updateData, this.applyTraits(formData))
             Object.assign(updateData, this.applyHitPoints(formData))
-            Object.assign(
-                updateData,
-                this.applySenses(
-                    foundry.utils.getProperty(
-                        this.actor,
-                        'system.perception.senses',
-                    ),
-                ),
-            )
-            Object.assign(
-                updateData,
-                this.applyMovement(
-                    foundry.utils.getProperty(this.actor, 'system.movement'),
-                ),
-            )
 
-            const newActor: BaseActor | undefined = await this.actor.clone(
-                updateData,
+            // Clone original actor with overrides (copies all data + items; save to world)
+            const newActor: Actor | undefined = await this.actor.clone(
+                updateData as any,
                 { save: true },
             )
             if (!newActor) {
@@ -408,6 +377,7 @@ export class CreatureBuilderForm extends FormApplication {
             const originalActor = this.actor
             this.actor = newActor
 
+            // Remove only strike and lore; clone already has spellcasting entry + spells
             const toDelete: string[] = []
             for (const item of newActor.items) {
                 if (
@@ -428,7 +398,6 @@ export class CreatureBuilderForm extends FormApplication {
                 this.applyLoreSkills(formData),
             ])
             this.actor = originalActor
-
             ;(newActor as Actor).sheet?.render(true)
         }
     }
@@ -589,9 +558,10 @@ export class CreatureBuilderForm extends FormApplication {
                         item.name
                             ?.replace(' Lore', '')
                             .replace(/ \(.*\)$/, '') || 'Unknown'
-                    const modValue =
-                        foundry.utils.getProperty(item, 'system.mod.value') ?? 0
-                    if (modValue > 0) {
+                    const modValue = Number(
+                        foundry.utils.getProperty(item, 'system.mod.value'),
+                    )
+                    if (Number.isFinite(modValue) && modValue > 0) {
                         const level = detectStatLevel(
                             Statistics.acrobatics,
                             clampedLevel,
@@ -605,7 +575,6 @@ export class CreatureBuilderForm extends FormApplication {
         return loreSkills
     }
 
-    // @ts-expect-error - Overriding parent method
     getData() {
         // console.debug('=== CreatureBuilderForm getData() ===')
         // console.debug('this.object:', this.object)
@@ -618,6 +587,29 @@ export class CreatureBuilderForm extends FormApplication {
         // )
 
         Handlebars.registerHelper('json', (context) => JSON.stringify(context))
+        Handlebars.registerHelper('roadmapLabel', (key) => {
+            if (typeof key !== 'string') {
+                return ''
+            }
+
+            const prefix = `${KeyPrefix}.custom.`
+            if (key.startsWith(prefix)) {
+                const raw = key.slice(prefix.length)
+                const normalized = raw
+                    .replace(/[_-]+/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                if (!normalized) {
+                    return key
+                }
+                return normalized
+                    .split(' ')
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ')
+            }
+
+            return game.i18n?.localize(key) ?? key
+        })
 
         const detectedStats = this.detectActorStats()
         const detectedTraits = this.detectTraits()

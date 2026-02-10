@@ -1,25 +1,20 @@
 import { DefaultCreatureLevel } from '@/Keys'
+import { RoadMapRegistry } from '@/roadmaps/RoadMapRegistry'
 import { CreatureBuilderForm } from './CreatureBuilderForm'
-import { RoadMapRegistry } from './RoadMapRegistry'
+
+const SHORT_MODULE_NAME = 'CB'
 
 Hooks.on('init', async () => {
-    // Initialize the RoadMapRegistry singleton (built-in roadmaps available immediately)
     RoadMapRegistry.getInstance()
 
-    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    await game['settings'].register(
-        'foundryvtt-pf2e-creature-builder',
-        'roadmaps',
-        {
-            scope: 'world',
-            config: false,
-            type: Object,
-            default: {},
-        },
-    )
+    game.settings?.register('foundryvtt-pf2e-creature-builder', 'roadmaps', {
+        scope: 'world',
+        config: false,
+        type: Object,
+        default: {},
+    })
 
-    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    await game['settings'].register('pf2e-creature-builder', 'abbreviateName', {
+    game.settings?.register('pf2e-creature-builder', 'abbreviateName', {
         name: 'Abbreviate Creature Builder',
         hint: 'Turn this on if you prefer to see CB instead of the full title Creature Builder in the monster sheet.',
         scope: 'world',
@@ -36,9 +31,8 @@ Hooks.on('ready', async () => {
 })
 
 function getMonsterManualLabel() {
-    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    return game['settings'].get('pf2e-creature-builder', 'abbreviateName')
-        ? 'CB'
+    return game.settings?.get('pf2e-creature-builder', 'abbreviateName')
+        ? SHORT_MODULE_NAME
         : 'Creature Builder'
 }
 
@@ -47,8 +41,8 @@ Hooks.on('renderActorSheet', async (sheet, html) => {
     if (actor?.type !== 'npc') {
         return
     }
-    // biome-ignore lint/complexity/useLiteralKeys: FoundryVTT type workaround
-    if (!actor.canUserModify(game['user'], 'update')) {
+
+    if (!actor.canUserModify(game.user!, 'update')) {
         return
     }
     const element = html.find('.window-header .window-title')
@@ -73,7 +67,7 @@ Hooks.on('renderActorDirectory', () => {
         monsterButton.on('click', () => {
             const monsterData = {
                 name: 'Monster',
-                type: 'npc',
+                type: 'npc' as const,
                 system: {
                     details: {
                         level: {
@@ -82,7 +76,7 @@ Hooks.on('renderActorDirectory', () => {
                     },
                 },
             }
-            const actor = new Actor(monsterData)
+            const actor = new Actor(monsterData as Actor.CreateData)
             new CreatureBuilderForm(actor, {
                 useDefaultLevel: true,
             }).render(true)

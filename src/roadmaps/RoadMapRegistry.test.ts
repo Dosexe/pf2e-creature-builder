@@ -1,8 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Options, RoadMaps, Statistics } from './Keys'
+import {
+    CasterType,
+    MagicalTradition,
+    Options,
+    RoadMaps,
+    Statistics,
+} from '@/Keys'
 
 vi.mock('@/utils', () => ({ globalLog: vi.fn() }))
 
+import type { CustomRoadmap } from '@/roadmaps/model/roadMapSchemas'
 // Import after mocking
 import { globalLog } from '@/utils'
 import { RoadMapRegistry } from './RoadMapRegistry'
@@ -142,12 +149,16 @@ describe('RoadMapRegistry', () => {
         })
 
         it('loads a single custom roadmap from JSON file', async () => {
-            const customRoadmap = {
+            const customRoadmap: CustomRoadmap = {
                 name: 'Tank',
-                statistics: {
-                    strength: 'high',
-                    constitution: 'extreme',
-                    armorClass: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                        constitution: 'extreme',
+                    },
+                    defenseAndPerception: {
+                        armorClass: 'high',
+                    },
                 },
             }
 
@@ -185,16 +196,22 @@ describe('RoadMapRegistry', () => {
             const customRoadmaps = [
                 {
                     name: 'Glass Cannon',
-                    statistics: {
-                        strength: 'extreme',
-                        hitPoints: 'low',
+                    stats: {
+                        abilityScores: {
+                            strength: 'extreme',
+                        },
+                        defenceAndPerception: {
+                            hitPoints: 'low',
+                        },
                     },
                 },
                 {
                     name: 'Defender',
-                    statistics: {
-                        armorClass: 'extreme',
-                        fortitude: 'high',
+                    stats: {
+                        defenceAndPerception: {
+                            armorClass: 'extreme',
+                            fortitude: 'high',
+                        },
                     },
                 },
             ]
@@ -239,7 +256,9 @@ describe('RoadMapRegistry', () => {
                     json: () =>
                         Promise.resolve({
                             name: 'Tank',
-                            statistics: { strength: 'high' },
+                            stats: {
+                                abilityScores: { strength: 'high' },
+                            },
                         }),
                 }),
             )
@@ -308,19 +327,39 @@ describe('RoadMapRegistry', () => {
                 expect.any(Error),
             )
         })
+
+        it('logs unexpected errors during loading', async () => {
+            const registry = RoadMapRegistry.getInstance()
+            ;(
+                globalLog as unknown as { mockImplementationOnce: (x) => void }
+            ).mockImplementationOnce(() => {
+                throw new Error('boom')
+            })
+
+            await registry.loadCustomRoadmaps()
+
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Error loading custom roadmaps:',
+                expect.any(Error),
+            )
+            expect(registry.isReady).toBe(true)
+        })
     })
 
     describe('Roadmap Translation', () => {
         it('translates all ability score keys correctly', async () => {
             const customRoadmap = {
                 name: 'Ability Test',
-                statistics: {
-                    strength: 'high',
-                    dexterity: 'moderate',
-                    constitution: 'extreme',
-                    intelligence: 'low',
-                    wisdom: 'terrible',
-                    charisma: 'abysmal',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                        dexterity: 'moderate',
+                        constitution: 'extreme',
+                        intelligence: 'low',
+                        wisdom: 'terrible',
+                        charisma: 'abysmal',
+                    },
                 },
             }
 
@@ -353,18 +392,24 @@ describe('RoadMapRegistry', () => {
         })
 
         it('translates defence and combat keys correctly', async () => {
-            const customRoadmap = {
+            const customRoadmap: CustomRoadmap = {
                 name: 'Combat Test',
-                statistics: {
-                    hitPoints: 'high',
-                    perception: 'extreme',
-                    armorClass: 'high',
-                    fortitude: 'high',
-                    reflex: 'moderate',
-                    will: 'low',
-                    strikeBonus: 'high',
-                    strikeDamage: 'extreme',
-                    spellcasting: 'moderate',
+                stats: {
+                    defenseAndPerception: {
+                        hitPoints: 'high',
+                        perception: 'extreme',
+                        armorClass: 'high',
+                        fortitude: 'high',
+                        reflex: 'moderate',
+                        will: 'low',
+                    },
+                    strikes: {
+                        strikeBonus: 'high',
+                        strikeDamage: 'extreme',
+                    },
+                    spellcasting: {
+                        value: 'moderate',
+                    },
                 },
             }
 
@@ -402,12 +447,14 @@ describe('RoadMapRegistry', () => {
         it('translates skill keys correctly', async () => {
             const customRoadmap = {
                 name: 'Skill Test',
-                statistics: {
-                    acrobatics: 'high',
-                    arcana: 'extreme',
-                    athletics: 'high',
-                    stealth: 'extreme',
-                    thievery: 'moderate',
+                stats: {
+                    skills: {
+                        acrobatics: 'high',
+                        arcana: 'extreme',
+                        athletics: 'high',
+                        stealth: 'extreme',
+                        thievery: 'moderate',
+                    },
                 },
             }
 
@@ -438,13 +485,53 @@ describe('RoadMapRegistry', () => {
             expect(roadmap[Statistics.thievery]).toBe(Options.moderate)
         })
 
-        it('handles case-insensitive option values', async () => {
+        it('covers all RoadmapConfigFile fields', async () => {
             const customRoadmap = {
-                name: 'Case Test',
-                statistics: {
-                    strength: 'HIGH',
-                    dexterity: 'Moderate',
-                    constitution: 'EXTREME',
+                name: 'Full Config Coverage',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                        dexterity: 'moderate',
+                        constitution: 'low',
+                        intelligence: 'extreme',
+                        wisdom: 'terrible',
+                        charisma: 'abysmal',
+                    },
+                    defenseAndPerception: {
+                        hitPoints: 'high',
+                        perception: 'extreme',
+                        armorClass: 'high',
+                        fortitude: 'low',
+                        reflex: 'moderate',
+                        will: 'terrible',
+                    },
+                    strikes: {
+                        strikeBonus: 'high',
+                        strikeDamage: 'extreme',
+                    },
+                    spellcasting: {
+                        value: 'moderate',
+                        tradition: 'arcane',
+                        type: 'prepared',
+                    },
+                    skills: {
+                        acrobatics: 'high',
+                        arcana: 'high',
+                        athletics: 'high',
+                        crafting: 'high',
+                        deception: 'high',
+                        diplomacy: 'high',
+                        intimidation: 'high',
+                        medicine: 'high',
+                        nature: 'high',
+                        occultism: 'high',
+                        performance: 'high',
+                        religion: 'high',
+                        society: 'high',
+                        stealth: 'high',
+                        survival: 'high',
+                        thievery: 'high',
+                    },
                 },
             }
 
@@ -466,20 +553,96 @@ describe('RoadMapRegistry', () => {
 
             const roadmap =
                 registry.getCustomRoadmaps()[
-                    'PF2EMONSTERMAKER.custom.case_test'
+                    'PF2EMONSTERMAKER.custom.full_config_coverage'
                 ]
+
             expect(roadmap[Statistics.str]).toBe(Options.high)
             expect(roadmap[Statistics.dex]).toBe(Options.moderate)
-            expect(roadmap[Statistics.con]).toBe(Options.extreme)
+            expect(roadmap[Statistics.con]).toBe(Options.low)
+            expect(roadmap[Statistics.int]).toBe(Options.extreme)
+            expect(roadmap[Statistics.wis]).toBe(Options.terrible)
+            expect(roadmap[Statistics.cha]).toBe(Options.abysmal)
+
+            expect(roadmap[Statistics.hp]).toBe(Options.high)
+            expect(roadmap[Statistics.per]).toBe(Options.extreme)
+            expect(roadmap[Statistics.ac]).toBe(Options.high)
+            expect(roadmap[Statistics.fort]).toBe(Options.low)
+            expect(roadmap[Statistics.ref]).toBe(Options.moderate)
+            expect(roadmap[Statistics.wil]).toBe(Options.terrible)
+
+            expect(roadmap[Statistics.strikeBonus]).toBe(Options.high)
+            expect(roadmap[Statistics.strikeDamage]).toBe(Options.extreme)
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.moderate)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(
+                MagicalTradition.arcane,
+            )
+            expect(roadmap[Statistics.spellcastingType]).toBe(
+                CasterType.prepared,
+            )
+
+            expect(roadmap[Statistics.acrobatics]).toBe(Options.high)
+            expect(roadmap[Statistics.arcana]).toBe(Options.high)
+            expect(roadmap[Statistics.athletics]).toBe(Options.high)
+            expect(roadmap[Statistics.crafting]).toBe(Options.high)
+            expect(roadmap[Statistics.deception]).toBe(Options.high)
+            expect(roadmap[Statistics.diplomacy]).toBe(Options.high)
+            expect(roadmap[Statistics.intimidation]).toBe(Options.high)
+            expect(roadmap[Statistics.medicine]).toBe(Options.high)
+            expect(roadmap[Statistics.nature]).toBe(Options.high)
+            expect(roadmap[Statistics.occultism]).toBe(Options.high)
+            expect(roadmap[Statistics.performance]).toBe(Options.high)
+            expect(roadmap[Statistics.religion]).toBe(Options.high)
+            expect(roadmap[Statistics.society]).toBe(Options.high)
+            expect(roadmap[Statistics.stealth]).toBe(Options.high)
+            expect(roadmap[Statistics.survival]).toBe(Options.high)
+            expect(roadmap[Statistics.thievery]).toBe(Options.high)
+        })
+
+        it('keeps the first value when stats are duplicated across groups', async () => {
+            const customRoadmap = {
+                name: 'Duplicate Stat',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
+                    strikes: {
+                        strength: 'extreme',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const roadmap =
+                registry.getCustomRoadmaps()[
+                    'PF2EMONSTERMAKER.custom.duplicate_stat'
+                ]
+            expect(roadmap[Statistics.str]).toBe(Options.high)
         })
 
         it('skips unknown statistic keys with warning', async () => {
             const customRoadmap = {
                 name: 'Unknown Key Test',
-                statistics: {
-                    strength: 'high',
-                    unknownStat: 'extreme',
-                    invalidKey: 'moderate',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                        unknownStat: 'extreme',
+                        invalidKey: 'moderate',
+                    },
                 },
             }
 
@@ -504,60 +667,17 @@ describe('RoadMapRegistry', () => {
                     'PF2EMONSTERMAKER.custom.unknown_key_test'
                 ]
             expect(roadmap[Statistics.str]).toBe(Options.high)
-            expect(Object.keys(roadmap)).toHaveLength(1)
-            expect(globalLog).toHaveBeenCalledWith(
-                true,
-                expect.stringContaining('Unknown statistic "unknownStat"'),
-            )
-            expect(globalLog).toHaveBeenCalledWith(
-                true,
-                expect.stringContaining('Unknown statistic "invalidKey"'),
-            )
-        })
-
-        it('skips unknown option values with warning', async () => {
-            const customRoadmap = {
-                name: 'Unknown Value Test',
-                statistics: {
-                    strength: 'high',
-                    dexterity: 'superstrong',
-                },
-            }
-
-            vi.stubGlobal('FilePicker', {
-                browse: vi.fn().mockResolvedValue({
-                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
-                }),
-            })
-            vi.stubGlobal(
-                'fetch',
-                vi.fn().mockResolvedValue({
-                    ok: true,
-                    json: () => Promise.resolve(customRoadmap),
-                }),
-            )
-
-            const registry = RoadMapRegistry.getInstance()
-            await registry.loadCustomRoadmaps()
-
-            const roadmap =
-                registry.getCustomRoadmaps()[
-                    'PF2EMONSTERMAKER.custom.unknown_value_test'
-                ]
-            expect(roadmap[Statistics.str]).toBe(Options.high)
-            expect(roadmap[Statistics.dex]).toBeUndefined()
-            expect(globalLog).toHaveBeenCalledWith(
-                true,
-                expect.stringContaining('Unknown option value "superstrong"'),
-            )
+            expect(Object.keys(roadmap)).toHaveLength(33)
         })
     })
 
     describe('Roadmap Validation', () => {
         it('skips roadmaps without name', async () => {
             const customRoadmap = {
-                statistics: {
-                    strength: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
                 },
             }
 
@@ -578,17 +698,15 @@ describe('RoadMapRegistry', () => {
             await registry.loadCustomRoadmaps()
 
             expect(registry.getCustomRoadmaps()).toEqual({})
-            expect(globalLog).toHaveBeenCalledWith(
-                true,
-                expect.stringContaining('missing required "name" field'),
-            )
         })
 
         it('skips roadmaps with empty name', async () => {
             const customRoadmap = {
                 name: '   ',
-                statistics: {
-                    strength: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
                 },
             }
 
@@ -609,13 +727,9 @@ describe('RoadMapRegistry', () => {
             await registry.loadCustomRoadmaps()
 
             expect(registry.getCustomRoadmaps()).toEqual({})
-            expect(globalLog).toHaveBeenCalledWith(
-                true,
-                expect.stringContaining('missing required "name" field'),
-            )
         })
 
-        it('skips roadmaps without statistics object', async () => {
+        it('skips roadmaps without stats object', async () => {
             const customRoadmap = {
                 name: 'No Stats',
             }
@@ -637,16 +751,12 @@ describe('RoadMapRegistry', () => {
             await registry.loadCustomRoadmaps()
 
             expect(registry.getCustomRoadmaps()).toEqual({})
-            expect(globalLog).toHaveBeenCalledWith(
-                true,
-                expect.stringContaining('missing required "statistics" object'),
-            )
         })
 
-        it('skips roadmaps with statistics as array', async () => {
+        it('skips roadmaps with stats as array', async () => {
             const customRoadmap = {
                 name: 'Array Stats',
-                statistics: ['strength', 'high'],
+                stats: ['strength', 'high'],
             }
 
             vi.stubGlobal('FilePicker', {
@@ -666,48 +776,18 @@ describe('RoadMapRegistry', () => {
             await registry.loadCustomRoadmaps()
 
             expect(registry.getCustomRoadmaps()).toEqual({})
-            expect(globalLog).toHaveBeenCalledWith(
-                true,
-                expect.stringContaining('missing required "statistics" object'),
-            )
-        })
-
-        it('skips roadmaps with no valid statistics', async () => {
-            const customRoadmap = {
-                name: 'All Invalid',
-                statistics: {
-                    unknownStat1: 'high',
-                    unknownStat2: 'moderate',
-                },
-            }
-
-            vi.stubGlobal('FilePicker', {
-                browse: vi.fn().mockResolvedValue({
-                    files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
-                }),
-            })
-            vi.stubGlobal(
-                'fetch',
-                vi.fn().mockResolvedValue({
-                    ok: true,
-                    json: () => Promise.resolve(customRoadmap),
-                }),
-            )
-
-            const registry = RoadMapRegistry.getInstance()
-            await registry.loadCustomRoadmaps()
-
-            expect(registry.getCustomRoadmaps()).toEqual({})
-            expect(globalLog).toHaveBeenCalledWith(
-                true,
-                expect.stringContaining('has no valid statistics'),
-            )
         })
 
         it('skips duplicate custom roadmap names', async () => {
             const customRoadmaps = [
-                { name: 'Duplicate', statistics: { strength: 'high' } },
-                { name: 'Duplicate', statistics: { strength: 'extreme' } },
+                {
+                    name: 'Duplicate',
+                    stats: { abilityScores: { strength: 'high' } },
+                },
+                {
+                    name: 'Duplicate',
+                    stats: { abilityScores: { strength: 'extreme' } },
+                },
             ]
 
             vi.stubGlobal('FilePicker', {
@@ -747,8 +827,10 @@ describe('RoadMapRegistry', () => {
             // But we test the protection mechanism anyway
             const customRoadmap = {
                 name: 'Tank',
-                statistics: {
-                    strength: 'extreme',
+                stats: {
+                    abilityScores: {
+                        strength: 'extreme',
+                    },
                 },
             }
 
@@ -777,14 +859,303 @@ describe('RoadMapRegistry', () => {
             const brute = registry.getRoadmap('PF2EMONSTERMAKER.brute')
             expect(brute).toEqual(RoadMaps['PF2EMONSTERMAKER.brute'])
         })
+
+        it('skips custom roadmaps that collide with built-in keys', () => {
+            const registry = RoadMapRegistry.getInstance()
+            ;(registry as any).builtInRoadmaps['PF2EMONSTERMAKER.custom.tank'] =
+                {}
+
+            ;(registry as any).processRoadmap(
+                {
+                    name: 'Tank',
+                    stats: { abilityScores: { strength: 'high' } },
+                },
+                'source.json',
+            )
+
+            expect(registry.getCustomRoadmaps()).toEqual({})
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                expect.stringContaining(
+                    'would override built-in roadmap - skipping',
+                ),
+            )
+        })
+    })
+
+    describe('Spellcasting Defaults', () => {
+        it('defaults spellcasting to none when not provided in custom roadmap', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Warrior',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
+                    defenseAndPerception: {
+                        armorClass: 'high',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/warrior.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.warrior']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.none)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(Options.none)
+            expect(roadmap[Statistics.spellcastingType]).toBe(Options.none)
+        })
+
+        it('uses spellcasting value with defaults for tradition and type when only spellcasting is provided', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Innate Caster',
+                stats: {
+                    abilityScores: {
+                        intelligence: 'high',
+                    },
+                    defenseAndPerception: {
+                        armorClass: 'moderate',
+                    },
+                    spellcasting: {
+                        value: 'high',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/innate.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.innate_caster']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.high)
+            // Should default to arcane and innate when not specified
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(
+                MagicalTradition.arcane,
+            )
+            expect(roadmap[Statistics.spellcastingType]).toBe(CasterType.innate)
+        })
+
+        it('uses all spellcasting values when fully specified in custom roadmap', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Divine Priest',
+                stats: {
+                    abilityScores: {
+                        wisdom: 'extreme',
+                    },
+                    defenseAndPerception: {
+                        will: 'high',
+                    },
+                    spellcasting: {
+                        value: 'extreme',
+                        tradition: 'divine',
+                        type: 'prepared',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/priest.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.divine_priest']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.extreme)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(
+                MagicalTradition.divine,
+            )
+            expect(roadmap[Statistics.spellcastingType]).toBe(
+                CasterType.prepared,
+            )
+        })
+
+        it('correctly maps occult spontaneous spellcaster', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Occult Bard',
+                stats: {
+                    abilityScores: {
+                        charisma: 'high',
+                    },
+                    spellcasting: {
+                        value: 'high',
+                        tradition: 'occult',
+                        type: 'spontaneous',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/bard.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.occult_bard']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.high)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(
+                MagicalTradition.occult,
+            )
+            expect(roadmap[Statistics.spellcastingType]).toBe(
+                CasterType.spontaneous,
+            )
+        })
+
+        it('correctly maps primal innate spellcaster', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Fey Creature',
+                stats: {
+                    abilityScores: {
+                        wisdom: 'high',
+                    },
+                    spellcasting: {
+                        value: 'moderate',
+                        tradition: 'primal',
+                        type: 'innate',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/fey.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.fey_creature']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.moderate)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(
+                MagicalTradition.primal,
+            )
+            expect(roadmap[Statistics.spellcastingType]).toBe(CasterType.innate)
+        })
+
+        it('handles spellcasting none explicitly', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Pure Martial',
+                stats: {
+                    abilityScores: {
+                        strength: 'extreme',
+                    },
+                    spellcasting: {
+                        value: 'none',
+                        tradition: 'arcane',
+                        type: 'innate',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/martial.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.pure_martial']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.none)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(Options.none)
+            expect(roadmap[Statistics.spellcastingType]).toBe(Options.none)
+        })
     })
 
     describe('Name Sanitization', () => {
         it('sanitizes names with special characters', async () => {
             const customRoadmap = {
                 name: 'Tank & Healer (v2.0)',
-                statistics: {
-                    strength: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
                 },
             }
 
@@ -813,8 +1184,10 @@ describe('RoadMapRegistry', () => {
         it('sanitizes names with leading/trailing whitespace', async () => {
             const customRoadmap = {
                 name: '  My Tank  ',
-                statistics: {
-                    strength: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
                 },
             }
 
@@ -851,9 +1224,11 @@ describe('RoadMapRegistry', () => {
         it('merges built-in and custom roadmaps', async () => {
             const customRoadmap = {
                 name: 'Custom Tank',
-                statistics: {
-                    strength: 'extreme',
-                    constitution: 'high',
+                stats: {
+                    abilityScores: {
+                        strength: 'extreme',
+                        constitution: 'high',
+                    },
                 },
             }
 
@@ -900,8 +1275,10 @@ describe('RoadMapRegistry', () => {
         it('returns custom roadmap when requested', async () => {
             const customRoadmap = {
                 name: 'My Custom',
-                statistics: {
-                    strength: 'extreme',
+                stats: {
+                    abilityScores: {
+                        strength: 'extreme',
+                    },
                 },
             }
 
