@@ -5,7 +5,7 @@ import {
     Options,
     RoadMaps,
     Statistics,
-} from '../Keys'
+} from '@/Keys'
 
 vi.mock('@/utils', () => ({ globalLog: vi.fn() }))
 
@@ -408,7 +408,7 @@ describe('RoadMapRegistry', () => {
                         strikeDamage: 'extreme',
                     },
                     spellcasting: {
-                        spellcasting: 'moderate',
+                        value: 'moderate',
                     },
                 },
             }
@@ -510,7 +510,7 @@ describe('RoadMapRegistry', () => {
                         strikeDamage: 'extreme',
                     },
                     spellcasting: {
-                        spellcasting: 'moderate',
+                        value: 'moderate',
                         tradition: 'arcane',
                         type: 'prepared',
                     },
@@ -880,6 +880,271 @@ describe('RoadMapRegistry', () => {
                     'would override built-in roadmap - skipping',
                 ),
             )
+        })
+    })
+
+    describe('Spellcasting Defaults', () => {
+        it('defaults spellcasting to none when not provided in custom roadmap', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Warrior',
+                stats: {
+                    abilityScores: {
+                        strength: 'high',
+                    },
+                    defenseAndPerception: {
+                        armorClass: 'high',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/warrior.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.warrior']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.none)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(Options.none)
+            expect(roadmap[Statistics.spellcastingType]).toBe(Options.none)
+        })
+
+        it('uses spellcasting value with defaults for tradition and type when only spellcasting is provided', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Innate Caster',
+                stats: {
+                    abilityScores: {
+                        intelligence: 'high',
+                    },
+                    defenseAndPerception: {
+                        armorClass: 'moderate',
+                    },
+                    spellcasting: {
+                        value: 'high',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/innate.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.innate_caster']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.high)
+            // Should default to arcane and innate when not specified
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(
+                MagicalTradition.arcane,
+            )
+            expect(roadmap[Statistics.spellcastingType]).toBe(CasterType.innate)
+        })
+
+        it('uses all spellcasting values when fully specified in custom roadmap', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Divine Priest',
+                stats: {
+                    abilityScores: {
+                        wisdom: 'extreme',
+                    },
+                    defenseAndPerception: {
+                        will: 'high',
+                    },
+                    spellcasting: {
+                        value: 'extreme',
+                        tradition: 'divine',
+                        type: 'prepared',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/priest.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.divine_priest']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.extreme)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(
+                MagicalTradition.divine,
+            )
+            expect(roadmap[Statistics.spellcastingType]).toBe(
+                CasterType.prepared,
+            )
+        })
+
+        it('correctly maps occult spontaneous spellcaster', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Occult Bard',
+                stats: {
+                    abilityScores: {
+                        charisma: 'high',
+                    },
+                    spellcasting: {
+                        value: 'high',
+                        tradition: 'occult',
+                        type: 'spontaneous',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/bard.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.occult_bard']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.high)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(
+                MagicalTradition.occult,
+            )
+            expect(roadmap[Statistics.spellcastingType]).toBe(
+                CasterType.spontaneous,
+            )
+        })
+
+        it('correctly maps primal innate spellcaster', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Fey Creature',
+                stats: {
+                    abilityScores: {
+                        wisdom: 'high',
+                    },
+                    spellcasting: {
+                        value: 'moderate',
+                        tradition: 'primal',
+                        type: 'innate',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: ['pf2e-creature-builder/custom-roadmaps/fey.json'],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.fey_creature']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.moderate)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(
+                MagicalTradition.primal,
+            )
+            expect(roadmap[Statistics.spellcastingType]).toBe(CasterType.innate)
+        })
+
+        it('handles spellcasting none explicitly', async () => {
+            const customRoadmap: CustomRoadmap = {
+                name: 'Pure Martial',
+                stats: {
+                    abilityScores: {
+                        strength: 'extreme',
+                    },
+                    spellcasting: {
+                        value: 'none',
+                        tradition: 'arcane',
+                        type: 'innate',
+                    },
+                },
+            }
+
+            vi.stubGlobal('FilePicker', {
+                browse: vi.fn().mockResolvedValue({
+                    files: [
+                        'pf2e-creature-builder/custom-roadmaps/martial.json',
+                    ],
+                }),
+            })
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    json: () => Promise.resolve(customRoadmap),
+                }),
+            )
+
+            const registry = RoadMapRegistry.getInstance()
+            await registry.loadCustomRoadmaps()
+
+            const custom = registry.getCustomRoadmaps()
+            const roadmap = custom['PF2EMONSTERMAKER.custom.pure_martial']
+
+            expect(roadmap).toBeDefined()
+            expect(roadmap[Statistics.spellcasting]).toBe(Options.none)
+            expect(roadmap[Statistics.spellcastingTradition]).toBe(Options.none)
+            expect(roadmap[Statistics.spellcastingType]).toBe(Options.none)
         })
     })
 

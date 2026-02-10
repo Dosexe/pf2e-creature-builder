@@ -11,7 +11,7 @@ import {
     type Roadmap,
     type RoadmapValue,
     Statistics,
-} from '../Keys'
+} from '@/Keys'
 
 /**
  * Transform a validated custom roadmap into internal roadmap format.
@@ -53,6 +53,19 @@ export function transformCustomRoadmap(customRoadmap: CustomRoadmap): Roadmap {
             : CasterType.innate
     }
 
+    const spellcastingValue = getOptionKey(
+        stats.spellcasting?.value,
+        Options.none,
+    )
+    const spellcastingTradition =
+        spellcastingValue === Options.none
+            ? Options.none
+            : getTraditionKey(stats.spellcasting?.tradition)
+    const spellcastingType =
+        spellcastingValue === Options.none
+            ? Options.none
+            : getCasterTypeKey(stats.spellcasting?.type)
+
     // Direct mapping from custom roadmap structure to internal roadmap
     return {
         // Ability Scores
@@ -76,15 +89,9 @@ export function transformCustomRoadmap(customRoadmap: CustomRoadmap): Roadmap {
         [Statistics.strikeDamage]: getOptionKey(stats.strikes?.strikeDamage),
 
         // Spellcasting
-        [Statistics.spellcasting]: getOptionKey(
-            stats.spellcasting?.spellcasting,
-        ),
-        [Statistics.spellcastingTradition]: getTraditionKey(
-            stats.spellcasting?.tradition,
-        ),
-        [Statistics.spellcastingType]: getCasterTypeKey(
-            stats.spellcasting?.type,
-        ),
+        [Statistics.spellcasting]: spellcastingValue,
+        [Statistics.spellcastingTradition]: spellcastingTradition,
+        [Statistics.spellcastingType]: spellcastingType,
 
         // Skills
         [Statistics.acrobatics]: getOptionKey(

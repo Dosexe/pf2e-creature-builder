@@ -81,7 +81,7 @@ const strikesSchema = z.looseObject({
  * Schema for spellcasting in custom roadmap
  */
 const spellcastingSchema = z.looseObject({
-    spellcasting: optionValueSchema.optional(),
+    value: optionValueSchema.optional(),
     tradition: traditionValueSchema.optional(),
     type: casterTypeValueSchema.optional(),
 })
