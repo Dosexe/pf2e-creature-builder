@@ -29,7 +29,7 @@ import {
     Skills,
     Statistics,
 } from './Keys'
-import { RoadMapRegistry } from './RoadMapRegistry'
+import { RoadMapRegistry } from './roadmaps/RoadMapRegistry'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 
 type DetectedStatValue = Options | MagicalTradition | CasterType

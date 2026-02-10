@@ -1,16 +1,15 @@
-import { globalLog } from '@/utils'
 import {
-    CASTER_TYPE_MAP,
     KeyPrefix,
-    OPTION_MAP,
     RoadMaps,
     type Roadmap,
     type RoadmapCollection,
-    type RoadmapConfigFile,
-    STAT_KEY_MAP,
-    Statistics,
-    TRADITION_MAP,
-} from './Keys'
+} from '@/Keys'
+import {
+    type CustomRoadmap,
+    customRoadmapFileSchema,
+} from '@/roadmaps/model/roadMapSchemas'
+import { transformCustomRoadmap } from '@/roadmaps/roadMapTransformer'
+import { globalLog } from '@/utils'
 
 /** Path to custom roadmaps folder relative to FoundryVTT Data directory */
 const CUSTOM_ROADMAPS_FOLDER = 'pf2e-creature-builder/custom-roadmaps'
@@ -160,7 +159,7 @@ export class RoadMapRegistry {
     }
 
     /**
-     * Load a single roadmap JSON file
+     * Load a single roadmap JSON file with Zod validation
      */
     private async loadRoadmapFile(filePath: string): Promise<void> {
         try {
@@ -175,10 +174,22 @@ export class RoadMapRegistry {
 
             const data = await response.json()
 
+            const validationResult = customRoadmapFileSchema.safeParse(data)
+            if (!validationResult.data) {
+                globalLog(
+                    true,
+                    `Validation error in ${filePath}:`,
+                    validationResult.error,
+                )
+                return
+            }
+
             // Support both single roadmap and array of roadmaps
-            const roadmaps: RoadmapConfigFile[] = Array.isArray(data)
-                ? data
-                : [data]
+            const roadmaps: CustomRoadmap[] = Array.isArray(
+                validationResult.data,
+            )
+                ? validationResult.data
+                : [validationResult.data]
 
             for (const roadmapData of roadmaps) {
                 this.processRoadmap(roadmapData, filePath)
@@ -189,20 +200,18 @@ export class RoadMapRegistry {
     }
 
     /**
-     * Process and validate a single roadmap from JSON data
+     * Process a validated custom roadmap and transform it to internal format
      */
-    private processRoadmap(data: RoadmapConfigFile, sourceFile: string): void {
-        if (!this.validateRoadmap(data)) {
-            globalLog(true, `Invalid roadmap format in ${sourceFile}:`, data)
-            return
-        }
-
-        const internalKey = `${KeyPrefix}.custom.${this.sanitizeName(data.name)}`
+    private processRoadmap(
+        customRoadmap: CustomRoadmap,
+        sourceFile: string,
+    ): void {
+        const internalKey = `${KeyPrefix}.custom.${this.sanitizeName(customRoadmap.name)}`
 
         if (this.isBuiltIn(internalKey)) {
             globalLog(
                 true,
-                `Custom roadmap "${data.name}" would override built-in roadmap - skipping`,
+                `Custom roadmap "${customRoadmap.name}" would override built-in roadmap - skipping`,
             )
             return
         }
@@ -210,127 +219,23 @@ export class RoadMapRegistry {
         if (internalKey in this.customRoadmaps) {
             globalLog(
                 true,
-                `Duplicate custom roadmap name "${data.name}" - skipping`,
+                `Duplicate custom roadmap name "${customRoadmap.name}" - skipping`,
             )
             return
         }
 
-        const internalRoadmap = this.transformRoadmapConfigFile(data)
-        if (internalRoadmap) {
-            this.customRoadmaps[internalKey] = internalRoadmap
-            globalLog(false, `Loaded custom roadmap: ${data.name}`)
-        }
-    }
-
-    /**
-     * Validate that a roadmap object has the required structure
-     */
-    private validateRoadmap(data: unknown): data is RoadmapConfigFile {
-        if (!data || typeof data !== 'object') {
-            return false
-        }
-
-        const roadmap = data as Record<string, unknown>
-
-        if (typeof roadmap.name !== 'string' || roadmap.name.trim() === '') {
-            globalLog(true, 'Roadmap missing required "name" field')
-            return false
-        }
-
-        const hasStats =
-            roadmap.stats &&
-            typeof roadmap.stats === 'object' &&
-            !Array.isArray(roadmap.stats)
-
-        if (!hasStats) {
-            globalLog(true, 'Roadmap missing required "stats" object')
-            return false
-        }
-
-        return true
-    }
-
-    private normalizeStatistics(
-        data: RoadmapConfigFile,
-    ): Record<string, string> {
-        const flattened: Record<string, string> = {}
-
-        for (const [groupName, groupValues] of Object.entries(data.stats)) {
-            if (
-                !groupValues ||
-                typeof groupValues !== 'object' ||
-                Array.isArray(groupValues)
-            ) {
-                globalLog(
-                    true,
-                    `Invalid group "${groupName}" in roadmap "${data.name}" - skipping group`,
-                )
-                continue
-            }
-
-            for (const [statKey, value] of Object.entries(groupValues)) {
-                if (statKey in flattened) {
-                    globalLog(
-                        true,
-                        `Duplicate statistic "${statKey}" in roadmap "${data.name}" - keeping first value`,
-                    )
-                    continue
-                }
-                flattened[statKey] = value
-            }
-        }
-
-        return flattened
-    }
-
-    private transformRoadmapConfigFile(
-        data: RoadmapConfigFile,
-    ): Roadmap | null {
-        const translated: Roadmap = {}
-        let hasValidStats = false
-
-        const statistics = this.normalizeStatistics(data)
-        for (const [userKey, userValue] of Object.entries(statistics)) {
-            const statKey = STAT_KEY_MAP[userKey]
-            if (!statKey) {
-                globalLog(
-                    true,
-                    `Unknown statistic "${userKey}" in roadmap "${data.name}" - skipping this stat`,
-                )
-                continue
-            }
-
-            const normalizedValue = userValue.toLowerCase()
-            let optionValue: Roadmap[keyof Roadmap] | undefined
-
-            if (statKey === Statistics.spellcastingTradition) {
-                optionValue = TRADITION_MAP[normalizedValue]
-            } else if (statKey === Statistics.spellcastingType) {
-                optionValue = CASTER_TYPE_MAP[normalizedValue]
-            } else {
-                optionValue = OPTION_MAP[normalizedValue]
-            }
-            if (!optionValue) {
-                globalLog(
-                    true,
-                    `Unknown option value "${userValue}" for "${userKey}" in roadmap "${data.name}" - skipping this stat`,
-                )
-                continue
-            }
-
-            translated[statKey] = optionValue
-            hasValidStats = true
-        }
-
-        if (!hasValidStats) {
+        try {
+            // Transform custom roadmap to internal format using direct mapping
+            this.customRoadmaps[internalKey] =
+                transformCustomRoadmap(customRoadmap)
+            globalLog(false, `Loaded custom roadmap: ${customRoadmap.name}`)
+        } catch (error) {
             globalLog(
                 true,
-                `Roadmap "${data.name}" has no valid statistics - skipping`,
+                `Error transforming roadmap "${customRoadmap.name}" from ${sourceFile}:`,
+                error,
             )
-            return null
         }
-
-        return translated
     }
 
     /**

@@ -105,7 +105,7 @@ const setupModule = async () => {
     vi.doMock('./CreatureBuilderForm', () => ({
         CreatureBuilderForm: CreatureBuilderFormMock,
     }))
-    vi.doMock('./RoadMapRegistry', () => ({
+    vi.doMock('@/roadmaps/RoadMapRegistry', () => ({
         RoadMapRegistry: RoadMapRegistryMock,
     }))
     CreatureBuilderFormMock.mockClear()

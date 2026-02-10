@@ -1,6 +1,6 @@
 import { DefaultCreatureLevel } from '@/Keys'
+import { RoadMapRegistry } from '@/roadmaps/RoadMapRegistry'
 import { CreatureBuilderForm } from './CreatureBuilderForm'
-import { RoadMapRegistry } from './RoadMapRegistry'
 
 const SHORT_MODULE_NAME = 'CB'
 
