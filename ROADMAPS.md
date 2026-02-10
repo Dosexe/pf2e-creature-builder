@@ -115,11 +115,11 @@ Each statistic belongs to a specific group in `stats`, and the group names/keys 
 
 #### `spellcasting`
 
-| Statistic Key  | Description            |
-|----------------|------------------------|
-| `spellcasting` | Spellcasting DC/attack |
-| `tradition`    | Spellcasting tradition |
-| `type`         | Spellcasting type      |
+| Statistic Key | Description            |
+|---------------|------------------------|
+| `value`       | Spellcasting DC/attack |
+| `tradition`   | Spellcasting tradition |
+| `type`        | Spellcasting type      |
 
 #### `skills`
 
@@ -164,6 +164,6 @@ Spellcasting type values:
 
 - Custom roadmaps cannot override built-in roadmaps. If you use a name that conflicts with a built-in roadmap, your custom roadmap will be skipped.
 - Only include the statistics you want to modify. Unspecified statistics will use the default value (usually `moderate`, or `none` for skills/spellcasting).
-- Invalid statistic names or option values will be logged to the console and skipped.
-- Spellcasting roadmaps can set spellcasting, tradition, and type. Key attribute still uses the form default.
+- Invalid statistic names or option will be skipped.
+- Spellcasting roadmaps can set spellcasting, tradition, and type.
 - Custom roadmaps load asynchronously after the game is ready, so they may not appear immediately on the very first form open after starting FoundryVTT.
