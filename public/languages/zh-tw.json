@@ -28,8 +28,8 @@
     "PF2EMONSTERMAKER.traditionOccult": "奧秘",
     "PF2EMONSTERMAKER.traditionPrimal": "原初",
     "PF2EMONSTERMAKER.casterInnate": "天生",
-    "PF2EMONSTERMAKER.casterPrepared": "准备施法",
-    "PF2EMONSTERMAKER.casterSpontaneous": "自发施法",
+    "PF2EMONSTERMAKER.casterPrepared": "準備施法",
+    "PF2EMONSTERMAKER.casterSpontaneous": "自發施法",
     "PF2EMONSTERMAKER.spellcastingAttribute": "關鍵屬性",
     "PF2EMONSTERMAKER.attrStr": "力量",
     "PF2EMONSTERMAKER.attrDex": "敏捷",
@@ -88,6 +88,7 @@
     "PF2EMONSTERMAKER.moderate": "中等",
     "PF2EMONSTERMAKER.low": "低",
     "PF2EMONSTERMAKER.terrible": "極低",
+    "PF2EMONSTERMAKER.abysmal": "慘不忍睹",
     "PF2EMONSTERMAKER.none": "無",
 
     "PF2EMONSTERMAKER.loreSkills": "學識技能",
