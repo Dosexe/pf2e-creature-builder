@@ -165,5 +165,5 @@ Spellcasting type values:
 - Custom roadmaps cannot override built-in roadmaps. If you use a name that conflicts with a built-in roadmap, your custom roadmap will be skipped.
 - Only include the statistics you want to modify. Unspecified statistics will use the default value (usually `moderate`, or `none` for skills/spellcasting).
 - Invalid statistic names or option will be skipped.
-- Spellcasting roadmaps can set spellcasting, tradition, and type.
+- Spellcasting roadmaps can set spellcasting value, tradition, and type.
 - Custom roadmaps load asynchronously after the game is ready, so they may not appear immediately on the very first form open after starting FoundryVTT.

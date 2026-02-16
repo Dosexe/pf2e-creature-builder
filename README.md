@@ -12,7 +12,7 @@ Main differences from the original module:
  - Added  support for Lore skills.
  - Added support for traits.
  - Added support for spellcasting
- - Ability to load custom roadmaps
+ - Ability to load custom roadmaps [BETA] (see [ROADMAPS](ROADMAPS.md))
  - Minor UI changes.
 
 To use the **Creature Builder**, you can create a blank NPC or start with an existing one.
