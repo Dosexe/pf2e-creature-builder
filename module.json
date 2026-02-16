@@ -1,12 +1,9 @@
 {
     "id": "pf2e-creature-builder",
-    "name": "pf2e-creature-builder",
     "title": "PF2E Creature Builder",
     "description": "A module that allows you to make an NPC/Monster from scratch using Creature Building Rules. To use create a new NPC sheet and use the Creature Builder button located in top-right corner of the sheet.",
     "version": "REPLACED AUTOMATICALLY",
     "authors": [{"name": "dosexe"}],
-    "minimumCoreVersion": "13",
-    "compatibleCoreVersion": "13",
     "compatibility": {
         "minimum": 13,
         "verified": "13.351",
