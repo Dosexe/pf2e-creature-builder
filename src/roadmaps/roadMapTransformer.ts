@@ -1,10 +1,4 @@
 import {
-    CASTER_TYPE_TRANSLATION_MAP,
-    type CustomRoadmap,
-    OPTION_TRANSLATION_MAP,
-    TRADITION_TRANSLATION_MAP,
-} from '@/roadmaps/model/roadMapSchemas'
-import {
     CasterType,
     MagicalTradition,
     Options,
@@ -12,6 +6,12 @@ import {
     type RoadmapValue,
     Statistics,
 } from '@/Keys'
+import {
+    CASTER_TYPE_TRANSLATION_MAP,
+    type CustomRoadmap,
+    OPTION_TRANSLATION_MAP,
+    TRADITION_TRANSLATION_MAP,
+} from '@/roadmaps/model/roadMapSchemas'
 
 /**
  * Transform a validated custom roadmap into internal roadmap format.
