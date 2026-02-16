@@ -348,7 +348,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.wil]: Options.high,
         [Statistics.hp]: Options.moderate,
         [Statistics.strikeBonus]: Options.moderate,
-        [Statistics.strikeDamage]: Options.high,
+        [Statistics.strikeDamage]: Options.moderate,
     },
     'PF2EMONSTERMAKER.monk': {
         [Statistics.per]: Options.high,
@@ -381,7 +381,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.survival]: Options.high,
         [Statistics.str]: Options.high,
         [Statistics.ac]: Options.high,
-        [Statistics.strikeBonus]: Options.high,
+        [Statistics.strikeBonus]: Options.moderate,
         [Statistics.strikeDamage]: Options.high,
     },
     'PF2EMONSTERMAKER.rogue': {
@@ -394,7 +394,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.ref]: Options.high,
         [Statistics.hp]: Options.low,
         [Statistics.strikeBonus]: Options.moderate,
-        [Statistics.strikeDamage]: Options.high,
+        [Statistics.strikeDamage]: Options.moderate,
     },
     'PF2EMONSTERMAKER.sorcerer': {
         [Statistics.per]: Options.low,
@@ -405,6 +405,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
         [Statistics.spellcasting]: Options.high,
+        [Statistics.spellcastingType]: CasterType.spontaneous,
     },
     'PF2EMONSTERMAKER.swashbuckler': {
         [Statistics.per]: Options.high,
@@ -415,7 +416,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.ref]: Options.high,
         [Statistics.hp]: Options.moderate,
         [Statistics.strikeBonus]: Options.moderate,
-        [Statistics.strikeDamage]: Options.high,
+        [Statistics.strikeDamage]: Options.moderate,
     },
     'PF2EMONSTERMAKER.witch': {
         [Statistics.per]: Options.low,
@@ -426,6 +427,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
         [Statistics.spellcasting]: Options.high,
+        [Statistics.spellcastingType]: CasterType.prepared,
     },
     'PF2EMONSTERMAKER.wizard': {
         [Statistics.per]: Options.low,
@@ -437,6 +439,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
         [Statistics.spellcasting]: Options.high,
+        [Statistics.spellcastingType]: CasterType.prepared,
     },
 }
 

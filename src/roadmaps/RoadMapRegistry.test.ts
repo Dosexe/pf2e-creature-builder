@@ -67,6 +67,26 @@ describe('RoadMapRegistry', () => {
             expect(registry.isBuiltIn('nonexistent')).toBe(false)
         })
 
+        it('correctly load built-in roadmap', () => {
+            const registry = RoadMapRegistry.getInstance()
+
+            expect(
+                registry.getRoadmap('PF2EMONSTERMAKER.wizard'),
+            ).toStrictEqual({
+                'PF2EMONSTERMAKER.ac': 'PF2EMONSTERMAKER.low',
+                'PF2EMONSTERMAKER.arcana': 'PF2EMONSTERMAKER.high',
+                'PF2EMONSTERMAKER.fort': 'PF2EMONSTERMAKER.low',
+                'PF2EMONSTERMAKER.hp': 'PF2EMONSTERMAKER.low',
+                'PF2EMONSTERMAKER.int': 'PF2EMONSTERMAKER.high',
+                'PF2EMONSTERMAKER.per': 'PF2EMONSTERMAKER.low',
+                'PF2EMONSTERMAKER.spellcasting': 'PF2EMONSTERMAKER.high',
+                'PF2EMONSTERMAKER.spellcastingType':
+                    'PF2EMONSTERMAKER.casterPrepared',
+                'PF2EMONSTERMAKER.strikeBonus': 'PF2EMONSTERMAKER.low',
+                'PF2EMONSTERMAKER.strikeDamage': 'PF2EMONSTERMAKER.low',
+            })
+        })
+
         it('getRoadmap returns correct roadmap for built-in key', () => {
             const registry = RoadMapRegistry.getInstance()
             const brute = registry.getRoadmap('PF2EMONSTERMAKER.brute')

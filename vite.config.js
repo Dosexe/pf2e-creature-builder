@@ -11,7 +11,7 @@ export default defineConfig({
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),
             formats: ['es'],
-            fileName: () => 'bundle',
+            fileName: () => 'bundle.js',
         },
     },
     server: {
