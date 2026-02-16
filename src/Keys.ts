@@ -277,6 +277,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
         [Statistics.spellcasting]: Options.high,
+        [Statistics.spellcastingType]: CasterType.spontaneous,
     },
     'PF2EMONSTERMAKER.champion': {
         [Statistics.per]: Options.low,
@@ -301,6 +302,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
         [Statistics.spellcasting]: Options.high,
+        [Statistics.spellcastingType]: CasterType.prepared,
     },
     'PF2EMONSTERMAKER.clericWarpriest': {
         [Statistics.per]: Options.moderate,
@@ -313,6 +315,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.strikeBonus]: Options.moderate,
         [Statistics.strikeDamage]: Options.moderate,
         [Statistics.spellcasting]: Options.high,
+        [Statistics.spellcastingType]: CasterType.prepared,
     },
     'PF2EMONSTERMAKER.druid': {
         [Statistics.per]: Options.high,
@@ -326,6 +329,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
         [Statistics.spellcasting]: Options.high,
+        [Statistics.spellcastingType]: CasterType.prepared,
     },
     'PF2EMONSTERMAKER.fighter': {
         [Statistics.per]: Options.high,
@@ -374,6 +378,7 @@ export const RoadMaps: RoadmapCollection = {
         [Statistics.strikeBonus]: Options.low,
         [Statistics.strikeDamage]: Options.low,
         [Statistics.spellcasting]: Options.high,
+        [Statistics.spellcastingType]: CasterType.spontaneous,
     },
     'PF2EMONSTERMAKER.ranger': {
         [Statistics.per]: Options.high,
