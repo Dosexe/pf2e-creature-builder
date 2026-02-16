@@ -5,14 +5,13 @@ import { resolve } from 'path';
 export default defineConfig({
     plugins: [tsconfigPaths()],
     build: {
-        outDir: 'dist',          // Vite outputs here
+        outDir: 'dist',
         emptyOutDir: true,
         sourcemap: true,
-        rollupOptions: {
-            input: resolve(__dirname, 'src/index.ts'),
-            output: {
-                entryFileNames: 'bundle.js',
-            },
+        lib: {
+            entry: resolve(__dirname, 'src/index.ts'),
+            formats: ['es'],
+            fileName: () => 'bundle',
         },
     },
     server: {

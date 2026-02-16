@@ -12,7 +12,7 @@
         "verified": "13.351",
         "maximum": 13
     },
-    "scripts": ["dist/bundle.js"],
+    "esmodules": ["dist/bundle.js"],
     "styles": [
         "dist/styles/module.css"
     ],
