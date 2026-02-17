@@ -4,6 +4,10 @@ on:
   release:
     types: [ published ]
 
+  push:
+    branches:
+      - main
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,10 +26,10 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npm run lint
+        run: npm run check
 
       - name: Test
-        run: npm test
+        run: npm test:coverage
 
       - name: Build
         run: npm run build
