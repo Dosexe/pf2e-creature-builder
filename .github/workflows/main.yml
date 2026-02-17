@@ -4,10 +4,6 @@ on:
   release:
     types: [ published ]
 
-  push:
-    branches:
-      - main
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,7 +25,7 @@ jobs:
         run: npm run check
 
       - name: Test
-        run: npm test:coverage
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build
