@@ -4,6 +4,8 @@ import type {
     SpellSlot,
 } from '@/spellcasting/model/spellcasting'
 import { createSpellCopyStrategy } from '@/spellcasting/SpellCopyStrategies'
+import { builtInSpellLists } from '@/spellcasting/SpellListData'
+import { resolveAndApplySpellList } from '@/spellcasting/SpellListResolver'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
@@ -90,6 +92,7 @@ export class CreatureBuilderForm extends FormApplication {
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
             creatureRoadmaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
+            spellLists: builtInSpellLists,
             detectedStats: this.useDefaultLevel ? {} : this.detectActorStats(),
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
@@ -266,20 +269,56 @@ export class CreatureBuilderForm extends FormApplication {
                     'system.slots': updatedSlots,
                 },
             ])
+
+            await this.applySpellList(
+                formData,
+                existingEntry.id,
+                updatedSlots,
+                casterType,
+            )
             return existingEntry
         }
 
         // New creature: create entry with generated slots only
+        const slots = generateSpellSlots(casterType, this.level)
         const spellcasting = buildSpellcastingEntry({
             tradition,
             casterType,
             keyAttribute,
             spellcastingBonus,
             level: this.level,
-            slots: generateSpellSlots(casterType, this.level),
+            slots,
         })
 
-        return Item.create(spellcasting, { parent: this.actor })
+        const created = await Item.create(spellcasting, { parent: this.actor })
+        if (created?.id) {
+            await this.applySpellList(formData, created.id, slots, casterType)
+        }
+        return created
+    }
+
+    async applySpellList(
+        formData: object,
+        spellcastingEntryId: string,
+        slots: Record<string, SpellSlot>,
+        casterType: string,
+    ) {
+        const spellListKey = formData[Statistics.spellList]
+        if (!spellListKey || spellListKey === 'none') return
+
+        const spellList = builtInSpellLists[spellListKey]
+        if (!spellList) {
+            globalLog(true, `Spell list "${spellListKey}" not found`)
+            return
+        }
+
+        await resolveAndApplySpellList(
+            spellList,
+            slots,
+            spellcastingEntryId,
+            casterType,
+            this.actor,
+        )
     }
 
     async applySkills(formData: object) {
@@ -627,6 +666,7 @@ export class CreatureBuilderForm extends FormApplication {
             CreatureStatistics: JSON.parse(JSON.stringify(this.data)),
             Levels: Levels,
             RoadMaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
+            SpellLists: builtInSpellLists,
             name: this.actor.name,
             detectedStats: detectedStats,
             detectedTraits: detectedTraits,

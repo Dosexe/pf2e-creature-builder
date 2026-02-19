@@ -4,6 +4,9 @@
  * This class is instantiated by the CreatureBuilderForm FormApplication after rendering
  */
 
+import type { RoadmapCollection } from '@/Keys'
+import type { SpellListCollection } from '@/spellcasting/model/spellList'
+
 interface StatisticEntry {
     name: string
     availableOptions?: string[]
@@ -28,7 +31,8 @@ interface LoreSkill {
 
 interface CreatureBuilderFormConfig {
     creatureStatistics: CreatureStatistic[]
-    creatureRoadmaps: { [key: string]: { [key: string]: string } }
+    creatureRoadmaps: RoadmapCollection
+    spellLists: SpellListCollection
     detectedStats: DetectedStats
     detectedTraits: string[]
     detectedLoreSkills: LoreSkill[]
@@ -44,6 +48,7 @@ class CreatureBuilderFormUI {
     private readonly monsterCreatureRoadmaps: {
         [key: string]: { [key: string]: string }
     }
+    private readonly spellLists: { [key: string]: { name: string } }
     private readonly detectedStats: DetectedStats
     private readonly detectedTraits: string[]
     private readonly detectedLoreSkills: LoreSkill[]
@@ -256,6 +261,7 @@ class CreatureBuilderFormUI {
     constructor(config: CreatureBuilderFormConfig) {
         this.monsterCreatureStatistics = config.creatureStatistics
         this.monsterCreatureRoadmaps = config.creatureRoadmaps
+        this.spellLists = config.spellLists
         this.detectedStats = config.detectedStats
         this.detectedTraits = config.detectedTraits
         this.detectedLoreSkills = config.detectedLoreSkills
@@ -429,15 +435,18 @@ class CreatureBuilderFormUI {
         const attributeSelect = document.getElementById(
             'creatureBuilderPF2EMONSTERMAKER.spellcastingAttribute',
         ) as HTMLSelectElement
+        const spellListSelect = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellList',
+        ) as HTMLSelectElement
 
         if (!spellcastingSelect) return
 
         const isNone = spellcastingSelect.value === 'PF2EMONSTERMAKER.none'
 
-        // Get the parent form-group elements to hide/show the entire row
         const traditionRow = traditionSelect?.closest('.form-group')
         const typeRow = typeSelect?.closest('.form-group')
         const attributeRow = attributeSelect?.closest('.form-group')
+        const spellListRow = spellListSelect?.closest('.form-group')
 
         if (traditionRow) {
             ;(traditionRow as HTMLElement).style.display = isNone
@@ -449,6 +458,11 @@ class CreatureBuilderFormUI {
         }
         if (attributeRow) {
             ;(attributeRow as HTMLElement).style.display = isNone
+                ? 'none'
+                : 'flex'
+        }
+        if (spellListRow) {
+            ;(spellListRow as HTMLElement).style.display = isNone
                 ? 'none'
                 : 'flex'
         }
@@ -921,6 +935,11 @@ class CreatureBuilderFormUI {
             'creatureBuilderRoadmap',
         ) as HTMLSelectElement
         if (roadmapSelect) roadmapSelect.value = 'Default'
+
+        const spellListSelect = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellList',
+        ) as HTMLSelectElement
+        if (spellListSelect) spellListSelect.value = 'none'
 
         this.traits.length = 0
         this.renderTraits()
