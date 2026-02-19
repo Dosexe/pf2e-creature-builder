@@ -19,7 +19,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@biomejs/biome": "^2.4.0",
+    "@biomejs/biome": "^2.4.2",
     "@league-of-foundry-developers/foundry-vtt-types": "^13.345.1",
     "@vitest/coverage-v8": "^4.0.18",
     "jsdom": "^27.4.0",
