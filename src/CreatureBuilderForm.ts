@@ -36,7 +36,7 @@ import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 
 type DetectedStatValue = Options | MagicalTradition | CasterType
 
-export class CreatureBuilderForm extends FormApplication {
+export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
     data = DefaultCreatureStatistics
     level = DefaultCreatureLevel
     private readonly _uniqueId: string
@@ -59,7 +59,7 @@ export class CreatureBuilderForm extends FormApplication {
     }
 
     static get defaultOptions() {
-        return foundry.utils.mergeObject(FormApplication.defaultOptions, {
+        return foundry.utils.mergeObject(foundry.appv1.api.FormApplication.defaultOptions, {
             classes: ['form', 'creatureBuilderForm'],
             popOut: true,
             template: `modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html`,
@@ -106,7 +106,7 @@ export class CreatureBuilderForm extends FormApplication {
     /**
      * Clean up when the form is closed
      */
-    async close(options?: FormApplication.CloseOptions) {
+    async close(options?: foundry.appv1.api.FormApplication.CloseOptions) {
         this.formUI = null
         return super.close(options)
     }

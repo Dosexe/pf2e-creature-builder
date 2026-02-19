@@ -84,8 +84,12 @@ beforeAll(async () => {
         }
     }
 
-    vi.stubGlobal('FormApplication', MockFormApplication)
     vi.stubGlobal('foundry', {
+        appv1: {
+            api: {
+                FormApplication: MockFormApplication,
+            },
+        },
         utils: {
             mergeObject,
             getProperty,
