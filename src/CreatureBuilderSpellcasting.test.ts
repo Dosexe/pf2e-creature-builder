@@ -401,7 +401,7 @@ describe('CreatureBuilderSpellcasting', () => {
             describe('expandSpontaneousSlotsPreservingValues', () => {
                 it('keeps existing slots with max > 0 entirely unchanged', () => {
                     // A spontaneous caster with custom slot counts that differ from the table
-                    // Table for level 5: [5, 4, 4, 3, 0, ...]
+                    //  for level 5: [5, 4, 4, 3, 0, ...]
                     const currentSlots = {
                         slot0: { max: 7, value: 7, prepared: [] }, // custom: 7 cantrips (table says 5)
                         slot1: { max: 6, value: 6, prepared: [] }, // custom: 6 slots (table says 4)
