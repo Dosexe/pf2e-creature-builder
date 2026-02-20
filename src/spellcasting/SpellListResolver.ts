@@ -117,6 +117,7 @@ export async function resolveAndApplySpellList(
     }
 
     const spellItems: Record<string, unknown>[] = []
+    const resolvedEntries: Map<number, SpellListEntry[]> = new Map()
 
     for (const levelDef of spellList.levels) {
         if (!availableLevels.has(levelDef.level)) continue
@@ -144,6 +145,13 @@ export async function resolveAndApplySpellList(
             }
 
             spellItems.push(spellData)
+
+            let levelEntries = resolvedEntries.get(levelDef.level)
+            if (!levelEntries) {
+                levelEntries = []
+                resolvedEntries.set(levelDef.level, levelEntries)
+            }
+            levelEntries.push(entry)
         }
     }
 
@@ -160,9 +168,8 @@ export async function resolveAndApplySpellList(
     if (casterType === 'prepared' && Array.isArray(created)) {
         await assignPreparedSlots(
             created,
-            spellList,
+            resolvedEntries,
             slots,
-            availableLevels,
             actor,
             spellcastingEntryId,
         )
@@ -180,9 +187,8 @@ export async function resolveAndApplySpellList(
  */
 async function assignPreparedSlots(
     createdItems: Array<{ id: string; name: string }>,
-    spellList: SpellList,
+    resolvedEntries: Map<number, SpellListEntry[]>,
     slots: Record<string, SpellSlot>,
-    availableLevels: Set<number>,
     actor: Actor,
     spellcastingEntryId: string,
 ): Promise<void> {
@@ -190,15 +196,13 @@ async function assignPreparedSlots(
     const updatedSlots: Record<string, SpellSlot> =
         foundry.utils.deepClone(slots)
 
-    for (const levelDef of spellList.levels) {
-        if (!availableLevels.has(levelDef.level)) continue
-
-        const slotKey = `slot${levelDef.level}`
+    for (const [level, entries] of resolvedEntries) {
+        const slotKey = `slot${level}`
         const slot = updatedSlots[slotKey]
         if (!slot?.prepared) continue
 
         let preparedIndex = 0
-        for (const _entry of levelDef.spells) {
+        for (const _entry of entries) {
             if (preparedIndex >= slot.prepared.length) break
             const created = createdQueue.shift()
             if (created) {

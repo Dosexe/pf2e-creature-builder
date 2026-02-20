@@ -885,5 +885,91 @@ describe('SpellListResolver', () => {
                 mockUpdateEmbedded.mock.calls[0][1][0]['system.slots']
             expect(updatedSlots.slot0).toBeUndefined()
         })
+
+        it('assigns prepared slots correctly when some slugs are unresolved', async () => {
+            const listWithUnresolved: SpellList = {
+                name: 'Partial Resolve',
+                tradition: MagicalTradition.arcane,
+                levels: [
+                    {
+                        level: 0,
+                        spells: [
+                            { slug: 'detect-magic' },
+                            { slug: 'missing-cantrip' },
+                        ],
+                    },
+                    {
+                        level: 1,
+                        spells: [{ slug: 'magic-missile' }],
+                    },
+                ],
+            }
+
+            const slots: Record<string, SpellSlot> = {
+                slot0: makeSlot(5, [
+                    { id: null, expended: false },
+                    { id: null, expended: false },
+                ]),
+                slot1: makeSlot(2, [{ id: null, expended: false }]),
+            }
+
+            mockGetIndex.mockResolvedValue([
+                {
+                    _id: 'id-dm',
+                    name: 'Detect Magic',
+                    system: { slug: 'detect-magic' },
+                },
+                {
+                    _id: 'id-mm',
+                    name: 'Magic Missile',
+                    system: { slug: 'magic-missile' },
+                },
+            ])
+
+            const makeDoc = (id: string, name: string, slug: string) => ({
+                toObject: () => ({
+                    _id: id,
+                    name,
+                    type: 'spell',
+                    system: { slug, location: { value: '' } },
+                }),
+            })
+
+            mockGetDocument.mockImplementation((id: string) => {
+                const docs: Record<string, any> = {
+                    'id-dm': makeDoc('id-dm', 'Detect Magic', 'detect-magic'),
+                    'id-mm': makeDoc('id-mm', 'Magic Missile', 'magic-missile'),
+                }
+                return Promise.resolve(docs[id] ?? null)
+            })
+
+            mockCreateEmbeddedDocuments.mockResolvedValue([
+                { id: 'new-dm', name: 'Detect Magic' },
+                { id: 'new-mm', name: 'Magic Missile' },
+            ])
+
+            const mockUpdateEmbedded = vi.fn().mockResolvedValue([])
+            mockActor.updateEmbeddedDocuments = mockUpdateEmbedded
+            mockActor.items = [{ type: 'spellcastingEntry', id: 'entry-1' }]
+
+            await resolveAndApplySpellList(
+                listWithUnresolved,
+                slots,
+                'entry-1',
+                'prepared',
+                mockActor,
+            )
+
+            expect(mockUpdateEmbedded).toHaveBeenCalledTimes(1)
+            const updatedSlots =
+                mockUpdateEmbedded.mock.calls[0][1][0]['system.slots']
+
+            expect(updatedSlots.slot0.prepared[0].id).toBe('new-dm')
+            expect(updatedSlots.slot0.prepared[1]).toEqual({
+                id: null,
+                expended: false,
+            })
+            expect(updatedSlots.slot1.prepared[0].id).toBe('new-mm')
+        })
     })
 })

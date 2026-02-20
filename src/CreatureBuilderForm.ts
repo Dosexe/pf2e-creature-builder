@@ -59,15 +59,18 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
     }
 
     static get defaultOptions() {
-        return foundry.utils.mergeObject(foundry.appv1.api.FormApplication.defaultOptions, {
-            classes: ['form', 'creatureBuilderForm'],
-            popOut: true,
-            template: `modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html`,
-            id: 'creatureBuilderForm',
-            title: 'Creature Builder Form',
-            height: 833,
-            width: 400,
-        })
+        return foundry.utils.mergeObject(
+            foundry.appv1.api.FormApplication.defaultOptions,
+            {
+                classes: ['form', 'creatureBuilderForm'],
+                popOut: true,
+                template: `modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html`,
+                id: 'creatureBuilderForm',
+                title: 'Creature Builder Form',
+                height: 833,
+                width: 400,
+            },
+        )
     }
 
     get id() {
@@ -212,13 +215,14 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
             }
         }
 
+        const resolvedCasterType = (casterType ??
+            'innate') as SpellcastingCasterType
+
         if (existingEntry) {
             const currentSlots = foundry.utils.getProperty(
                 existingEntry,
                 'system.slots',
             ) as Record<string, SpellSlot> | undefined
-            const resolvedCasterType = (casterType ??
-                'innate') as SpellcastingCasterType
             const updatedSlots = (() => {
                 if (!currentSlots) {
                     return generateSpellSlots(resolvedCasterType, this.level)
@@ -274,16 +278,16 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                 formData,
                 existingEntry.id,
                 updatedSlots,
-                casterType,
+                resolvedCasterType,
             )
             return existingEntry
         }
 
         // New creature: create entry with generated slots only
-        const slots = generateSpellSlots(casterType, this.level)
+        const slots = generateSpellSlots(resolvedCasterType, this.level)
         const spellcasting = buildSpellcastingEntry({
             tradition,
-            casterType,
+            casterType: resolvedCasterType,
             keyAttribute,
             spellcastingBonus,
             level: this.level,
@@ -292,7 +296,12 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
 
         const created = await Item.create(spellcasting, { parent: this.actor })
         if (created?.id) {
-            await this.applySpellList(formData, created.id, slots, casterType)
+            await this.applySpellList(
+                formData,
+                created.id,
+                slots,
+                resolvedCasterType,
+            )
         }
         return created
     }
