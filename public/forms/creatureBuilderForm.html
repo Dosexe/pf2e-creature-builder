@@ -76,6 +76,17 @@
         </div>
     </details>
     {{/each}}
+    <div class="form-group setting" id="spellListFormGroup" style="display: none;">
+        <label for="creatureBuilderPF2EMONSTERMAKER.spellList" class="creatureBuilderFormText">
+            Spell List
+        </label>
+        <select id="creatureBuilderPF2EMONSTERMAKER.spellList" name="PF2EMONSTERMAKER.spellList" class="creatureBuilderFormTextSmall">
+            <option value="none" selected>None</option>
+            {{#each SpellLists}}
+            <option value="{{@key}}">{{this.name}}</option>
+            {{/each}}
+        </select>
+    </div>
     <details class="collapsibleSection" id="sectionLore" open>
         <summary class="collapsibleHeader">
             <h3>{{localize "PF2EMONSTERMAKER.loreSkills"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow" style=""></i></h3>
