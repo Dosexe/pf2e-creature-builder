@@ -125,21 +125,14 @@ export async function resolveAndApplySpellList(
             spellcastingEntryId,
             actor,
         )
-    } else if (casterType === 'innate') {
-        await resolveAndApplyInnate(
-            spellList,
-            availableLevels,
-            resolvedBySlug,
-            spellcastingEntryId,
-            actor,
-        )
     } else {
-        await resolveAndApplySpontaneous(
+        await resolveAndApplyPerLevel(
             spellList,
             availableLevels,
             resolvedBySlug,
             spellcastingEntryId,
             actor,
+            casterType === 'innate',
         )
     }
 }
@@ -289,17 +282,18 @@ async function resolveAndApplyPrepared(
 }
 
 /**
- * For innate casters: create one spell document per entry per level.
- * The same slug at different levels produces separate documents, each with
- * its own heightenedLevel and a single use (uses: {value:1, max:1}).
- * Cantrips (level 0) get no uses limit.
+ * For innate and spontaneous casters: create one spell document per entry
+ * per level. The same slug at different levels produces separate documents,
+ * each with its own heightenedLevel.
+ * Innate spells get uses: {value:1, max:1} for non-cantrip levels.
  */
-async function resolveAndApplyInnate(
+async function resolveAndApplyPerLevel(
     spellList: SpellList,
     availableLevels: Set<number>,
     resolvedBySlug: Map<string, Record<string, unknown>>,
     spellcastingEntryId: string,
     actor: Actor,
+    withUses: boolean,
 ): Promise<void> {
     const spellItems: Record<string, unknown>[] = []
 
@@ -313,7 +307,7 @@ async function resolveAndApplyInnate(
                 value: spellcastingEntryId,
                 heightenedLevel: levelDef.level,
             }
-            if (levelDef.level > 0) {
+            if (withUses && levelDef.level > 0) {
                 location.uses = { value: 1, max: 1 }
             }
             spellItems.push(cloneSpellTemplate(template, entry, location))
@@ -327,40 +321,9 @@ async function resolveAndApplyInnate(
 
     await (actor as any).createEmbeddedDocuments('Item', spellItems)
 
+    const label = withUses ? 'innate' : 'spontaneous'
     globalLog(
         false,
-        `Applied ${spellItems.length} spells from list "${spellList.name}" (innate)`,
-    )
-}
-
-/**
- * For spontaneous casters: create exactly one spell document per
- * unique slug across all levels. No duplicates for spells that appear at
- * multiple levels (heightening is implicit).
- */
-async function resolveAndApplySpontaneous(
-    spellList: SpellList,
-    availableLevels: Set<number>,
-    resolvedBySlug: Map<string, Record<string, unknown>>,
-    spellcastingEntryId: string,
-    actor: Actor,
-): Promise<void> {
-    const { items: spellItems } = collectUniqueSpellItems(
-        spellList,
-        availableLevels,
-        resolvedBySlug,
-        spellcastingEntryId,
-    )
-
-    if (spellItems.length === 0) {
-        globalLog(false, 'No spells resolved for spell list')
-        return
-    }
-
-    await (actor as any).createEmbeddedDocuments('Item', spellItems)
-
-    globalLog(
-        false,
-        `Applied ${spellItems.length} spells from list "${spellList.name}" (spontaneous)`,
+        `Applied ${spellItems.length} spells from list "${spellList.name}" (${label})`,
     )
 }

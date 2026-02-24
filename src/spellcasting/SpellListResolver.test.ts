@@ -256,6 +256,17 @@ describe('SpellListResolver', () => {
             expect(items.every((item: any) => item._id === undefined)).toBe(
                 true,
             )
+            // spontaneous spells get heightenedLevel per their list level
+            expect(items[0].system.location.heightenedLevel).toBe(0)
+            expect(items[1].system.location.heightenedLevel).toBe(0)
+            expect(items[2].system.location.heightenedLevel).toBe(1)
+            expect(items[3].system.location.heightenedLevel).toBe(1)
+            // spontaneous spells do not get uses
+            expect(
+                items.every(
+                    (item: any) => item.system.location.uses === undefined,
+                ),
+            ).toBe(true)
         })
 
         it('applies label override when entry has a label', async () => {
@@ -293,6 +304,8 @@ describe('SpellListResolver', () => {
             const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
             expect(items).toHaveLength(1)
             expect(items[0].name).toBe('Fireball (Modified)')
+            expect(items[0].system.location.heightenedLevel).toBe(2)
+            expect(items[0].system.location.uses).toBeUndefined()
         })
 
         it('skips spells whose slug is not found in the compendium', async () => {
@@ -326,6 +339,7 @@ describe('SpellListResolver', () => {
             const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
             expect(items).toHaveLength(1)
             expect(items[0].name).toBe('Detect Magic')
+            expect(items[0].system.location.heightenedLevel).toBe(0)
         })
 
         it('assigns prepared slots for prepared casters', async () => {
@@ -443,6 +457,7 @@ describe('SpellListResolver', () => {
             const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
             expect(items).toHaveLength(1)
             expect(items[0].name).toBe('Detect Magic')
+            expect(items[0].system.location.heightenedLevel).toBe(0)
         })
 
         it('skips spells when getDocument returns null', async () => {
@@ -485,6 +500,7 @@ describe('SpellListResolver', () => {
             const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
             expect(items).toHaveLength(1)
             expect(items[0].name).toBe('Detect Magic')
+            expect(items[0].system.location.heightenedLevel).toBe(0)
         })
 
         it('handles spell data without system property', async () => {
@@ -1062,7 +1078,7 @@ describe('SpellListResolver', () => {
             expect(mockCreateEmbeddedDocuments).not.toHaveBeenCalled()
         })
 
-        it('deduplicates spells for spontaneous casters across levels', async () => {
+        it('creates per-level spell documents for spontaneous casters with heightenedLevel', async () => {
             const dupList: SpellList = {
                 name: 'Dup Spontaneous',
                 tradition: MagicalTradition.arcane,
@@ -1140,29 +1156,29 @@ describe('SpellListResolver', () => {
             expect(mockCreateEmbeddedDocuments).toHaveBeenCalledTimes(1)
             const [docType, items] = mockCreateEmbeddedDocuments.mock.calls[0]
             expect(docType).toBe('Item')
-            expect(items).toHaveLength(2)
+            // 3 items: breathe-fire@1, blazing-bolt@2, breathe-fire@2
+            expect(items).toHaveLength(3)
 
-            const breatheFire = items.find(
-                (i: any) => i.system.slug === 'breathe-fire',
-            )
-            const blazingBolt = items.find(
-                (i: any) => i.system.slug === 'blazing-bolt',
-            )
+            const breatheFireL1 = items[0]
+            expect(breatheFireL1.system.slug).toBe('breathe-fire')
+            expect(breatheFireL1.system.location.value).toBe('entry-1')
+            expect(breatheFireL1.system.location.heightenedLevel).toBe(1)
+            expect(breatheFireL1.system.location.uses).toBeUndefined()
+            expect(breatheFireL1._id).toBeUndefined()
 
-            expect(breatheFire).toBeDefined()
-            expect(blazingBolt).toBeDefined()
-
-            // breathe-fire keeps its base rank (1) — spontaneous heightening is implicit
-            expect(breatheFire.system.level.value).toBe(1)
-            expect(blazingBolt.system.level.value).toBe(2)
-
-            // both are linked to the spellcasting entry
-            expect(breatheFire.system.location.value).toBe('entry-1')
+            const blazingBolt = items[1]
+            expect(blazingBolt.system.slug).toBe('blazing-bolt')
             expect(blazingBolt.system.location.value).toBe('entry-1')
-
-            // _id is stripped so Foundry creates new documents
-            expect(breatheFire._id).toBeUndefined()
+            expect(blazingBolt.system.location.heightenedLevel).toBe(2)
+            expect(blazingBolt.system.location.uses).toBeUndefined()
             expect(blazingBolt._id).toBeUndefined()
+
+            const breatheFireL2 = items[2]
+            expect(breatheFireL2.system.slug).toBe('breathe-fire')
+            expect(breatheFireL2.system.location.value).toBe('entry-1')
+            expect(breatheFireL2.system.location.heightenedLevel).toBe(2)
+            expect(breatheFireL2.system.location.uses).toBeUndefined()
+            expect(breatheFireL2._id).toBeUndefined()
         })
 
         it('deduplicates spells for prepared casters and reuses IDs across slots', async () => {
