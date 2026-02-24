@@ -116,98 +116,144 @@ export async function resolveAndApplySpellList(
         }
     }
 
-    const spellItems: Record<string, unknown>[] = []
-    const resolvedEntries: Map<number, SpellListEntry[]> = new Map()
+    if (casterType === 'prepared') {
+        await resolveAndApplyPrepared(
+            spellList,
+            availableLevels,
+            resolvedBySlug,
+            slots,
+            spellcastingEntryId,
+            actor,
+        )
+    } else if (casterType === 'innate') {
+        await resolveAndApplyInnate(
+            spellList,
+            availableLevels,
+            resolvedBySlug,
+            spellcastingEntryId,
+            actor,
+        )
+    } else {
+        await resolveAndApplySpontaneous(
+            spellList,
+            availableLevels,
+            resolvedBySlug,
+            spellcastingEntryId,
+            actor,
+        )
+    }
+}
+
+/**
+ * Clone a compendium spell template and prepare it for creation on an actor.
+ * Strips _id, applies optional label override, and sets system.location.
+ */
+function cloneSpellTemplate(
+    template: Record<string, unknown>,
+    entry: SpellListEntry,
+    location: Record<string, unknown>,
+): Record<string, unknown> {
+    const spellData = foundry.utils.deepClone(template) as Record<
+        string,
+        unknown
+    >
+    delete spellData._id
+    if (entry.label) {
+        spellData.name = entry.label
+    }
+    const system = spellData.system as Record<string, unknown> | undefined
+    if (system) {
+        system.location = location
+    }
+    return spellData
+}
+
+/**
+ * Collect unique spell items from a spell list, deduplicating by slug.
+ * Returns the items and an ordered list of slugs (for mapping created IDs back).
+ */
+function collectUniqueSpellItems(
+    spellList: SpellList,
+    availableLevels: Set<number>,
+    resolvedBySlug: Map<string, Record<string, unknown>>,
+    spellcastingEntryId: string,
+): { items: Record<string, unknown>[]; slugOrder: string[] } {
+    const items: Record<string, unknown>[] = []
+    const slugOrder: string[] = []
+    const seenSlugs = new Set<string>()
 
     for (const levelDef of spellList.levels) {
         if (!availableLevels.has(levelDef.level)) continue
-
         for (const entry of levelDef.spells) {
+            if (seenSlugs.has(entry.slug)) continue
             const template = resolvedBySlug.get(entry.slug)
             if (!template) continue
 
-            const spellData = foundry.utils.deepClone(template) as Record<
-                string,
-                unknown
-            >
-
-            delete spellData._id
-
-            if (entry.label) {
-                spellData.name = entry.label
-            }
-
-            const system = spellData.system as
-                | Record<string, unknown>
-                | undefined
-            if (system) {
-                system.location = { value: spellcastingEntryId }
-            }
-
-            spellItems.push(spellData)
-
-            let levelEntries = resolvedEntries.get(levelDef.level)
-            if (!levelEntries) {
-                levelEntries = []
-                resolvedEntries.set(levelDef.level, levelEntries)
-            }
-            levelEntries.push(entry)
+            seenSlugs.add(entry.slug)
+            items.push(
+                cloneSpellTemplate(template, entry, {
+                    value: spellcastingEntryId,
+                }),
+            )
+            slugOrder.push(entry.slug)
         }
     }
+    return { items, slugOrder }
+}
 
-    if (spellItems.length === 0) {
+/**
+ * For prepared casters: create one spell document per unique slug, then
+ * assign created IDs to prepared slot arrays per level. Multiple entries
+ * for the same slug at a level reuse the same document ID.
+ */
+async function resolveAndApplyPrepared(
+    spellList: SpellList,
+    availableLevels: Set<number>,
+    resolvedBySlug: Map<string, Record<string, unknown>>,
+    slots: Record<string, SpellSlot>,
+    spellcastingEntryId: string,
+    actor: Actor,
+): Promise<void> {
+    const { items: uniqueSpellItems, slugOrder } = collectUniqueSpellItems(
+        spellList,
+        availableLevels,
+        resolvedBySlug,
+        spellcastingEntryId,
+    )
+
+    if (uniqueSpellItems.length === 0) {
         globalLog(false, 'No spells resolved for spell list')
         return
     }
 
-    const created = await (actor as any).createEmbeddedDocuments(
+    const created = (await (actor as any).createEmbeddedDocuments(
         'Item',
-        spellItems,
-    )
+        uniqueSpellItems,
+    )) as Array<{ id: string; name: string }>
 
-    if (casterType === 'prepared' && Array.isArray(created)) {
-        await assignPreparedSlots(
-            created,
-            resolvedEntries,
-            slots,
-            actor,
-            spellcastingEntryId,
-        )
+    const slugToId = new Map<string, string>()
+    for (let i = 0; i < slugOrder.length; i++) {
+        if (created[i]) {
+            slugToId.set(slugOrder[i], created[i].id)
+        }
     }
 
-    globalLog(
-        false,
-        `Applied ${spellItems.length} spells from list "${spellList.name}"`,
-    )
-}
-
-/**
- * For prepared casters, assign created spell IDs to the prepared[] arrays
- * in the spellcasting entry's slots.
- */
-async function assignPreparedSlots(
-    createdItems: Array<{ id: string; name: string }>,
-    resolvedEntries: Map<number, SpellListEntry[]>,
-    slots: Record<string, SpellSlot>,
-    actor: Actor,
-    spellcastingEntryId: string,
-): Promise<void> {
-    const createdQueue = [...createdItems]
     const updatedSlots: Record<string, SpellSlot> =
         foundry.utils.deepClone(slots)
 
-    for (const [level, entries] of resolvedEntries) {
-        const slotKey = `slot${level}`
+    for (const levelDef of spellList.levels) {
+        if (!availableLevels.has(levelDef.level)) continue
+        const slotKey = `slot${levelDef.level}`
         const slot = updatedSlots[slotKey]
         if (!slot?.prepared) continue
 
         let preparedIndex = 0
-        for (const _entry of entries) {
+        for (const entry of levelDef.spells) {
             if (preparedIndex >= slot.prepared.length) break
-            const created = createdQueue.shift()
-            if (created) {
+            const spellId = slugToId.get(entry.slug)
+            if (spellId) {
                 slot.prepared[preparedIndex] = {
-                    id: created.id,
+                    id: spellId,
                     expended: false,
                 }
                 preparedIndex++
@@ -235,4 +281,86 @@ async function assignPreparedSlots(
             { _id: entryId, 'system.slots': updatedSlots },
         ])
     }
+
+    globalLog(
+        false,
+        `Applied ${uniqueSpellItems.length} spells from list "${spellList.name}" (prepared)`,
+    )
+}
+
+/**
+ * For innate casters: create one spell document per entry per level.
+ * The same slug at different levels produces separate documents, each with
+ * its own heightenedLevel and a single use (uses: {value:1, max:1}).
+ * Cantrips (level 0) get no uses limit.
+ */
+async function resolveAndApplyInnate(
+    spellList: SpellList,
+    availableLevels: Set<number>,
+    resolvedBySlug: Map<string, Record<string, unknown>>,
+    spellcastingEntryId: string,
+    actor: Actor,
+): Promise<void> {
+    const spellItems: Record<string, unknown>[] = []
+
+    for (const levelDef of spellList.levels) {
+        if (!availableLevels.has(levelDef.level)) continue
+        for (const entry of levelDef.spells) {
+            const template = resolvedBySlug.get(entry.slug)
+            if (!template) continue
+
+            const location: Record<string, unknown> = {
+                value: spellcastingEntryId,
+                heightenedLevel: levelDef.level,
+            }
+            if (levelDef.level > 0) {
+                location.uses = { value: 1, max: 1 }
+            }
+            spellItems.push(cloneSpellTemplate(template, entry, location))
+        }
+    }
+
+    if (spellItems.length === 0) {
+        globalLog(false, 'No spells resolved for spell list')
+        return
+    }
+
+    await (actor as any).createEmbeddedDocuments('Item', spellItems)
+
+    globalLog(
+        false,
+        `Applied ${spellItems.length} spells from list "${spellList.name}" (innate)`,
+    )
+}
+
+/**
+ * For spontaneous casters: create exactly one spell document per
+ * unique slug across all levels. No duplicates for spells that appear at
+ * multiple levels (heightening is implicit).
+ */
+async function resolveAndApplySpontaneous(
+    spellList: SpellList,
+    availableLevels: Set<number>,
+    resolvedBySlug: Map<string, Record<string, unknown>>,
+    spellcastingEntryId: string,
+    actor: Actor,
+): Promise<void> {
+    const { items: spellItems } = collectUniqueSpellItems(
+        spellList,
+        availableLevels,
+        resolvedBySlug,
+        spellcastingEntryId,
+    )
+
+    if (spellItems.length === 0) {
+        globalLog(false, 'No spells resolved for spell list')
+        return
+    }
+
+    await (actor as any).createEmbeddedDocuments('Item', spellItems)
+
+    globalLog(
+        false,
+        `Applied ${spellItems.length} spells from list "${spellList.name}" (spontaneous)`,
+    )
 }

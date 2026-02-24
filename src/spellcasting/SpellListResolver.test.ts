@@ -665,8 +665,8 @@ describe('SpellListResolver', () => {
             const updatedSlots =
                 mockUpdateEmbedded.mock.calls[0][1][0]['system.slots']
             expect(updatedSlots.slot0.prepared).toHaveLength(0)
-            expect(updatedSlots.slot1.prepared[0].id).toBe('new-dm')
-            expect(updatedSlots.slot1.prepared[1].id).toBe('new-li')
+            expect(updatedSlots.slot1.prepared[0].id).toBe('new-mm')
+            expect(updatedSlots.slot1.prepared[1].id).toBe('new-bh')
         })
 
         it('skips prepared slot assignment when slot key is missing from slots record', async () => {
@@ -812,10 +812,7 @@ describe('SpellListResolver', () => {
                 mockUpdateEmbedded.mock.calls[0][1][0]['system.slots']
             expect(updatedSlots.slot0.prepared[0].id).toBe('new-dm1')
             expect(updatedSlots.slot0.prepared[1].id).toBe('new-li')
-            expect(updatedSlots.slot0.prepared[2]).toEqual({
-                id: null,
-                expended: false,
-            })
+            expect(updatedSlots.slot0.prepared[2].id).toBe('new-dm1')
         })
 
         it('skips prepared slot when slot object is undefined after clone', async () => {
@@ -970,6 +967,499 @@ describe('SpellListResolver', () => {
                 expended: false,
             })
             expect(updatedSlots.slot1.prepared[0].id).toBe('new-mm')
+        })
+
+        it('applies label override for prepared casters', async () => {
+            const labelList: SpellList = {
+                name: 'Label Test',
+                tradition: MagicalTradition.arcane,
+                levels: [
+                    {
+                        level: 1,
+                        spells: [
+                            {
+                                slug: 'elemental-form',
+                                label: 'Elemental Form (Fire Only)',
+                            },
+                        ],
+                    },
+                ],
+            }
+
+            const slots: Record<string, SpellSlot> = {
+                slot1: makeSlot(2, [{ id: null, expended: false }]),
+            }
+
+            mockGetIndex.mockResolvedValue([
+                {
+                    _id: 'id-ef',
+                    name: 'Elemental Form',
+                    system: { slug: 'elemental-form' },
+                },
+            ])
+
+            mockGetDocument.mockResolvedValue({
+                toObject: () => ({
+                    _id: 'id-ef',
+                    name: 'Elemental Form',
+                    type: 'spell',
+                    system: {
+                        slug: 'elemental-form',
+                        location: { value: '' },
+                    },
+                }),
+            })
+
+            mockCreateEmbeddedDocuments.mockResolvedValue([
+                { id: 'new-ef', name: 'Elemental Form (Fire Only)' },
+            ])
+
+            const mockUpdateEmbedded = vi.fn().mockResolvedValue([])
+            mockActor.updateEmbeddedDocuments = mockUpdateEmbedded
+            mockActor.items = [{ type: 'spellcastingEntry', id: 'entry-1' }]
+
+            await resolveAndApplySpellList(
+                labelList,
+                slots,
+                'entry-1',
+                'prepared',
+                mockActor,
+            )
+
+            const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
+            expect(items).toHaveLength(1)
+            expect(items[0].name).toBe('Elemental Form (Fire Only)')
+        })
+
+        it('returns early when no spells resolve for prepared casters', async () => {
+            const emptyList: SpellList = {
+                name: 'Empty Prepared',
+                tradition: MagicalTradition.arcane,
+                levels: [
+                    {
+                        level: 0,
+                        spells: [{ slug: 'nonexistent' }],
+                    },
+                ],
+            }
+
+            const slots: Record<string, SpellSlot> = {
+                slot0: makeSlot(5, [{ id: null, expended: false }]),
+            }
+
+            mockGetIndex.mockResolvedValue([])
+
+            mockActor.items = [{ type: 'spellcastingEntry', id: 'entry-1' }]
+
+            await resolveAndApplySpellList(
+                emptyList,
+                slots,
+                'entry-1',
+                'prepared',
+                mockActor,
+            )
+
+            expect(mockCreateEmbeddedDocuments).not.toHaveBeenCalled()
+        })
+
+        it('deduplicates spells for spontaneous casters across levels', async () => {
+            const dupList: SpellList = {
+                name: 'Dup Spontaneous',
+                tradition: MagicalTradition.arcane,
+                levels: [
+                    { level: 1, spells: [{ slug: 'breathe-fire' }] },
+                    {
+                        level: 2,
+                        spells: [
+                            { slug: 'blazing-bolt' },
+                            { slug: 'breathe-fire' },
+                        ],
+                    },
+                ],
+            }
+
+            const slots = { slot1: makeSlot(2), slot2: makeSlot(2) }
+
+            mockGetIndex.mockResolvedValue([
+                {
+                    _id: 'id-bf',
+                    name: 'Breathe Fire',
+                    system: { slug: 'breathe-fire' },
+                },
+                {
+                    _id: 'id-bb',
+                    name: 'Blazing Bolt',
+                    system: { slug: 'blazing-bolt' },
+                },
+            ])
+
+            const makeDoc = (
+                id: string,
+                name: string,
+                slug: string,
+                level: number,
+            ) => ({
+                toObject: () => ({
+                    _id: id,
+                    name,
+                    type: 'spell',
+                    system: {
+                        slug,
+                        level: { value: level },
+                        location: { value: '' },
+                    },
+                }),
+            })
+
+            mockGetDocument.mockImplementation((id: string) => {
+                const docs: Record<string, any> = {
+                    'id-bf': makeDoc(
+                        'id-bf',
+                        'Breathe Fire',
+                        'breathe-fire',
+                        1,
+                    ),
+                    'id-bb': makeDoc(
+                        'id-bb',
+                        'Blazing Bolt',
+                        'blazing-bolt',
+                        2,
+                    ),
+                }
+                return Promise.resolve(docs[id] ?? null)
+            })
+
+            await resolveAndApplySpellList(
+                dupList,
+                slots,
+                'entry-1',
+                'spontaneous',
+                mockActor,
+            )
+
+            expect(mockCreateEmbeddedDocuments).toHaveBeenCalledTimes(1)
+            const [docType, items] = mockCreateEmbeddedDocuments.mock.calls[0]
+            expect(docType).toBe('Item')
+            expect(items).toHaveLength(2)
+
+            const breatheFire = items.find(
+                (i: any) => i.system.slug === 'breathe-fire',
+            )
+            const blazingBolt = items.find(
+                (i: any) => i.system.slug === 'blazing-bolt',
+            )
+
+            expect(breatheFire).toBeDefined()
+            expect(blazingBolt).toBeDefined()
+
+            // breathe-fire keeps its base rank (1) — spontaneous heightening is implicit
+            expect(breatheFire.system.level.value).toBe(1)
+            expect(blazingBolt.system.level.value).toBe(2)
+
+            // both are linked to the spellcasting entry
+            expect(breatheFire.system.location.value).toBe('entry-1')
+            expect(blazingBolt.system.location.value).toBe('entry-1')
+
+            // _id is stripped so Foundry creates new documents
+            expect(breatheFire._id).toBeUndefined()
+            expect(blazingBolt._id).toBeUndefined()
+        })
+
+        it('deduplicates spells for prepared casters and reuses IDs across slots', async () => {
+            const dupList: SpellList = {
+                name: 'Dup Prepared',
+                tradition: MagicalTradition.arcane,
+                levels: [
+                    { level: 1, spells: [{ slug: 'breathe-fire' }] },
+                    {
+                        level: 2,
+                        spells: [
+                            { slug: 'blazing-bolt' },
+                            { slug: 'breathe-fire' },
+                        ],
+                    },
+                ],
+            }
+
+            const slots: Record<string, SpellSlot> = {
+                slot1: makeSlot(2, [{ id: null, expended: false }]),
+                slot2: makeSlot(2, [
+                    { id: null, expended: false },
+                    { id: null, expended: false },
+                ]),
+            }
+
+            mockGetIndex.mockResolvedValue([
+                {
+                    _id: 'id-bf',
+                    name: 'Breathe Fire',
+                    system: { slug: 'breathe-fire' },
+                },
+                {
+                    _id: 'id-bb',
+                    name: 'Blazing Bolt',
+                    system: { slug: 'blazing-bolt' },
+                },
+            ])
+
+            const makeDoc = (id: string, name: string, slug: string) => ({
+                toObject: () => ({
+                    _id: id,
+                    name,
+                    type: 'spell',
+                    system: { slug, location: { value: '' } },
+                }),
+            })
+
+            mockGetDocument.mockImplementation((id: string) => {
+                const docs: Record<string, any> = {
+                    'id-bf': makeDoc('id-bf', 'Breathe Fire', 'breathe-fire'),
+                    'id-bb': makeDoc('id-bb', 'Blazing Bolt', 'blazing-bolt'),
+                }
+                return Promise.resolve(docs[id] ?? null)
+            })
+
+            mockCreateEmbeddedDocuments.mockResolvedValue([
+                { id: 'new-bf', name: 'Breathe Fire' },
+                { id: 'new-bb', name: 'Blazing Bolt' },
+            ])
+
+            const mockUpdateEmbedded = vi.fn().mockResolvedValue([])
+            mockActor.updateEmbeddedDocuments = mockUpdateEmbedded
+            mockActor.items = [{ type: 'spellcastingEntry', id: 'entry-1' }]
+
+            await resolveAndApplySpellList(
+                dupList,
+                slots,
+                'entry-1',
+                'prepared',
+                mockActor,
+            )
+
+            expect(mockCreateEmbeddedDocuments).toHaveBeenCalledTimes(1)
+            const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
+            expect(items).toHaveLength(2)
+
+            expect(mockUpdateEmbedded).toHaveBeenCalledTimes(1)
+            const updatedSlots =
+                mockUpdateEmbedded.mock.calls[0][1][0]['system.slots']
+            expect(updatedSlots.slot1.prepared[0].id).toBe('new-bf')
+            expect(updatedSlots.slot2.prepared[0].id).toBe('new-bb')
+            expect(updatedSlots.slot2.prepared[1].id).toBe('new-bf')
+        })
+
+        it('creates separate spell documents per level for innate casters with heightenedLevel and uses', async () => {
+            const innateList: SpellList = {
+                name: 'Innate Fire',
+                tradition: MagicalTradition.primal,
+                levels: [
+                    {
+                        level: 0,
+                        spells: [{ slug: 'detect-magic' }],
+                    },
+                    {
+                        level: 1,
+                        spells: [{ slug: 'breathe-fire' }],
+                    },
+                    {
+                        level: 2,
+                        spells: [
+                            { slug: 'blazing-bolt' },
+                            { slug: 'breathe-fire' },
+                        ],
+                    },
+                ],
+            }
+
+            const slots = {
+                slot0: makeSlot(5),
+                slot1: makeSlot(2),
+                slot2: makeSlot(2),
+            }
+
+            mockGetIndex.mockResolvedValue([
+                {
+                    _id: 'id-dm',
+                    name: 'Detect Magic',
+                    system: { slug: 'detect-magic' },
+                },
+                {
+                    _id: 'id-bf',
+                    name: 'Breathe Fire',
+                    system: { slug: 'breathe-fire' },
+                },
+                {
+                    _id: 'id-bb',
+                    name: 'Blazing Bolt',
+                    system: { slug: 'blazing-bolt' },
+                },
+            ])
+
+            const makeDoc = (
+                id: string,
+                name: string,
+                slug: string,
+                level: number,
+            ) => ({
+                toObject: () => ({
+                    _id: id,
+                    name,
+                    type: 'spell',
+                    system: {
+                        slug,
+                        level: { value: level },
+                        location: { value: '' },
+                    },
+                }),
+            })
+
+            mockGetDocument.mockImplementation((id: string) => {
+                const docs: Record<string, any> = {
+                    'id-dm': makeDoc(
+                        'id-dm',
+                        'Detect Magic',
+                        'detect-magic',
+                        0,
+                    ),
+                    'id-bf': makeDoc(
+                        'id-bf',
+                        'Breathe Fire',
+                        'breathe-fire',
+                        1,
+                    ),
+                    'id-bb': makeDoc(
+                        'id-bb',
+                        'Blazing Bolt',
+                        'blazing-bolt',
+                        2,
+                    ),
+                }
+                return Promise.resolve(docs[id] ?? null)
+            })
+
+            await resolveAndApplySpellList(
+                innateList,
+                slots,
+                'entry-1',
+                'innate',
+                mockActor,
+            )
+
+            expect(mockCreateEmbeddedDocuments).toHaveBeenCalledTimes(1)
+            const [docType, items] = mockCreateEmbeddedDocuments.mock.calls[0]
+            expect(docType).toBe('Item')
+            // 4 items: detect-magic@0, breathe-fire@1, blazing-bolt@2, breathe-fire@2
+            expect(items).toHaveLength(4)
+
+            const detectMagic = items[0]
+            expect(detectMagic.system.slug).toBe('detect-magic')
+            expect(detectMagic.system.location.value).toBe('entry-1')
+            expect(detectMagic.system.location.heightenedLevel).toBe(0)
+            expect(detectMagic.system.location.uses).toBeUndefined()
+            expect(detectMagic._id).toBeUndefined()
+
+            const breatheFireL1 = items[1]
+            expect(breatheFireL1.system.slug).toBe('breathe-fire')
+            expect(breatheFireL1.system.location.heightenedLevel).toBe(1)
+            expect(breatheFireL1.system.location.uses).toEqual({
+                value: 1,
+                max: 1,
+            })
+
+            const blazingBolt = items[2]
+            expect(blazingBolt.system.slug).toBe('blazing-bolt')
+            expect(blazingBolt.system.location.heightenedLevel).toBe(2)
+            expect(blazingBolt.system.location.uses).toEqual({
+                value: 1,
+                max: 1,
+            })
+
+            const breatheFireL2 = items[3]
+            expect(breatheFireL2.system.slug).toBe('breathe-fire')
+            expect(breatheFireL2.system.location.heightenedLevel).toBe(2)
+            expect(breatheFireL2.system.location.uses).toEqual({
+                value: 1,
+                max: 1,
+            })
+        })
+
+        it('applies label override for innate casters', async () => {
+            const innateList: SpellList = {
+                name: 'Innate Label',
+                tradition: MagicalTradition.arcane,
+                levels: [
+                    {
+                        level: 5,
+                        spells: [
+                            {
+                                slug: 'elemental-form',
+                                label: 'Elemental Form (Fire Only)',
+                            },
+                        ],
+                    },
+                ],
+            }
+
+            const slots = { slot5: makeSlot(2) }
+
+            mockGetIndex.mockResolvedValue([
+                {
+                    _id: 'id-ef',
+                    name: 'Elemental Form',
+                    system: { slug: 'elemental-form' },
+                },
+            ])
+
+            mockGetDocument.mockResolvedValue({
+                toObject: () => ({
+                    _id: 'id-ef',
+                    name: 'Elemental Form',
+                    type: 'spell',
+                    system: {
+                        slug: 'elemental-form',
+                        location: { value: '' },
+                    },
+                }),
+            })
+
+            await resolveAndApplySpellList(
+                innateList,
+                slots,
+                'entry-1',
+                'innate',
+                mockActor,
+            )
+
+            const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
+            expect(items).toHaveLength(1)
+            expect(items[0].name).toBe('Elemental Form (Fire Only)')
+            expect(items[0].system.location.heightenedLevel).toBe(5)
+            expect(items[0].system.location.uses).toEqual({
+                value: 1,
+                max: 1,
+            })
+        })
+
+        it('returns early when no spells resolve for innate casters', async () => {
+            const emptyList: SpellList = {
+                name: 'Empty Innate',
+                tradition: MagicalTradition.arcane,
+                levels: [{ level: 1, spells: [{ slug: 'nonexistent' }] }],
+            }
+
+            const slots = { slot1: makeSlot(2) }
+
+            mockGetIndex.mockResolvedValue([])
+
+            await resolveAndApplySpellList(
+                emptyList,
+                slots,
+                'entry-1',
+                'innate',
+                mockActor,
+            )
+
+            expect(mockCreateEmbeddedDocuments).not.toHaveBeenCalled()
         })
     })
 })

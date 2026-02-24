@@ -635,6 +635,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
         // )
 
         Handlebars.registerHelper('json', (context) => JSON.stringify(context))
+        Handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b)
         Handlebars.registerHelper('roadmapLabel', (key) => {
             if (typeof key !== 'string') {
                 return ''
