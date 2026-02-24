@@ -1288,9 +1288,9 @@ describe('SpellListResolver', () => {
             }
 
             const slots = {
-                slot0: makeSlot(5),
-                slot1: makeSlot(2),
-                slot2: makeSlot(2),
+                slot0: makeSlot(0),
+                slot1: makeSlot(0),
+                slot2: makeSlot(0),
             }
 
             mockGetIndex.mockResolvedValue([
@@ -1416,7 +1416,7 @@ describe('SpellListResolver', () => {
                 ],
             }
 
-            const slots = { slot5: makeSlot(2) }
+            const slots = { slot5: makeSlot(0) }
 
             mockGetIndex.mockResolvedValue([
                 {
@@ -1463,7 +1463,7 @@ describe('SpellListResolver', () => {
                 levels: [{ level: 1, spells: [{ slug: 'nonexistent' }] }],
             }
 
-            const slots = { slot1: makeSlot(2) }
+            const slots = { slot1: makeSlot(0) }
 
             mockGetIndex.mockResolvedValue([])
 

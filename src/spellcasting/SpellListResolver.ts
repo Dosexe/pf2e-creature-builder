@@ -87,7 +87,10 @@ export async function resolveAndApplySpellList(
         return
     }
 
-    const availableLevels = getAvailableSpellLevels(slots)
+    const availableLevels =
+        casterType === 'innate'
+            ? new Set(spellList.levels.map((l) => l.level))
+            : getAvailableSpellLevels(slots)
     const requiredSlugs = collectRequiredSlugs(spellList, availableLevels)
 
     if (requiredSlugs.size === 0) {
