@@ -58,6 +58,7 @@ export enum Statistics {
     spellcastingTradition = 'PF2EMONSTERMAKER.spellcastingTradition',
     spellcastingType = 'PF2EMONSTERMAKER.spellcastingType',
     spellcastingAttribute = 'PF2EMONSTERMAKER.spellcastingAttribute',
+    spellList = 'PF2EMONSTERMAKER.spellList',
 
     // Skills
     acrobatics = 'PF2EMONSTERMAKER.acrobatics',

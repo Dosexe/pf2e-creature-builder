@@ -4,6 +4,8 @@ import type {
     SpellSlot,
 } from '@/spellcasting/model/spellcasting'
 import { createSpellCopyStrategy } from '@/spellcasting/SpellCopyStrategies'
+import { builtInSpellLists } from '@/spellcasting/SpellListData'
+import { resolveAndApplySpellList } from '@/spellcasting/SpellListResolver'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
@@ -34,7 +36,7 @@ import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 
 type DetectedStatValue = Options | MagicalTradition | CasterType
 
-export class CreatureBuilderForm extends FormApplication {
+export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
     data = DefaultCreatureStatistics
     level = DefaultCreatureLevel
     private readonly _uniqueId: string
@@ -57,15 +59,18 @@ export class CreatureBuilderForm extends FormApplication {
     }
 
     static get defaultOptions() {
-        return foundry.utils.mergeObject(FormApplication.defaultOptions, {
-            classes: ['form', 'creatureBuilderForm'],
-            popOut: true,
-            template: `modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html`,
-            id: 'creatureBuilderForm',
-            title: 'Creature Builder Form',
-            height: 833,
-            width: 400,
-        })
+        return foundry.utils.mergeObject(
+            foundry.appv1.api.FormApplication.defaultOptions,
+            {
+                classes: ['form', 'creatureBuilderForm'],
+                popOut: true,
+                template: `modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html`,
+                id: 'creatureBuilderForm',
+                title: 'Creature Builder Form',
+                height: 833,
+                width: 400,
+            },
+        )
     }
 
     get id() {
@@ -90,6 +95,7 @@ export class CreatureBuilderForm extends FormApplication {
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
             creatureRoadmaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
+            spellLists: builtInSpellLists,
             detectedStats: this.useDefaultLevel ? {} : this.detectActorStats(),
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
@@ -103,7 +109,7 @@ export class CreatureBuilderForm extends FormApplication {
     /**
      * Clean up when the form is closed
      */
-    async close(options?: FormApplication.CloseOptions) {
+    async close(options?: foundry.appv1.api.FormApplication.CloseOptions) {
         this.formUI = null
         return super.close(options)
     }
@@ -209,13 +215,14 @@ export class CreatureBuilderForm extends FormApplication {
             }
         }
 
+        const resolvedCasterType = (casterType ??
+            'innate') as SpellcastingCasterType
+
         if (existingEntry) {
             const currentSlots = foundry.utils.getProperty(
                 existingEntry,
                 'system.slots',
             ) as Record<string, SpellSlot> | undefined
-            const resolvedCasterType = (casterType ??
-                'innate') as SpellcastingCasterType
             const updatedSlots = (() => {
                 if (!currentSlots) {
                     return generateSpellSlots(resolvedCasterType, this.level)
@@ -266,20 +273,61 @@ export class CreatureBuilderForm extends FormApplication {
                     'system.slots': updatedSlots,
                 },
             ])
+
+            await this.applySpellList(
+                formData,
+                existingEntry.id,
+                updatedSlots,
+                resolvedCasterType,
+            )
             return existingEntry
         }
 
         // New creature: create entry with generated slots only
+        const slots = generateSpellSlots(resolvedCasterType, this.level)
         const spellcasting = buildSpellcastingEntry({
             tradition,
-            casterType,
+            casterType: resolvedCasterType,
             keyAttribute,
             spellcastingBonus,
             level: this.level,
-            slots: generateSpellSlots(casterType, this.level),
+            slots,
         })
 
-        return Item.create(spellcasting, { parent: this.actor })
+        const created = await Item.create(spellcasting, { parent: this.actor })
+        if (created?.id) {
+            await this.applySpellList(
+                formData,
+                created.id,
+                slots,
+                resolvedCasterType,
+            )
+        }
+        return created
+    }
+
+    async applySpellList(
+        formData: object,
+        spellcastingEntryId: string,
+        slots: Record<string, SpellSlot>,
+        casterType: string,
+    ) {
+        const spellListKey = formData[Statistics.spellList]
+        if (!spellListKey || spellListKey === 'none') return
+
+        const spellList = builtInSpellLists[spellListKey]
+        if (!spellList) {
+            globalLog(true, `Spell list "${spellListKey}" not found`)
+            return
+        }
+
+        await resolveAndApplySpellList(
+            spellList,
+            slots,
+            spellcastingEntryId,
+            casterType,
+            this.actor,
+        )
     }
 
     async applySkills(formData: object) {
@@ -587,6 +635,7 @@ export class CreatureBuilderForm extends FormApplication {
         // )
 
         Handlebars.registerHelper('json', (context) => JSON.stringify(context))
+        Handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b)
         Handlebars.registerHelper('roadmapLabel', (key) => {
             if (typeof key !== 'string') {
                 return ''
@@ -627,6 +676,7 @@ export class CreatureBuilderForm extends FormApplication {
             CreatureStatistics: JSON.parse(JSON.stringify(this.data)),
             Levels: Levels,
             RoadMaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
+            SpellLists: builtInSpellLists,
             name: this.actor.name,
             detectedStats: detectedStats,
             detectedTraits: detectedTraits,

@@ -73,6 +73,19 @@
                 </select>
             </div>
             {{/each}}
+            {{#if (eq this.name "PF2EMONSTERMAKER.spellcasting")}}
+            <div class="form-group setting" id="spellListFormGroup" style="display: none;">
+                <label for="creatureBuilderPF2EMONSTERMAKER.spellList" class="creatureBuilderFormText">
+                    {{localize "PF2EMONSTERMAKER.spellList"}}
+                </label>
+                <select id="creatureBuilderPF2EMONSTERMAKER.spellList" name="PF2EMONSTERMAKER.spellList" class="creatureBuilderFormTextSmall">
+                    <option value="none" selected>{{localize "PF2EMONSTERMAKER.none"}}</option>
+                    {{#each @root.SpellLists}}
+                    <option value="{{@key}}">{{this.name}}</option>
+                    {{/each}}
+                </select>
+            </div>
+            {{/if}}
         </div>
     </details>
     {{/each}}

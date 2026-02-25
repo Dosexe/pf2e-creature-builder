@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as SpellCopyStrategies from '@/spellcasting/SpellCopyStrategies'
+import * as SpellListResolverModule from '@/spellcasting/SpellListResolver'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
 import {
@@ -84,8 +85,12 @@ beforeAll(async () => {
         }
     }
 
-    vi.stubGlobal('FormApplication', MockFormApplication)
     vi.stubGlobal('foundry', {
+        appv1: {
+            api: {
+                FormApplication: MockFormApplication,
+            },
+        },
         utils: {
             mergeObject,
             getProperty,
@@ -898,5 +903,76 @@ describe('CreatureBuilderForm', () => {
         )
         expect(newActor.sheet.render).toHaveBeenCalledWith(true)
         expect(form.actor).toBe(originalActor)
+    })
+
+    it('applySpellList calls resolveAndApplySpellList for a valid spell list key', async () => {
+        const resolverSpy = vi
+            .spyOn(SpellListResolverModule, 'resolveAndApplySpellList')
+            .mockResolvedValue(undefined)
+
+        const actor = buildActor()
+        const form = new CreatureBuilderForm(actor)
+        const formData = { [Statistics.spellList]: 'pyromancer' }
+        const slots = { slot0: { max: 5, value: 5, prepared: [] } }
+
+        await form.applySpellList(formData, 'entry-1', slots, 'prepared')
+
+        expect(resolverSpy).toHaveBeenCalledTimes(1)
+        expect(resolverSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ name: 'Pyromancer' }),
+            slots,
+            'entry-1',
+            'prepared',
+            actor,
+        )
+
+        resolverSpy.mockRestore()
+    })
+
+    it('applySpellList logs when spell list key is not found', async () => {
+        const resolverSpy = vi
+            .spyOn(SpellListResolverModule, 'resolveAndApplySpellList')
+            .mockResolvedValue(undefined)
+
+        const form = new CreatureBuilderForm(buildActor())
+        const formData = { [Statistics.spellList]: 'nonexistent-list' }
+
+        await form.applySpellList(formData, 'entry-1', {}, 'prepared')
+
+        expect(resolverSpy).not.toHaveBeenCalled()
+        expect(globalLog).toHaveBeenCalledWith(
+            true,
+            'Spell list "nonexistent-list" not found',
+        )
+
+        resolverSpy.mockRestore()
+    })
+
+    it('applySpellcasting calls applySpellList when creating new entry', async () => {
+        const actor = buildActor()
+        const form = new CreatureBuilderForm(actor)
+        form.level = '1'
+
+        Item.create.mockResolvedValue({ id: 'new-entry-id' })
+
+        const applySpellListSpy = vi
+            .spyOn(form, 'applySpellList')
+            .mockResolvedValue(undefined)
+
+        await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellList]: 'pyromancer',
+        })
+
+        expect(applySpellListSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                [Statistics.spellList]: 'pyromancer',
+            }),
+            'new-entry-id',
+            expect.any(Object),
+            expect.any(String),
+        )
+
+        applySpellListSpy.mockRestore()
     })
 })
