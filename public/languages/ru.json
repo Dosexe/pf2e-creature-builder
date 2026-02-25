@@ -14,9 +14,9 @@
     "PF2EMONSTERMAKER.int": "Интеллект",
     "PF2EMONSTERMAKER.wis": "Мудрость",
     "PF2EMONSTERMAKER.cha": "Харизма",
-    "PF2EMONSTERMAKER.hp": "Хиты",
+    "PF2EMONSTERMAKER.hp": "Очки здоровья",
     "PF2EMONSTERMAKER.per": "Восприятие",
-    "PF2EMONSTERMAKER.ac": "Класс Доспеха",
+    "PF2EMONSTERMAKER.ac": "Класс Брони",
     "PF2EMONSTERMAKER.fort": "Стойкость",
     "PF2EMONSTERMAKER.ref": "Рефлексы",
     "PF2EMONSTERMAKER.wil": "Воля",
@@ -63,8 +63,8 @@
     "PF2EMONSTERMAKER.skills": "Навыки",
 
     "PF2EMONSTERMAKER.brute": "Жестокий",
-    "PF2EMONSTERMAKER.magicalStriker": "Атакующий магией",
-    "PF2EMONSTERMAKER.skirmisher": "Ловкий",
+    "PF2EMONSTERMAKER.magicalStriker": "Маг Боец",
+    "PF2EMONSTERMAKER.skirmisher": "Застрельщик",
     "PF2EMONSTERMAKER.sniper": "Снайпер",
     "PF2EMONSTERMAKER.soldier": "Солдат",
     "PF2EMONSTERMAKER.spellcaster": "Заклинатель",
@@ -101,8 +101,7 @@
     "PF2EMONSTERMAKER.addLore": "Добавить Знание",
     "PF2EMONSTERMAKER.loreName": "Название знания (напр. Война)",
 
-    "PF2EMONSTERMAKER.traits": "Особенности",
-    "PF2EMONSTERMAKER.traitsPlaceholder": "Введите особенность и нажмите Enter",
-
+    "PF2EMONSTERMAKER.traits": "Черты",
+    "PF2EMONSTERMAKER.traitsPlaceholder": "Поиск черт...",
     "PF2EMONSTERMAKER.resetDefaults": "Сбросить к умолчаниям"
 }
