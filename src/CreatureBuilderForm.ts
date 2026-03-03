@@ -327,6 +327,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
             spellcastingEntryId,
             casterType,
             this.actor,
+            this.level,
         )
     }
 

@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MagicalTradition } from '@/Keys'
-import type { SpellSlot } from '@/spellcasting/model/spellcasting'
-import type { SpellList } from '@/spellcasting/model/spellList'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {MagicalTradition} from '@/Keys'
+import type {SpellSlot} from '@/spellcasting/model/spellcasting'
+import type {SpellList} from '@/spellcasting/model/spellList'
 import {
     collectRequiredSlugs,
     getAvailableSpellLevels,
+    getMaxInnateSpellLevel,
     resolveAndApplySpellList,
 } from './SpellListResolver'
 
@@ -1030,8 +1031,7 @@ describe('SpellListResolver', () => {
                 { id: 'new-ef', name: 'Elemental Form (Fire Only)' },
             ])
 
-            const mockUpdateEmbedded = vi.fn().mockResolvedValue([])
-            mockActor.updateEmbeddedDocuments = mockUpdateEmbedded
+            mockActor.updateEmbeddedDocuments = vi.fn().mockResolvedValue([])
             mockActor.items = [{ type: 'spellcastingEntry', id: 'entry-1' }]
 
             await resolveAndApplySpellList(
@@ -1359,6 +1359,7 @@ describe('SpellListResolver', () => {
                 'entry-1',
                 'innate',
                 mockActor,
+                '3',
             )
 
             expect(mockCreateEmbeddedDocuments).toHaveBeenCalledTimes(1)
@@ -1444,6 +1445,7 @@ describe('SpellListResolver', () => {
                 'entry-1',
                 'innate',
                 mockActor,
+                '10',
             )
 
             const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
@@ -1473,9 +1475,329 @@ describe('SpellListResolver', () => {
                 'entry-1',
                 'innate',
                 mockActor,
+                '3',
             )
 
             expect(mockCreateEmbeddedDocuments).not.toHaveBeenCalled()
+        })
+
+        it('filters innate spells by creature level — only includes levels up to max spell rank', async () => {
+            const innateList: SpellList = {
+                name: 'Innate Wide',
+                tradition: MagicalTradition.primal,
+                levels: [
+                    {
+                        level: 0,
+                        spells: [{ slug: 'detect-magic' }],
+                    },
+                    {
+                        level: 1,
+                        spells: [{ slug: 'breathe-fire' }],
+                    },
+                    {
+                        level: 2,
+                        spells: [{ slug: 'blazing-bolt' }],
+                    },
+                    {
+                        level: 3,
+                        spells: [{ slug: 'fireball' }],
+                    },
+                    {
+                        level: 5,
+                        spells: [{ slug: 'elemental-form' }],
+                    },
+                ],
+            }
+
+            const slots = {
+                slot0: makeSlot(0),
+                slot1: makeSlot(0),
+                slot2: makeSlot(0),
+                slot3: makeSlot(0),
+                slot5: makeSlot(0),
+            }
+
+            mockGetIndex.mockResolvedValue([
+                {
+                    _id: 'id-dm',
+                    name: 'Detect Magic',
+                    system: { slug: 'detect-magic' },
+                },
+                {
+                    _id: 'id-bf',
+                    name: 'Breathe Fire',
+                    system: { slug: 'breathe-fire' },
+                },
+                {
+                    _id: 'id-bb',
+                    name: 'Blazing Bolt',
+                    system: { slug: 'blazing-bolt' },
+                },
+                {
+                    _id: 'id-fb',
+                    name: 'Fireball',
+                    system: { slug: 'fireball' },
+                },
+                {
+                    _id: 'id-ef',
+                    name: 'Elemental Form',
+                    system: { slug: 'elemental-form' },
+                },
+            ])
+
+            const makeDoc = (
+                id: string,
+                name: string,
+                slug: string,
+                level: number,
+            ) => ({
+                toObject: () => ({
+                    _id: id,
+                    name,
+                    type: 'spell',
+                    system: {
+                        slug,
+                        level: { value: level },
+                        location: { value: '' },
+                    },
+                }),
+            })
+
+            mockGetDocument.mockImplementation((id: string) => {
+                const docs: Record<string, any> = {
+                    'id-dm': makeDoc(
+                        'id-dm',
+                        'Detect Magic',
+                        'detect-magic',
+                        0,
+                    ),
+                    'id-bf': makeDoc(
+                        'id-bf',
+                        'Breathe Fire',
+                        'breathe-fire',
+                        1,
+                    ),
+                    'id-bb': makeDoc(
+                        'id-bb',
+                        'Blazing Bolt',
+                        'blazing-bolt',
+                        2,
+                    ),
+                    'id-fb': makeDoc('id-fb', 'Fireball', 'fireball', 3),
+                    'id-ef': makeDoc(
+                        'id-ef',
+                        'Elemental Form',
+                        'elemental-form',
+                        5,
+                    ),
+                }
+                return Promise.resolve(docs[id] ?? null)
+            })
+
+            // Creature level 3 => max spell level ceil(3/2)=2
+            // Should only get cantrips (0), level 1, and level 2 spells
+            await resolveAndApplySpellList(
+                innateList,
+                slots,
+                'entry-1',
+                'innate',
+                mockActor,
+                '3',
+            )
+
+            expect(mockCreateEmbeddedDocuments).toHaveBeenCalledTimes(1)
+            const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
+            expect(items).toHaveLength(3)
+            expect(items[0].system.slug).toBe('detect-magic')
+            expect(items[1].system.slug).toBe('breathe-fire')
+            expect(items[2].system.slug).toBe('blazing-bolt')
+        })
+
+        it('innate casters at high level get all spell levels', async () => {
+            const innateList: SpellList = {
+                name: 'Innate Full',
+                tradition: MagicalTradition.primal,
+                levels: [
+                    {
+                        level: 0,
+                        spells: [{ slug: 'detect-magic' }],
+                    },
+                    {
+                        level: 5,
+                        spells: [{ slug: 'fireball' }],
+                    },
+                    {
+                        level: 10,
+                        spells: [{ slug: 'cataclysm' }],
+                    },
+                ],
+            }
+
+            const slots = {
+                slot0: makeSlot(0),
+                slot5: makeSlot(0),
+                slot10: makeSlot(0),
+            }
+
+            mockGetIndex.mockResolvedValue([
+                {
+                    _id: 'id-dm',
+                    name: 'Detect Magic',
+                    system: { slug: 'detect-magic' },
+                },
+                {
+                    _id: 'id-fb',
+                    name: 'Fireball',
+                    system: { slug: 'fireball' },
+                },
+                {
+                    _id: 'id-ca',
+                    name: 'Cataclysm',
+                    system: { slug: 'cataclysm' },
+                },
+            ])
+
+            const makeDoc = (id: string, name: string, slug: string) => ({
+                toObject: () => ({
+                    _id: id,
+                    name,
+                    type: 'spell',
+                    system: {
+                        slug,
+                        location: { value: '' },
+                    },
+                }),
+            })
+
+            mockGetDocument.mockImplementation((id: string) => {
+                const docs: Record<string, any> = {
+                    'id-dm': makeDoc('id-dm', 'Detect Magic', 'detect-magic'),
+                    'id-fb': makeDoc('id-fb', 'Fireball', 'fireball'),
+                    'id-ca': makeDoc('id-ca', 'Cataclysm', 'cataclysm'),
+                }
+                return Promise.resolve(docs[id] ?? null)
+            })
+
+            // Creature level 20 => max spell level min(10, ceil(20/2))=10
+            await resolveAndApplySpellList(
+                innateList,
+                slots,
+                'entry-1',
+                'innate',
+                mockActor,
+                '20',
+            )
+
+            expect(mockCreateEmbeddedDocuments).toHaveBeenCalledTimes(1)
+            const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
+            expect(items).toHaveLength(3)
+        })
+
+        it('innate casters default to level 1 when creatureLevel is not provided', async () => {
+            const innateList: SpellList = {
+                name: 'Innate Default',
+                tradition: MagicalTradition.primal,
+                levels: [
+                    {
+                        level: 0,
+                        spells: [{ slug: 'detect-magic' }],
+                    },
+                    {
+                        level: 1,
+                        spells: [{ slug: 'breathe-fire' }],
+                    },
+                    {
+                        level: 2,
+                        spells: [{ slug: 'blazing-bolt' }],
+                    },
+                ],
+            }
+
+            const slots = {
+                slot0: makeSlot(0),
+                slot1: makeSlot(0),
+                slot2: makeSlot(0),
+            }
+
+            mockGetIndex.mockResolvedValue([
+                {
+                    _id: 'id-dm',
+                    name: 'Detect Magic',
+                    system: { slug: 'detect-magic' },
+                },
+                {
+                    _id: 'id-bf',
+                    name: 'Breathe Fire',
+                    system: { slug: 'breathe-fire' },
+                },
+                {
+                    _id: 'id-bb',
+                    name: 'Blazing Bolt',
+                    system: { slug: 'blazing-bolt' },
+                },
+            ])
+
+            const makeDoc = (id: string, name: string, slug: string) => ({
+                toObject: () => ({
+                    _id: id,
+                    name,
+                    type: 'spell',
+                    system: {
+                        slug,
+                        location: { value: '' },
+                    },
+                }),
+            })
+
+            mockGetDocument.mockImplementation((id: string) => {
+                const docs: Record<string, any> = {
+                    'id-dm': makeDoc('id-dm', 'Detect Magic', 'detect-magic'),
+                    'id-bf': makeDoc('id-bf', 'Breathe Fire', 'breathe-fire'),
+                    'id-bb': makeDoc('id-bb', 'Blazing Bolt', 'blazing-bolt'),
+                }
+                return Promise.resolve(docs[id] ?? null)
+            })
+
+            // No creatureLevel passed — defaults to level 1 => max spell rank 1
+            await resolveAndApplySpellList(
+                innateList,
+                slots,
+                'entry-1',
+                'innate',
+                mockActor,
+            )
+
+            expect(mockCreateEmbeddedDocuments).toHaveBeenCalledTimes(1)
+            const [, items] = mockCreateEmbeddedDocuments.mock.calls[0]
+            // Only cantrips (0) and level 1 — level 2 should be excluded
+            expect(items).toHaveLength(2)
+            expect(items[0].system.slug).toBe('detect-magic')
+            expect(items[1].system.slug).toBe('breathe-fire')
+        })
+    })
+
+    describe('getMaxInnateSpellLevel', () => {
+        it('returns 1 for creature level 0 and below', () => {
+            expect(getMaxInnateSpellLevel(0)).toBe(1)
+            expect(getMaxInnateSpellLevel(-1)).toBe(1)
+        })
+
+        it('returns ceil(level/2) for standard levels', () => {
+            expect(getMaxInnateSpellLevel(1)).toBe(1)
+            expect(getMaxInnateSpellLevel(2)).toBe(1)
+            expect(getMaxInnateSpellLevel(3)).toBe(2)
+            expect(getMaxInnateSpellLevel(4)).toBe(2)
+            expect(getMaxInnateSpellLevel(5)).toBe(3)
+            expect(getMaxInnateSpellLevel(6)).toBe(3)
+            expect(getMaxInnateSpellLevel(9)).toBe(5)
+            expect(getMaxInnateSpellLevel(10)).toBe(5)
+            expect(getMaxInnateSpellLevel(18)).toBe(9)
+        })
+
+        it('caps at 10 for very high levels', () => {
+            expect(getMaxInnateSpellLevel(19)).toBe(10)
+            expect(getMaxInnateSpellLevel(20)).toBe(10)
+            expect(getMaxInnateSpellLevel(24)).toBe(10)
         })
     })
 })

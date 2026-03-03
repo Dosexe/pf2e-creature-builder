@@ -924,6 +924,7 @@ describe('CreatureBuilderForm', () => {
             'entry-1',
             'prepared',
             actor,
+            form.level,
         )
 
         resolverSpy.mockRestore()

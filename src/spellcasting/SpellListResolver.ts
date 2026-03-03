@@ -68,6 +68,15 @@ export interface ResolvedSpell {
 }
 
 /**
+ * Compute the maximum spell rank an innate caster can access based on
+ * creature level using the same progression as prepared/spontaneous slot tables.
+ */
+export function getMaxInnateSpellLevel(creatureLevel: number): number {
+    if (creatureLevel < 1) return 1
+    return Math.min(10, Math.ceil(creatureLevel / 2))
+}
+
+/**
  * Resolve a spell list against the PF2E spells compendium and create
  * spell items on the actor linked to the given spellcasting entry.
  *
@@ -80,6 +89,7 @@ export async function resolveAndApplySpellList(
     spellcastingEntryId: string,
     casterType: string,
     actor: Actor,
+    creatureLevel?: string,
 ): Promise<void> {
     const pack = game!.packs!.get(SPELLS_COMPENDIUM)
     if (!pack) {
@@ -87,10 +97,19 @@ export async function resolveAndApplySpellList(
         return
     }
 
-    const availableLevels =
-        casterType === 'innate'
-            ? new Set(spellList.levels.map((l) => l.level))
-            : getAvailableSpellLevels(slots)
+    const availableLevels = (() => {
+        if (casterType !== 'innate') {
+            return getAvailableSpellLevels(slots)
+        }
+        const maxLevel = getMaxInnateSpellLevel(
+            Number(creatureLevel ?? '1') || 1,
+        )
+        return new Set(
+            spellList.levels
+                .map((l) => l.level)
+                .filter((l) => l === 0 || l <= maxLevel),
+        )
+    })()
     const requiredSlugs = collectRequiredSlugs(spellList, availableLevels)
 
     if (requiredSlugs.size === 0) {
