@@ -14,6 +14,7 @@ Main differences from the original module:
  - Added  support for Lore skills.
  - Added support for traits.
  - Added support for spellcasting
+ - Added support for themed spell lists
  - Ability to load custom roadmaps [BETA] (see [ROADMAPS](ROADMAPS.md))
  - Minor UI changes.
 
@@ -30,6 +31,7 @@ Strikes are replaced using the values provided in the Creature Builder form.
 If the resulting creature is a **spellcaster of a higher level than the base creature**, the module will automatically grant additional spell slots:
 - **Prepared spellcasters** receive spell slots based on the **wizard spellcasting table**, for more info see [Wizard Class](https://2e.aonprd.com/Classes.aspx?ID=39)
 - **Spontaneous spellcasters** receive spell slots based on the **sorcerer spellcasting table**, for more info see [Sorcerer Class](https://2e.aonprd.com/Classes.aspx?ID=62)
+- For spellcaster it is also possible to choose a specific themed spell list (see [Themed Spell Lists](https://2e.aonprd.com/Rules.aspx?ID=3383)), which will attoumatically assign spells accroding to the creature level.
 
 ### Accessing the Creature Builder
 
