@@ -1,7 +1,7 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest'
-import {MagicalTradition} from '@/Keys'
-import type {SpellSlot} from '@/spellcasting/model/spellcasting'
-import type {SpellList} from '@/spellcasting/model/spellList'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { MagicalTradition } from '@/Keys'
+import type { SpellSlot } from '@/spellcasting/model/spellcasting'
+import type { SpellList } from '@/spellcasting/model/spellList'
 import {
     collectRequiredSlugs,
     getAvailableSpellLevels,
