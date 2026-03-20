@@ -157,7 +157,7 @@ describe('index hooks', () => {
     it('registers settings and initializes RoadMapRegistry on init', async () => {
         hooks.init?.[0]?.()
         const register = (globalThis as any).game.settings.register
-        expect(register).toHaveBeenCalledTimes(2)
+        expect(register).toHaveBeenCalledTimes(3)
         expect(register).toHaveBeenCalledWith(
             'foundryvtt-pf2e-creature-builder',
             'roadmaps',
@@ -166,6 +166,11 @@ describe('index hooks', () => {
         expect(register).toHaveBeenCalledWith(
             'pf2e-creature-builder',
             'abbreviateName',
+            expect.objectContaining({ type: Boolean, default: false }),
+        )
+        expect(register).toHaveBeenCalledWith(
+            'pf2e-creature-builder',
+            'useClassicUI',
             expect.objectContaining({ type: Boolean, default: false }),
         )
         expect(RoadMapRegistryMock.getInstance).toHaveBeenCalled()

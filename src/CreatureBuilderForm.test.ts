@@ -976,4 +976,214 @@ describe('CreatureBuilderForm', () => {
 
         applySpellListSpy.mockRestore()
     })
+
+    describe('useClassicUI and template selection', () => {
+        it('defaults to modern template when useClassicUI setting is not available', () => {
+            const options = CreatureBuilderForm.defaultOptions
+            expect(options.template).toContain('creatureBuilderFormModern.html')
+            expect(options.classes).toContain('creatureBuilderFormModern')
+            expect(options.height).toBeLessThan(833)
+        })
+
+        it('includes dragDrop config in modern mode', () => {
+            const options = CreatureBuilderForm.defaultOptions
+            expect(options.dragDrop).toEqual([
+                { dropSelector: '.creature-builder-drop-zone' },
+            ])
+        })
+
+        it('returns false for useClassicUI when settings throw', () => {
+            const originalGame = (globalThis as any).game
+            vi.stubGlobal('game', {
+                settings: {
+                    get: () => {
+                        throw new Error('Setting not registered')
+                    },
+                },
+            })
+            try {
+                expect(CreatureBuilderForm.useClassicUI).toBe(false)
+            } finally {
+                vi.stubGlobal('game', originalGame)
+            }
+        })
+
+        it('returns modern UI when useClassicUI is explicitly false', () => {
+            vi.stubGlobal('game', {
+                ...game,
+                settings: {
+                    get: (_ns: string, key: string) =>
+                        key === 'useClassicUI' ? false : undefined,
+                },
+            })
+            expect(CreatureBuilderForm.useClassicUI).toBe(false)
+        })
+
+        it('returns classic UI when useClassicUI is true', () => {
+            const originalGame = (globalThis as any).game
+            vi.stubGlobal('game', {
+                ...game,
+                settings: {
+                    get: (_ns: string, key: string) =>
+                        key === 'useClassicUI' ? true : undefined,
+                },
+            })
+            try {
+                expect(CreatureBuilderForm.useClassicUI).toBe(true)
+                const options = CreatureBuilderForm.defaultOptions
+                expect(options.template).toContain('creatureBuilderForm.html')
+                expect(options.template).not.toContain('Modern')
+                expect(options.classes).not.toContain(
+                    'creatureBuilderFormModern',
+                )
+                expect(options.height).toBe(833)
+                expect(options.dragDrop).toEqual([])
+            } finally {
+                vi.stubGlobal('game', originalGame)
+            }
+        })
+    })
+
+    describe('_canDragDrop', () => {
+        it('returns true in modern mode', () => {
+            const form = new CreatureBuilderForm(buildActor())
+            expect((form as any)._canDragDrop('.drop-zone')).toBe(true)
+        })
+    })
+
+    describe('droppedItems', () => {
+        it('starts with empty droppedItems array', () => {
+            const form = new CreatureBuilderForm(buildActor())
+            expect(form.droppedItems).toEqual([])
+        })
+
+        it('clears droppedItems on close', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.droppedItems.push({ name: 'Test Item', type: 'spell' })
+            await form.close()
+            expect(form.droppedItems).toEqual([])
+        })
+    })
+
+    describe('applyDroppedItems', () => {
+        it('does nothing when droppedItems is empty', async () => {
+            const actor = buildActor()
+            const form = new CreatureBuilderForm(actor)
+            form.actor = actor as any
+            await form.applyDroppedItems()
+            expect(actor.updateEmbeddedDocuments).not.toHaveBeenCalled()
+        })
+
+        it('calls createEmbeddedDocuments with queued items', async () => {
+            const mockCreateEmbedded = vi.fn().mockResolvedValue(undefined)
+            const actor = buildActor({
+                createEmbeddedDocuments: mockCreateEmbedded,
+            })
+            const form = new CreatureBuilderForm(actor)
+            form.actor = actor as any
+            const items = [
+                { name: 'Fireball', type: 'spell' },
+                { name: 'Longsword', type: 'weapon' },
+            ]
+            form.droppedItems.push(...items)
+            await form.applyDroppedItems()
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', items)
+        })
+    })
+
+    describe('_onDrop', () => {
+        it('ignores drops without valid item data', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: { getData: () => '{}' },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(0)
+        })
+
+        it('ignores drops with invalid JSON', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: { getData: () => '{not valid json' },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(0)
+        })
+
+        it('ignores drops with non-Item type', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: {
+                    getData: () =>
+                        JSON.stringify({
+                            type: 'Actor',
+                            uuid: 'some-uuid',
+                        }),
+                },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(0)
+        })
+
+        it('rejects disallowed item types with notification', async () => {
+            const warnSpy = vi.fn()
+            vi.stubGlobal('ui', { notifications: { warn: warnSpy } })
+            ;(globalThis as any).fromUuid = async () => ({
+                type: 'ancestry',
+                name: 'Elf',
+                toObject: () => ({
+                    name: 'Elf',
+                    type: 'ancestry',
+                    img: '',
+                }),
+            })
+
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: {
+                    getData: () =>
+                        JSON.stringify({
+                            type: 'Item',
+                            uuid: 'some-uuid',
+                        }),
+                },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(0)
+            expect(warnSpy).toHaveBeenCalled()
+
+            delete (globalThis as any).fromUuid
+        })
+
+        it('accepts allowed item types and pushes to droppedItems', async () => {
+            const itemData = {
+                _id: 'abc123',
+                name: 'Fireball',
+                type: 'spell',
+                img: 'icons/spell.svg',
+            }
+            ;(globalThis as any).fromUuid = async () => ({
+                type: 'spell',
+                name: 'Fireball',
+                toObject: () => ({ ...itemData }),
+            })
+
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: {
+                    getData: () =>
+                        JSON.stringify({
+                            type: 'Item',
+                            uuid: 'some-uuid',
+                        }),
+                },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(1)
+            expect(form.droppedItems[0]).not.toHaveProperty('_id')
+            expect(form.droppedItems[0]).toHaveProperty('name', 'Fireball')
+
+            delete (globalThis as any).fromUuid
+        })
+    })
 })
