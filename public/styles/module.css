@@ -162,3 +162,239 @@ summary.collapsibleHeader {
     border-top: 2px solid var(--color-underline-header);
     margin: 10px 0 10px 0;
 }
+
+/* ============================================================================
+   Modern Form — Compact Stat Layout
+   ============================================================================ */
+
+.creatureBuilderFormModern .stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-bottom: 6px;
+}
+
+.creatureBuilderFormModern .stat-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1 1 70px;
+    min-width: 60px;
+}
+
+.creatureBuilderFormModern .stat-cell--wide {
+    flex: 1 1 120px;
+}
+
+.creatureBuilderFormModern .stat-cell label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.creatureBuilderFormModern .stat-cell-input {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+
+.creatureBuilderFormModern .stat-select {
+    flex: 1;
+    min-width: 0;
+    height: 26px;
+    font-size: 12px;
+    padding: 2px 4px;
+    box-sizing: border-box;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+.creatureBuilderFormModern .stat-value-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 22px;
+    padding: 0 4px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.07);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.creatureBuilderFormModern .collapsibleContent {
+    padding-left: 0;
+}
+
+/* ============================================================================
+   Modern Form — Stat Option Color Highlights
+   ============================================================================ */
+
+.creatureBuilderFormModern .stat-level-extreme {
+    background-color: rgba(46, 125, 50, 0.22);
+}
+
+.creatureBuilderFormModern .stat-level-high {
+    background-color: rgba(76, 175, 80, 0.15);
+}
+
+.creatureBuilderFormModern .stat-level-moderate {
+    background-color: transparent;
+}
+
+.creatureBuilderFormModern .stat-level-low {
+    background-color: rgba(255, 152, 0, 0.15);
+}
+
+.creatureBuilderFormModern .stat-level-terrible {
+    background-color: rgba(245, 124, 0, 0.22);
+}
+
+.creatureBuilderFormModern .stat-level-abysmal {
+    background-color: rgba(211, 47, 47, 0.2);
+}
+
+.creatureBuilderFormModern .stat-level-none {
+    background-color: rgba(158, 158, 158, 0.15);
+}
+
+/* ============================================================================
+   Modern Form — Live Stat Preview Bar
+   ============================================================================ */
+
+.creatureBuilderFormModern .stat-preview-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 2px;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    background: rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    font-size: 11px;
+    line-height: 1.4;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.creatureBuilderFormModern .preview-stat {
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    font-family: inherit;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.creatureBuilderFormModern .preview-stat::after {
+    content: "|";
+    margin-left: 6px;
+    opacity: 0.3;
+    font-weight: 400;
+}
+
+.creatureBuilderFormModern .preview-stat:last-child::after {
+    content: none;
+}
+
+/* ============================================================================
+   Modern Form — Drag-and-Drop Zone
+   ============================================================================ */
+
+.creatureBuilderFormModern .creature-builder-drop-zone {
+    border: 2px dashed rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 10px;
+    min-height: 60px;
+    margin: 8px 0;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    position: relative;
+}
+
+.creatureBuilderFormModern .creature-builder-drop-zone.drag-over {
+    border-color: rgba(76, 175, 80, 0.6);
+    background-color: rgba(76, 175, 80, 0.06);
+}
+
+.creatureBuilderFormModern .drop-zone-hint {
+    text-align: center;
+    color: rgba(0, 0, 0, 0.4);
+    font-size: 12px;
+    margin: 8px 0;
+    pointer-events: none;
+}
+
+.creatureBuilderFormModern .drop-zone-hint i {
+    margin-right: 4px;
+}
+
+.creatureBuilderFormModern .dropped-items-list:not(:empty) ~ .drop-zone-hint,
+.creatureBuilderFormModern .drop-zone-hint.hidden {
+    display: none;
+}
+
+.creatureBuilderFormModern .dropped-item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    margin-bottom: 3px;
+    background: rgba(0, 0, 0, 0.04);
+    font-size: 12px;
+}
+
+.creatureBuilderFormModern .dropped-item-row:hover {
+    background: rgba(0, 0, 0, 0.07);
+}
+
+.creatureBuilderFormModern .dropped-item-img {
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.creatureBuilderFormModern .dropped-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.creatureBuilderFormModern .dropped-item-type {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.08);
+    text-transform: capitalize;
+    flex-shrink: 0;
+}
+
+.creatureBuilderFormModern .dropped-item-remove {
+    cursor: pointer;
+    font-size: 12px;
+    padding: 3px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.creatureBuilderFormModern .dropped-item-remove:hover {
+    background-color: rgba(211, 47, 47, 0.15);
+    transform: scale(1.15);
+}
