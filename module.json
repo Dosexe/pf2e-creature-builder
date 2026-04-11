@@ -6,8 +6,8 @@
     "authors": [{"name": "dosexe"}],
     "compatibility": {
         "minimum": 13,
-        "verified": "13.351",
-        "maximum": 13
+        "verified": "14.360",
+        "maximum": 14
     },
     "esmodules": ["dist/bundle.js"],
     "styles": [
