@@ -290,6 +290,7 @@ class CreatureBuilderFormUI {
             this.setupDropZone()
             this.setupStatHighlightListeners()
             this.setupStatPreviewListeners()
+            this.setupPreviewSidebar()
         }
 
         setTimeout(() => {
@@ -1184,6 +1185,7 @@ class CreatureBuilderFormUI {
         { key: 'PF2EMONSTERMAKER.per', label: 'Per', prefix: '+' },
         { key: 'PF2EMONSTERMAKER.strikeBonus', label: 'Atk', prefix: '+' },
         { key: 'PF2EMONSTERMAKER.strikeDamage', label: 'Dmg', prefix: '' },
+        { key: 'PF2EMONSTERMAKER.spellcasting', label: 'Spell DC', prefix: '' },
     ]
 
     public updateStatPreview(): void {
@@ -1283,6 +1285,32 @@ class CreatureBuilderFormUI {
                 span.classList.add(cssClass)
             }
         }
+    }
+
+    private setupPreviewSidebar(): void {
+        const previewBar = document.getElementById('statPreviewBar')
+        if (!previewBar) return
+
+        const appWindow = document.getElementById('creatureBuilderForm')
+        if (!appWindow) return
+
+        appWindow.appendChild(previewBar)
+
+        const positionSidebar = () => {
+            const rect = appWindow.getBoundingClientRect()
+            previewBar.style.top = `${rect.top}px`
+            previewBar.style.left = `${rect.right + 4}px`
+        }
+
+        positionSidebar()
+
+        const observer = new MutationObserver(positionSidebar)
+        observer.observe(appWindow, {
+            attributes: true,
+            attributeFilter: ['style'],
+        })
+
+        window.addEventListener('resize', positionSidebar)
     }
 
     private setupStatPreviewListeners(): void {
