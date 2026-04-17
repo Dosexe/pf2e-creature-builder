@@ -190,6 +190,8 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
               )
 
         const isModern = !CreatureBuilderForm.useClassicUI
+        const appElement =
+            (html[0]?.closest('.app') as HTMLElement) ?? undefined
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
             creatureRoadmaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
@@ -200,6 +202,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
             actorLevel,
             isModern,
             droppedItems: this.droppedItems,
+            appElement,
         }
 
         this.formUI = new CreatureBuilderFormUI(config)
