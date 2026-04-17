@@ -40,6 +40,7 @@ interface CreatureBuilderFormConfig {
     actorLevel: string
     isModern?: boolean
     droppedItems?: Record<string, unknown>[]
+    appElement?: HTMLElement
 }
 
 /**
@@ -58,6 +59,7 @@ class CreatureBuilderFormUI {
     private readonly actorLevel: string
     private readonly isModern: boolean
     private readonly droppedItems: Record<string, unknown>[]
+    private readonly appElement: HTMLElement | null
     private loreCounter: number = 0
     private traits: string[] = []
     private selectedDropdownIndex: number = -1
@@ -273,6 +275,7 @@ class CreatureBuilderFormUI {
         this.actorLevel = String(config.actorLevel)
         this.isModern = config.isModern === true
         this.droppedItems = config.droppedItems ?? []
+        this.appElement = config.appElement ?? null
     }
 
     /**
@@ -1310,7 +1313,7 @@ class CreatureBuilderFormUI {
         const previewBar = document.getElementById('statPreviewBar')
         if (!previewBar) return
 
-        const appWindow = document.getElementById('creatureBuilderForm')
+        const appWindow = this.appElement
         if (!appWindow) return
 
         document.body.appendChild(previewBar)
