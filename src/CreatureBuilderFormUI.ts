@@ -1236,6 +1236,24 @@ class CreatureBuilderFormUI {
         },
     ]
 
+    private static readonly ABILITY_KEYS = [
+        'PF2EMONSTERMAKER.str',
+        'PF2EMONSTERMAKER.dex',
+        'PF2EMONSTERMAKER.con',
+        'PF2EMONSTERMAKER.int',
+        'PF2EMONSTERMAKER.wis',
+        'PF2EMONSTERMAKER.cha',
+    ] as const
+
+    private static readonly ABILITY_LABELS: Record<string, string> = {
+        'PF2EMONSTERMAKER.str': 'STR',
+        'PF2EMONSTERMAKER.dex': 'DEX',
+        'PF2EMONSTERMAKER.con': 'CON',
+        'PF2EMONSTERMAKER.int': 'INT',
+        'PF2EMONSTERMAKER.wis': 'WIS',
+        'PF2EMONSTERMAKER.cha': 'CHA',
+    }
+
     public updateStatPreview(): void {
         const levelSelect = document.getElementById(
             'creatureBuilderLevel',
@@ -1243,6 +1261,9 @@ class CreatureBuilderFormUI {
         if (!levelSelect) return
 
         const level = levelSelect.value
+
+        this.updatePreviewRoadmapLevel(level)
+        this.updatePreviewAbilityScores(level)
 
         for (const {
             key,
@@ -1284,6 +1305,49 @@ class CreatureBuilderFormUI {
         }
 
         this.updateInlineStatBadges(level)
+    }
+
+    private updatePreviewRoadmapLevel(level: string): void {
+        const el = document.getElementById('previewRoadmapLevel')
+        if (!el) return
+
+        const roadmapSelect = document.getElementById(
+            'creatureBuilderRoadmap',
+        ) as HTMLSelectElement
+        const roadmapText =
+            roadmapSelect?.selectedOptions?.[0]?.textContent?.trim() ||
+            'Default'
+        el.textContent = `${roadmapText} lvl ${level}`
+    }
+
+    private updatePreviewAbilityScores(level: string): void {
+        for (const key of CreatureBuilderFormUI.ABILITY_KEYS) {
+            const span = document.querySelector(
+                `[data-ability="${key}"]`,
+            ) as HTMLElement
+            if (!span) continue
+
+            const label = CreatureBuilderFormUI.ABILITY_LABELS[key]
+            const select = document.getElementById(
+                `creatureBuilder${key}`,
+            ) as HTMLSelectElement
+
+            if (!select || select.value === 'PF2EMONSTERMAKER.none') {
+                span.textContent = `${label} --`
+                continue
+            }
+
+            const valueTable = statisticValues[key]
+            if (!valueTable?.[level]?.[select.value]) {
+                span.textContent = `${label} --`
+                continue
+            }
+
+            const rawValue = valueTable[level][select.value]
+            const num = Number(rawValue)
+            const display = num >= 0 ? `+${num}` : `${num}`
+            span.textContent = `${label} ${display}`
+        }
     }
 
     private updateInlineStatBadges(level: string): void {
@@ -1362,6 +1426,15 @@ class CreatureBuilderFormUI {
         ) as HTMLSelectElement
         if (levelSelect) {
             levelSelect.addEventListener('change', () => {
+                this.updateStatPreview()
+            })
+        }
+
+        const roadmapSelect = document.getElementById(
+            'creatureBuilderRoadmap',
+        ) as HTMLSelectElement
+        if (roadmapSelect) {
+            roadmapSelect.addEventListener('change', () => {
                 this.updateStatPreview()
             })
         }
