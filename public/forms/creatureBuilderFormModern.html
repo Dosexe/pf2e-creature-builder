@@ -10,6 +10,7 @@
         <span class="preview-stat" data-stat="PF2EMONSTERMAKER.per">Per --</span>
         <span class="preview-stat" data-stat="PF2EMONSTERMAKER.strikeBonus">Atk --</span>
         <span class="preview-stat" data-stat="PF2EMONSTERMAKER.strikeDamage">Dmg --</span>
+        <span class="preview-stat" data-stat="PF2EMONSTERMAKER.spellcasting">Spell DC --</span>
     </div>
 
     <h2>{{localize "PF2EMONSTERMAKER.nameLevelRoadmap"}}</h2>
@@ -66,7 +67,11 @@
                 {{#each this.statisticEntries}}
                 <div class="stat-cell">
                     <label for="{{concat 'creatureBuilder' this.name}}" title="{{localize this.name}}">
+                        {{#if (eq ../this.name "PF2EMONSTERMAKER.skills")}}
+                        {{localize this.name}}
+                        {{else}}
                         {{localize (concat this.name 'Short')}}
+                        {{/if}}
                     </label>
                     <div class="stat-cell-input">
                         <select id="{{concat 'creatureBuilder' this.name}}" name="{{this.name}}" class="stat-select">
@@ -116,12 +121,19 @@
         </div>
     </details>
 
-    <div class="creature-builder-drop-zone" id="creatureBuilderDropZone">
-        <p class="drop-zone-hint" id="dropZoneHint">
-            <i class="fas fa-plus-circle"></i> {{localize "PF2EMONSTERMAKER.dropHint"}}
-        </p>
-        <div class="dropped-items-list" id="droppedItemsList"></div>
-    </div>
+    <details class="collapsibleSection" id="sectionItems" open>
+        <summary class="collapsibleHeader">
+            <h3>{{localize "PF2EMONSTERMAKER.itemsActions"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
+        </summary>
+        <div class="collapsibleContent">
+            <div class="creature-builder-drop-zone" id="creatureBuilderDropZone">
+                <p class="drop-zone-hint" id="dropZoneHint">
+                    <i class="fas fa-plus-circle"></i> {{localize "PF2EMONSTERMAKER.dropHint"}}
+                </p>
+                <div class="dropped-items-list" id="droppedItemsList"></div>
+            </div>
+        </div>
+    </details>
 
     <div class="formDivider"></div>
     <div class="buttons">

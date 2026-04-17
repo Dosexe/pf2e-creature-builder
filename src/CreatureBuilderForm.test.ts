@@ -1074,20 +1074,84 @@ describe('CreatureBuilderForm', () => {
             expect(actor.updateEmbeddedDocuments).not.toHaveBeenCalled()
         })
 
-        it('calls createEmbeddedDocuments with queued items', async () => {
+        it('creates non-spell items without entry ID', async () => {
             const mockCreateEmbedded = vi.fn().mockResolvedValue(undefined)
             const actor = buildActor({
                 createEmbeddedDocuments: mockCreateEmbedded,
             })
             const form = new CreatureBuilderForm(actor)
             form.actor = actor as any
-            const items = [
+            form.droppedItems.push({ name: 'Longsword', type: 'weapon' })
+            await form.applyDroppedItems()
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                { name: 'Longsword', type: 'weapon' },
+            ])
+        })
+
+        it('links spells to spellcasting entry when ID is provided', async () => {
+            const mockCreateEmbedded = vi.fn().mockResolvedValue(undefined)
+            const actor = buildActor({
+                createEmbeddedDocuments: mockCreateEmbedded,
+            })
+            const form = new CreatureBuilderForm(actor)
+            form.actor = actor as any
+            form.droppedItems.push({
+                name: 'Fireball',
+                type: 'spell',
+                system: { level: { value: 3 } },
+            })
+            await form.applyDroppedItems('entry-abc')
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                {
+                    name: 'Fireball',
+                    type: 'spell',
+                    system: {
+                        level: { value: 3 },
+                        location: { value: 'entry-abc' },
+                    },
+                },
+            ])
+        })
+
+        it('separates spells and non-spells into distinct calls', async () => {
+            const mockCreateEmbedded = vi.fn().mockResolvedValue(undefined)
+            const actor = buildActor({
+                createEmbeddedDocuments: mockCreateEmbedded,
+            })
+            const form = new CreatureBuilderForm(actor)
+            form.actor = actor as any
+            form.droppedItems.push(
                 { name: 'Fireball', type: 'spell' },
                 { name: 'Longsword', type: 'weapon' },
-            ]
-            form.droppedItems.push(...items)
+            )
+            await form.applyDroppedItems('entry-abc')
+            expect(mockCreateEmbedded).toHaveBeenCalledTimes(2)
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                { name: 'Longsword', type: 'weapon' },
+            ])
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                {
+                    name: 'Fireball',
+                    type: 'spell',
+                    system: { location: { value: 'entry-abc' } },
+                },
+            ])
+        })
+
+        it('skips spells when no spellcasting entry ID is provided', async () => {
+            const mockCreateEmbedded = vi.fn().mockResolvedValue(undefined)
+            const actor = buildActor({
+                createEmbeddedDocuments: mockCreateEmbedded,
+            })
+            const form = new CreatureBuilderForm(actor)
+            form.actor = actor as any
+            form.droppedItems.push({ name: 'Fireball', type: 'spell' })
             await form.applyDroppedItems()
-            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', items)
+            expect(mockCreateEmbedded).not.toHaveBeenCalled()
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Dropped spells skipped: no spellcasting entry available',
+            )
         })
     })
 
@@ -1182,6 +1246,176 @@ describe('CreatureBuilderForm', () => {
             expect(form.droppedItems).toHaveLength(1)
             expect(form.droppedItems[0]).not.toHaveProperty('_id')
             expect(form.droppedItems[0]).toHaveProperty('name', 'Fireball')
+
+            delete (globalThis as any).fromUuid
+        })
+
+        it('rejects duplicate action drops with the same uuid', async () => {
+            ;(globalThis as any).fromUuid = async () => ({
+                type: 'action',
+                name: 'Strike',
+                toObject: () => ({ name: 'Strike', type: 'action' }),
+            })
+
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: {
+                    getData: () =>
+                        JSON.stringify({ type: 'Item', uuid: 'action-1' }),
+                },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(1)
+
+            delete (globalThis as any).fromUuid
+        })
+
+        it('rejects duplicate spell drops with the same uuid and level', async () => {
+            ;(globalThis as any).fromUuid = async () => ({
+                type: 'spell',
+                name: 'Fireball',
+                toObject: () => ({
+                    name: 'Fireball',
+                    type: 'spell',
+                    system: { level: { value: 3 } },
+                }),
+            })
+
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: {
+                    getData: () =>
+                        JSON.stringify({ type: 'Item', uuid: 'spell-1' }),
+                },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(1)
+
+            delete (globalThis as any).fromUuid
+        })
+
+        it('allows same spell with different levels', async () => {
+            let callCount = 0
+            ;(globalThis as any).fromUuid = async () => {
+                callCount++
+                const level = callCount === 1 ? 3 : 5
+                return {
+                    type: 'spell',
+                    name: 'Heal',
+                    toObject: () => ({
+                        name: 'Heal',
+                        type: 'spell',
+                        system: { level: { value: level } },
+                    }),
+                }
+            }
+
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: {
+                    getData: () =>
+                        JSON.stringify({ type: 'Item', uuid: 'spell-heal' }),
+                },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(2)
+
+            delete (globalThis as any).fromUuid
+        })
+
+        it('allows different items with different uuids', async () => {
+            let callCount = 0
+            ;(globalThis as any).fromUuid = async () => {
+                callCount++
+                return {
+                    type: 'weapon',
+                    name: callCount === 1 ? 'Longsword' : 'Shortbow',
+                    toObject: () => ({
+                        name: callCount === 1 ? 'Longsword' : 'Shortbow',
+                        type: 'weapon',
+                    }),
+                }
+            }
+
+            const form = new CreatureBuilderForm(buildActor())
+            const makeEvent = (uuid: string) =>
+                ({
+                    dataTransfer: {
+                        getData: () => JSON.stringify({ type: 'Item', uuid }),
+                    },
+                }) as unknown as DragEvent
+            await (form as any)._onDrop(makeEvent('weapon-1'))
+            await (form as any)._onDrop(makeEvent('weapon-2'))
+            expect(form.droppedItems).toHaveLength(2)
+
+            delete (globalThis as any).fromUuid
+        })
+
+        it('allows duplicate consumables with the same uuid', async () => {
+            ;(globalThis as any).fromUuid = async () => ({
+                type: 'consumable',
+                name: 'Healing Potion',
+                toObject: () => ({
+                    name: 'Healing Potion',
+                    type: 'consumable',
+                }),
+            })
+
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: {
+                    getData: () =>
+                        JSON.stringify({ type: 'Item', uuid: 'potion-1' }),
+                },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(2)
+
+            delete (globalThis as any).fromUuid
+        })
+
+        it('allows duplicate equipment with the same uuid', async () => {
+            ;(globalThis as any).fromUuid = async () => ({
+                type: 'equipment',
+                name: 'Torch',
+                toObject: () => ({ name: 'Torch', type: 'equipment' }),
+            })
+
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: {
+                    getData: () =>
+                        JSON.stringify({ type: 'Item', uuid: 'torch-1' }),
+                },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(2)
+
+            delete (globalThis as any).fromUuid
+        })
+
+        it('rejects duplicate feats with the same uuid', async () => {
+            ;(globalThis as any).fromUuid = async () => ({
+                type: 'feat',
+                name: 'Toughness',
+                toObject: () => ({ name: 'Toughness', type: 'feat' }),
+            })
+
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: {
+                    getData: () =>
+                        JSON.stringify({ type: 'Item', uuid: 'feat-1' }),
+                },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(1)
 
             delete (globalThis as any).fromUuid
         })

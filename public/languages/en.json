@@ -146,7 +146,8 @@
     "PF2EMONSTERMAKER.thieveryShort": "Thv",
 
     "PF2EMONSTERMAKER.items": "Items",
-    "PF2EMONSTERMAKER.dropHint": "Drag items or spells here from a compendium",
+    "PF2EMONSTERMAKER.itemsActions": "Items / Actions",
+    "PF2EMONSTERMAKER.dropHint": "Drag items or actions here from a compendium",
     "PF2EMONSTERMAKER.removeItem": "Remove item",
     "PF2EMONSTERMAKER.invalidItemType": "This item type cannot be added"
 }

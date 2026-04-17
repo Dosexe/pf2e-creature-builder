@@ -144,6 +144,31 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
 
         const itemData = item.toObject ? item.toObject() : { ...item }
         delete itemData._id
+
+        const uniqueTypes = new Set([
+            'spell',
+            'action',
+            'feat',
+            'condition',
+            'lore',
+        ])
+        if (uniqueTypes.has(itemType)) {
+            const getSpellLevel = (obj: Record<string, unknown>) =>
+                (obj.system as Record<string, unknown> | undefined)?.level as
+                    | Record<string, unknown>
+                    | undefined
+            const spellLevel = getSpellLevel(itemData)?.value
+            const isDuplicate = this.droppedItems.some((existing) => {
+                if (existing._sourceUuid !== data.uuid) return false
+                if (itemType === 'spell') {
+                    return getSpellLevel(existing)?.value === spellLevel
+                }
+                return true
+            })
+            if (isDuplicate) return
+        }
+
+        itemData._sourceUuid = data.uuid
         this.droppedItems.push(itemData)
 
         this.formUI?.renderDroppedItem(itemData)
@@ -460,16 +485,58 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
         }
     }
 
-    async applyDroppedItems() {
+    private static stripSourceUuid(
+        items: Record<string, unknown>[],
+    ): Record<string, unknown>[] {
+        return items.map(({ _sourceUuid, ...rest }) => rest)
+    }
+
+    async applyDroppedItems(spellcastingEntryId?: string) {
         if (this.droppedItems.length === 0) return
-        await (
+
+        const spells: Record<string, unknown>[] = []
+        const nonSpells: Record<string, unknown>[] = []
+        for (const item of this.droppedItems) {
+            if (item.type === 'spell') {
+                spells.push(item)
+            } else {
+                nonSpells.push(item)
+            }
+        }
+
+        const createEmbedded = (
             this.actor as {
                 createEmbeddedDocuments: (
                     embeddedName: string,
                     data: object[],
                 ) => Promise<unknown>
             }
-        ).createEmbeddedDocuments('Item', this.droppedItems)
+        ).createEmbeddedDocuments.bind(this.actor)
+
+        if (nonSpells.length > 0) {
+            await createEmbedded(
+                'Item',
+                CreatureBuilderForm.stripSourceUuid(nonSpells),
+            )
+        }
+
+        if (spells.length > 0 && spellcastingEntryId) {
+            const linkedSpells = CreatureBuilderForm.stripSourceUuid(
+                spells,
+            ).map((spell) => ({
+                ...spell,
+                system: {
+                    ...(spell.system as Record<string, unknown> | undefined),
+                    location: { value: spellcastingEntryId },
+                },
+            }))
+            await createEmbedded('Item', linkedSpells)
+        } else if (spells.length > 0) {
+            globalLog(
+                true,
+                'Dropped spells skipped: no spellcasting entry available',
+            )
+        }
     }
 
     protected async _updateObject(_event: Event, formData?: object) {
@@ -528,12 +595,16 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                 await newActor.deleteEmbeddedDocuments('Item', toDelete)
             }
 
-            await Promise.all([
+            const spellcastingEntry = await this.applySpellcasting(formData)
+            const spellcastingEntryId =
+                (spellcastingEntry as { id?: string } | undefined)?.id ??
+                undefined
+
+            await Promise.allSettled([
                 this.applyStrike(formData),
-                this.applySpellcasting(formData),
                 this.applySkills(formData),
                 this.applyLoreSkills(formData),
-                this.applyDroppedItems(),
+                this.applyDroppedItems(spellcastingEntryId),
             ])
             this.actor = originalActor
             ;(newActor as Actor).sheet?.render(true)

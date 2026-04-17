@@ -233,8 +233,20 @@ summary.collapsibleHeader {
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+.creatureBuilderFormModern .stat-value-badge[data-stat-badge="PF2EMONSTERMAKER.spellcastingTradition"],
+.creatureBuilderFormModern .stat-value-badge[data-stat-badge="PF2EMONSTERMAKER.spellcastingType"] {
+    display: none;
+}
+
 .creatureBuilderFormModern .collapsibleContent {
     padding-left: 0;
+    padding-top: 8px;
+}
+
+.creatureBuilderFormModern details[data-section-name="PF2EMONSTERMAKER.abilityScores"] .stat-cell {
+    flex: 1 1 calc(33.333% - 10px);
+    min-width: calc(33.333% - 10px);
+    max-width: calc(33.333% - 10px);
 }
 
 /* ============================================================================
@@ -270,27 +282,27 @@ summary.collapsibleHeader {
 }
 
 /* ============================================================================
-   Modern Form — Live Stat Preview Bar
+   Modern Form — Live Stat Preview Sidebar
    ============================================================================ */
 
 .creatureBuilderFormModern .stat-preview-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px 2px;
-    padding: 6px 8px;
-    margin-bottom: 8px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 6px;
     background: rgba(0, 0, 0, 0.06);
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 4px;
     font-size: 11px;
     line-height: 1.4;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    position: fixed;
+    z-index: 100;
+    width: 100px;
+    box-sizing: border-box;
 }
 
 .creatureBuilderFormModern .preview-stat {
-    padding: 2px 6px;
+    padding: 3px 6px;
     border-radius: 3px;
     white-space: nowrap;
     font-family: inherit;
@@ -299,13 +311,6 @@ summary.collapsibleHeader {
 }
 
 .creatureBuilderFormModern .preview-stat::after {
-    content: "|";
-    margin-left: 6px;
-    opacity: 0.3;
-    font-weight: 400;
-}
-
-.creatureBuilderFormModern .preview-stat:last-child::after {
     content: none;
 }
 

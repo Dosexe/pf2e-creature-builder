@@ -1217,6 +1217,7 @@ describe('CreatureBuilderFormUI', () => {
                 'PF2EMONSTERMAKER.per',
                 'PF2EMONSTERMAKER.strikeBonus',
                 'PF2EMONSTERMAKER.strikeDamage',
+                'PF2EMONSTERMAKER.spellcasting',
             ]
             for (const key of previewStats) {
                 const span = document.createElement('span')
@@ -1353,6 +1354,7 @@ describe('CreatureBuilderFormUI', () => {
                 'PF2EMONSTERMAKER.per',
                 'PF2EMONSTERMAKER.strikeBonus',
                 'PF2EMONSTERMAKER.strikeDamage',
+                'PF2EMONSTERMAKER.spellcasting',
             ]
             for (const key of previewStats) {
                 const span = document.createElement('span')
