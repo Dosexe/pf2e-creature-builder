@@ -102,7 +102,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                 id: 'creatureBuilderForm',
                 title: 'Creature Builder Form',
                 height: isClassic ? 833 : 620,
-                width: isClassic ? 400 : 510,
+                width: isClassic ? 400 : 530,
                 dragDrop: isClassic
                     ? []
                     : [{ dropSelector: '.creature-builder-drop-zone' }],
