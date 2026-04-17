@@ -276,6 +276,16 @@ class CreatureBuilderFormUI {
     }
 
     /**
+     * Remove the preview sidebar from document.body if it was moved there
+     */
+    public destroy(): void {
+        const previewBar = document.getElementById('statPreviewBar')
+        if (previewBar?.parentElement === document.body) {
+            previewBar.remove()
+        }
+    }
+
+    /**
      * Initialize the form - call this after DOM is ready
      */
     public initialize(): void {
@@ -1176,6 +1186,7 @@ class CreatureBuilderFormUI {
         key: string
         label: string
         prefix: string
+        offset?: number
     }[] = [
         { key: 'PF2EMONSTERMAKER.hp', label: 'HP', prefix: '' },
         { key: 'PF2EMONSTERMAKER.ac', label: 'AC', prefix: '' },
@@ -1185,7 +1196,7 @@ class CreatureBuilderFormUI {
         { key: 'PF2EMONSTERMAKER.per', label: 'Per', prefix: '+' },
         { key: 'PF2EMONSTERMAKER.strikeBonus', label: 'Atk', prefix: '+' },
         { key: 'PF2EMONSTERMAKER.strikeDamage', label: 'Dmg', prefix: '' },
-        { key: 'PF2EMONSTERMAKER.spellcasting', label: 'Spell DC', prefix: '' },
+        { key: 'PF2EMONSTERMAKER.spellcasting', label: 'Spell DC', prefix: '', offset: 8 },
     ]
 
     public updateStatPreview(): void {
@@ -1200,6 +1211,7 @@ class CreatureBuilderFormUI {
             key,
             label,
             prefix,
+            offset,
         } of CreatureBuilderFormUI.PREVIEW_STATS) {
             const span = document.querySelector(
                 `.preview-stat[data-stat="${key}"]`,
@@ -1223,8 +1235,11 @@ class CreatureBuilderFormUI {
                 continue
             }
 
-            const value = valueTable[level][select.value]
-            span.textContent = `${label} ${prefix}${value}`
+            const rawValue = valueTable[level][select.value]
+            const displayValue = offset
+                ? String(Number(rawValue) + offset)
+                : rawValue
+            span.textContent = `${label} ${prefix}${displayValue}`
             this.applyPreviewHighlight(span, select.value)
         }
 
@@ -1264,8 +1279,12 @@ class CreatureBuilderFormUI {
             const rawValue = valueTable[level][optionValue]
             const numValue = Number.parseInt(rawValue, 10)
             if (!Number.isNaN(numValue) && String(numValue) === rawValue) {
-                badge.textContent =
-                    numValue >= 0 ? `+${numValue}` : `${numValue}`
+                if (statKey === 'PF2EMONSTERMAKER.spellcasting') {
+                    badge.textContent = String(numValue + 8)
+                } else {
+                    badge.textContent =
+                        numValue >= 0 ? `+${numValue}` : `${numValue}`
+                }
             } else {
                 badge.textContent = rawValue
             }
@@ -1294,7 +1313,7 @@ class CreatureBuilderFormUI {
         const appWindow = document.getElementById('creatureBuilderForm')
         if (!appWindow) return
 
-        appWindow.appendChild(previewBar)
+        document.body.appendChild(previewBar)
 
         const positionSidebar = () => {
             const rect = appWindow.getBoundingClientRect()

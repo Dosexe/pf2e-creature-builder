@@ -798,7 +798,7 @@ describe('CreatureBuilderForm', () => {
     it('clears form UI reference on close', async () => {
         const form = new CreatureBuilderForm(buildActor())
         // biome-ignore lint/complexity/useLiteralKeys: private property
-        form['formUI'] = {} as CreatureBuilderFormUI
+        form['formUI'] = { destroy: vi.fn() } as unknown as CreatureBuilderFormUI
         await form.close()
         // biome-ignore lint/complexity/useLiteralKeys: private property
         expect(form['formUI']).toBeNull()

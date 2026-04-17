@@ -249,6 +249,18 @@ summary.collapsibleHeader {
     max-width: calc(33.333% - 10px);
 }
 
+.creatureBuilderFormModern details[data-section-name="Defence + Perception"] .stat-cell {
+    flex: 1 1 calc(33.333% - 10px);
+    min-width: calc(33.333% - 10px);
+    max-width: calc(33.333% - 10px);
+}
+
+.creatureBuilderFormModern details[data-section-name="PF2EMONSTERMAKER.skills"] .stat-cell {
+    flex: 1 1 calc(33.333% - 10px);
+    min-width: calc(33.333% - 10px);
+    max-width: calc(33.333% - 10px);
+}
+
 /* ============================================================================
    Modern Form — Stat Option Color Highlights
    ============================================================================ */
