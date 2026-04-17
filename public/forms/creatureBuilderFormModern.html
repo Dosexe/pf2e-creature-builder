@@ -1,143 +1,149 @@
 <form>
-    <h1>{{localize "PF2EMONSTERMAKER.title"}}</h1>
+    <div class="form-layout">
+        <div class="form-main" id="formMainContent">
+            <h1>{{localize "PF2EMONSTERMAKER.title"}}</h1>
 
-    <div class="stat-preview-bar" id="statPreviewBar">
-        <span class="preview-stat" data-stat="PF2EMONSTERMAKER.hp">HP --</span>
-        <span class="preview-stat" data-stat="PF2EMONSTERMAKER.ac">AC --</span>
-        <span class="preview-stat" data-stat="PF2EMONSTERMAKER.fort">Fort --</span>
-        <span class="preview-stat" data-stat="PF2EMONSTERMAKER.ref">Ref --</span>
-        <span class="preview-stat" data-stat="PF2EMONSTERMAKER.wil">Will --</span>
-        <span class="preview-stat" data-stat="PF2EMONSTERMAKER.per">Per --</span>
-        <span class="preview-stat" data-stat="PF2EMONSTERMAKER.strikeBonus">Atk --</span>
-        <span class="preview-stat" data-stat="PF2EMONSTERMAKER.strikeDamage">Dmg --</span>
-        <span class="preview-stat" data-stat="PF2EMONSTERMAKER.spellcasting">Spell DC --</span>
-    </div>
-
-    <h2>{{localize "PF2EMONSTERMAKER.nameLevelRoadmap"}}</h2>
-    <div class="form-group setting">
-        <label for="creatureBuilderName" class="creatureBuilderFormText">
-            {{localize "PF2EMONSTERMAKER.name"}}
-        </label>
-        <input id="creatureBuilderName" name="PF2EMONSTERMAKER.name" placeholder="{{name}}" class="creatureBuilderFormText">
-    </div>
-    <div class="stat-row">
-        <div class="stat-cell stat-cell--wide">
-            <label for="creatureBuilderLevel">{{localize "PF2EMONSTERMAKER.level"}}</label>
-            <select name="PF2EMONSTERMAKER.level" id="creatureBuilderLevel" class="stat-select">
-                {{#each Levels}}
-                <option value="{{this}}">{{this}}</option>
-                {{/each}}
-            </select>
-        </div>
-        <div class="stat-cell stat-cell--wide">
-            <label for="creatureBuilderRoadmap">{{localize "PF2EMONSTERMAKER.roadmap"}}</label>
-            <select id="creatureBuilderRoadmap" class="stat-select" onchange="setRoadmap(this)">
-                <option value="Default" selected>Default</option>
-                {{#each RoadMaps}}
-                <option value="{{@key}}">{{roadmapLabel @key}}</option>
-                {{/each}}
-            </select>
-        </div>
-    </div>
-
-    <div class="form-group setting">
-        <label for="creatureBuilderTraits" class="creatureBuilderFormText">
-            {{localize "PF2EMONSTERMAKER.traits"}}
-        </label>
-        <div class="traitsContainer">
-            <tags class="tagify tags paizo-style" tabindex="-1" id="traitsTagify">
-                <span contenteditable="true" tabindex="0" data-placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}" class="tagify__input" role="textbox" aria-autocomplete="both" aria-multiline="false" id="creatureBuilderTraitsInput"></span>
-            </tags>
-            <div id="creatureBuilderTraitsDropdown" class="creatureBuilderTraitsDropdown tagify__dropdown" role="listbox" aria-labelledby="dropdown" placement="bottom" position="all">
-                <div data-selector="tagify-suggestions-wrapper" class="tagify__dropdown__wrapper">
-                    <header data-selector="tagify-suggestions-header" class="tagify__dropdown__header"></header>
+            <h2>{{localize "PF2EMONSTERMAKER.nameLevelRoadmap"}}</h2>
+            <div class="form-group setting">
+                <label for="creatureBuilderName" class="creatureBuilderFormText">
+                    {{localize "PF2EMONSTERMAKER.name"}}
+                </label>
+                <input id="creatureBuilderName" name="PF2EMONSTERMAKER.name" placeholder="{{name}}" class="creatureBuilderFormText">
+            </div>
+            <div class="stat-row">
+                <div class="stat-cell stat-cell--wide">
+                    <label for="creatureBuilderLevel">{{localize "PF2EMONSTERMAKER.level"}}</label>
+                    <select name="PF2EMONSTERMAKER.level" id="creatureBuilderLevel" class="stat-select">
+                        {{#each Levels}}
+                        <option value="{{this}}">{{this}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                <div class="stat-cell stat-cell--wide">
+                    <label for="creatureBuilderRoadmap">{{localize "PF2EMONSTERMAKER.roadmap"}}</label>
+                    <select id="creatureBuilderRoadmap" class="stat-select" onchange="setRoadmap(this)">
+                        <option value="Default" selected>Default</option>
+                        {{#each RoadMaps}}
+                        <option value="{{@key}}">{{roadmapLabel @key}}</option>
+                        {{/each}}
+                    </select>
                 </div>
             </div>
-        </div>
-        <input type="hidden" name="PF2EMONSTERMAKER.traits" id="creatureBuilderTraitsHidden" value="">
-    </div>
 
-    {{#each CreatureStatistics}}
-    <details class="collapsibleSection" data-section-name="{{this.name}}" open>
-        <summary class="collapsibleHeader">
-            <h3>{{localize this.name}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
-        </summary>
-        <div class="collapsibleContent">
-            <div class="stat-row">
-                {{#each this.statisticEntries}}
-                <div class="stat-cell">
-                    <label for="{{concat 'creatureBuilder' this.name}}" title="{{localize this.name}}">
-                        {{#if (eq ../this.name "PF2EMONSTERMAKER.abilityScores")}}
-                        {{localize (concat this.name 'Short')}}
-                        {{else}}
-                        {{localize this.name}}
-                        {{/if}}
-                    </label>
-                    <div class="stat-cell-input">
-                        <select id="{{concat 'creatureBuilder' this.name}}" name="{{this.name}}" class="stat-select">
-                            {{#if this.availableOptions}}
-                            {{#each this.availableOptions}}
-                            <option value="{{this}}">{{localize this}}</option>
-                            {{/each}}
-                            {{/if}}
-                            {{#unless this.availableOptions}}
-                            {{#each ../this.availableOptions}}
-                            <option value="{{this}}">{{localize this}}</option>
-                            {{/each}}
-                            {{/unless}}
-                        </select>
-                        <span class="stat-value-badge" data-stat-badge="{{this.name}}">--</span>
+            <div class="form-group setting">
+                <label for="creatureBuilderTraits" class="creatureBuilderFormText">
+                    {{localize "PF2EMONSTERMAKER.traits"}}
+                </label>
+                <div class="traitsContainer">
+                    <tags class="tagify tags paizo-style" tabindex="-1" id="traitsTagify">
+                        <span contenteditable="true" tabindex="0" data-placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}" class="tagify__input" role="textbox" aria-autocomplete="both" aria-multiline="false" id="creatureBuilderTraitsInput"></span>
+                    </tags>
+                    <div id="creatureBuilderTraitsDropdown" class="creatureBuilderTraitsDropdown tagify__dropdown" role="listbox" aria-labelledby="dropdown" placement="bottom" position="all">
+                        <div data-selector="tagify-suggestions-wrapper" class="tagify__dropdown__wrapper">
+                            <header data-selector="tagify-suggestions-header" class="tagify__dropdown__header"></header>
+                        </div>
                     </div>
                 </div>
-                {{/each}}
+                <input type="hidden" name="PF2EMONSTERMAKER.traits" id="creatureBuilderTraitsHidden" value="">
             </div>
-            {{#if (eq this.name "PF2EMONSTERMAKER.spellcasting")}}
-            <div class="form-group setting" id="spellListFormGroup" style="display: none;">
-                <label for="creatureBuilderPF2EMONSTERMAKER.spellList" class="creatureBuilderFormText">
-                    {{localize "PF2EMONSTERMAKER.spellList"}}
-                </label>
-                <select id="creatureBuilderPF2EMONSTERMAKER.spellList" name="PF2EMONSTERMAKER.spellList" class="stat-select">
-                    <option value="none" selected>{{localize "PF2EMONSTERMAKER.none"}}</option>
-                    {{#each @root.SpellLists}}
-                    <option value="{{@key}}">{{this.name}}</option>
-                    {{/each}}
-                </select>
-            </div>
-            {{/if}}
-        </div>
-    </details>
-    {{/each}}
 
-    <details class="collapsibleSection" id="sectionLore" open>
-        <summary class="collapsibleHeader">
-            <h3>{{localize "PF2EMONSTERMAKER.loreSkills"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
-        </summary>
-        <div class="collapsibleContent">
-            <div id="loreSkillsContainer">
-                <button type="button" id="addLoreButton" class="creatureBuilderAddButton" title="{{localize "PF2EMONSTERMAKER.addLore"}}">
-                    {{localize "PF2EMONSTERMAKER.addLore"}}
-                </button>
+            {{#each CreatureStatistics}}
+            <details class="collapsibleSection" data-section-name="{{this.name}}" open>
+                <summary class="collapsibleHeader">
+                    <h3>{{localize this.name}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
+                </summary>
+                <div class="collapsibleContent">
+                    <div class="stat-row">
+                        {{#each this.statisticEntries}}
+                        <div class="stat-cell">
+                            <label for="{{concat 'creatureBuilder' this.name}}" title="{{localize this.name}}">
+                                {{#if (eq ../this.name "PF2EMONSTERMAKER.abilityScores")}}
+                                {{localize (concat this.name 'Short')}}
+                                {{else}}
+                                {{localize this.name}}
+                                {{/if}}
+                            </label>
+                            <div class="stat-cell-input">
+                                <select id="{{concat 'creatureBuilder' this.name}}" name="{{this.name}}" class="stat-select">
+                                    {{#if this.availableOptions}}
+                                    {{#each this.availableOptions}}
+                                    <option value="{{this}}">{{localize this}}</option>
+                                    {{/each}}
+                                    {{/if}}
+                                    {{#unless this.availableOptions}}
+                                    {{#each ../this.availableOptions}}
+                                    <option value="{{this}}">{{localize this}}</option>
+                                    {{/each}}
+                                    {{/unless}}
+                                </select>
+                                <span class="stat-value-badge" data-stat-badge="{{this.name}}">--</span>
+                            </div>
+                        </div>
+                        {{/each}}
+                    </div>
+                    {{#if (eq this.name "PF2EMONSTERMAKER.spellcasting")}}
+                    <div class="form-group setting" id="spellListFormGroup" style="display: none;">
+                        <label for="creatureBuilderPF2EMONSTERMAKER.spellList" class="creatureBuilderFormText">
+                            {{localize "PF2EMONSTERMAKER.spellList"}}
+                        </label>
+                        <select id="creatureBuilderPF2EMONSTERMAKER.spellList" name="PF2EMONSTERMAKER.spellList" class="stat-select">
+                            <option value="none" selected>{{localize "PF2EMONSTERMAKER.none"}}</option>
+                            {{#each @root.SpellLists}}
+                            <option value="{{@key}}">{{this.name}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
+                    {{/if}}
+                </div>
+            </details>
+            {{/each}}
+
+            <details class="collapsibleSection" id="sectionLore" open>
+                <summary class="collapsibleHeader">
+                    <h3>{{localize "PF2EMONSTERMAKER.loreSkills"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
+                </summary>
+                <div class="collapsibleContent">
+                    <div id="loreSkillsContainer">
+                        <button type="button" id="addLoreButton" class="creatureBuilderAddButton" title="{{localize "PF2EMONSTERMAKER.addLore"}}">
+                            {{localize "PF2EMONSTERMAKER.addLore"}}
+                        </button>
+                    </div>
+                </div>
+            </details>
+
+            <details class="collapsibleSection" id="sectionItems" open>
+                <summary class="collapsibleHeader">
+                    <h3>{{localize "PF2EMONSTERMAKER.itemsActions"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
+                </summary>
+                <div class="collapsibleContent">
+                    <div class="creature-builder-drop-zone" id="creatureBuilderDropZone">
+                        <p class="drop-zone-hint" id="dropZoneHint">
+                            <i class="fas fa-plus-circle"></i> {{localize "PF2EMONSTERMAKER.dropHint"}}
+                        </p>
+                        <div class="dropped-items-list" id="droppedItemsList"></div>
+                    </div>
+                </div>
+            </details>
+
+            <div class="formDivider"></div>
+            <div class="buttons">
+                <button type="button" id="creatureBuilderResetButton" class="creatureBuilderResetButton">{{localize "PF2EMONSTERMAKER.resetDefaults"}}</button>
+                <button type="submit" id="creatureBuilderFormSubmit">Submit</button>
             </div>
         </div>
-    </details>
 
-    <details class="collapsibleSection" id="sectionItems" open>
-        <summary class="collapsibleHeader">
-            <h3>{{localize "PF2EMONSTERMAKER.itemsActions"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
-        </summary>
-        <div class="collapsibleContent">
-            <div class="creature-builder-drop-zone" id="creatureBuilderDropZone">
-                <p class="drop-zone-hint" id="dropZoneHint">
-                    <i class="fas fa-plus-circle"></i> {{localize "PF2EMONSTERMAKER.dropHint"}}
-                </p>
-                <div class="dropped-items-list" id="droppedItemsList"></div>
-            </div>
+        <div class="form-preview-divider"></div>
+
+        <div class="stat-preview-bar" id="statPreviewBar">
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.hp">HP --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.ac">AC --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.fort">Fort --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.ref">Ref --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.wil">Will --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.per">Per --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.strikeBonus">Atk --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.strikeDamage">Dmg --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.spellcasting">Spell DC --</span>
         </div>
-    </details>
-
-    <div class="formDivider"></div>
-    <div class="buttons">
-        <button type="button" id="creatureBuilderResetButton" class="creatureBuilderResetButton">{{localize "PF2EMONSTERMAKER.resetDefaults"}}</button>
-        <button type="submit" id="creatureBuilderFormSubmit">Submit</button>
     </div>
 </form>

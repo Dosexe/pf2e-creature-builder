@@ -40,7 +40,6 @@ interface CreatureBuilderFormConfig {
     actorLevel: string
     isModern?: boolean
     droppedItems?: Record<string, unknown>[]
-    appElement?: HTMLElement
 }
 
 /**
@@ -59,7 +58,6 @@ class CreatureBuilderFormUI {
     private readonly actorLevel: string
     private readonly isModern: boolean
     private readonly droppedItems: Record<string, unknown>[]
-    private readonly appElement: HTMLElement | null
     private loreCounter: number = 0
     private traits: string[] = []
     private selectedDropdownIndex: number = -1
@@ -275,17 +273,6 @@ class CreatureBuilderFormUI {
         this.actorLevel = String(config.actorLevel)
         this.isModern = config.isModern === true
         this.droppedItems = config.droppedItems ?? []
-        this.appElement = config.appElement ?? null
-    }
-
-    /**
-     * Remove the preview sidebar from document.body if it was moved there
-     */
-    public destroy(): void {
-        const previewBar = document.getElementById('statPreviewBar')
-        if (previewBar?.parentElement === document.body) {
-            previewBar.remove()
-        }
     }
 
     /**
@@ -1199,7 +1186,12 @@ class CreatureBuilderFormUI {
         { key: 'PF2EMONSTERMAKER.per', label: 'Per', prefix: '+' },
         { key: 'PF2EMONSTERMAKER.strikeBonus', label: 'Atk', prefix: '+' },
         { key: 'PF2EMONSTERMAKER.strikeDamage', label: 'Dmg', prefix: '' },
-        { key: 'PF2EMONSTERMAKER.spellcasting', label: 'Spell DC', prefix: '', offset: 8 },
+        {
+            key: 'PF2EMONSTERMAKER.spellcasting',
+            label: 'Spell DC',
+            prefix: '',
+            offset: 8,
+        },
     ]
 
     public updateStatPreview(): void {
@@ -1281,9 +1273,15 @@ class CreatureBuilderFormUI {
 
             const rawValue = valueTable[level][optionValue]
             const numValue = Number.parseInt(rawValue, 10)
+            const noSignPrefix = new Set([
+                'PF2EMONSTERMAKER.hp',
+                'PF2EMONSTERMAKER.ac',
+            ])
             if (!Number.isNaN(numValue) && String(numValue) === rawValue) {
                 if (statKey === 'PF2EMONSTERMAKER.spellcasting') {
                     badge.textContent = String(numValue + 8)
+                } else if (noSignPrefix.has(statKey)) {
+                    badge.textContent = String(numValue)
                 } else {
                     badge.textContent =
                         numValue >= 0 ? `+${numValue}` : `${numValue}`
@@ -1310,29 +1308,7 @@ class CreatureBuilderFormUI {
     }
 
     private setupPreviewSidebar(): void {
-        const previewBar = document.getElementById('statPreviewBar')
-        if (!previewBar) return
-
-        const appWindow = this.appElement
-        if (!appWindow) return
-
-        document.body.appendChild(previewBar)
-
-        const positionSidebar = () => {
-            const rect = appWindow.getBoundingClientRect()
-            previewBar.style.top = `${rect.top}px`
-            previewBar.style.left = `${rect.right + 4}px`
-        }
-
-        positionSidebar()
-
-        const observer = new MutationObserver(positionSidebar)
-        observer.observe(appWindow, {
-            attributes: true,
-            attributeFilter: ['style'],
-        })
-
-        window.addEventListener('resize', positionSidebar)
+        // Preview bar is positioned via CSS inside .form-layout; no JS needed.
     }
 
     private setupStatPreviewListeners(): void {

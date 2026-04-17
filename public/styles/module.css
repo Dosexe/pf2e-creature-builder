@@ -294,23 +294,50 @@ summary.collapsibleHeader {
 }
 
 /* ============================================================================
-   Modern Form — Live Stat Preview Sidebar
+   Modern Form — Two-Column Layout with Preview Sidebar
    ============================================================================ */
+
+.creatureBuilderFormModern .window-content {
+    overflow: hidden;
+}
+
+.creatureBuilderFormModern .window-content > form {
+    height: 100%;
+}
+
+.creatureBuilderFormModern .form-layout {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+}
+
+.creatureBuilderFormModern .form-main {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.creatureBuilderFormModern .form-preview-divider {
+    width: 1px;
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.15);
+}
 
 .creatureBuilderFormModern .stat-preview-bar {
     display: flex;
     flex-direction: column;
     gap: 2px;
     padding: 8px 6px;
-    background: rgba(0, 0, 0, 0.06);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
     font-size: 11px;
     line-height: 1.4;
-    position: fixed;
-    z-index: 100;
     width: 100px;
+    flex-shrink: 0;
     box-sizing: border-box;
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
 }
 
 .creatureBuilderFormModern .preview-stat {

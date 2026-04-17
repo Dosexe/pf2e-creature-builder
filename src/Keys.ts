@@ -531,9 +531,6 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
                 availableOptions: [Options.low, Options.moderate, Options.high],
             },
             {
-                name: Statistics.per,
-            },
-            {
                 name: Statistics.ac,
                 availableOptions: [
                     Options.low,
@@ -541,6 +538,9 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
                     Options.high,
                     Options.extreme,
                 ],
+            },
+            {
+                name: Statistics.per,
             },
             {
                 name: Statistics.fort,
