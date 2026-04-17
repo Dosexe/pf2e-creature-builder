@@ -1176,20 +1176,62 @@ class CreatureBuilderFormUI {
         key: string
         label: string
         prefix: string
+        icon: string
         offset?: number
     }[] = [
-        { key: 'PF2EMONSTERMAKER.hp', label: 'HP', prefix: '' },
-        { key: 'PF2EMONSTERMAKER.ac', label: 'AC', prefix: '' },
-        { key: 'PF2EMONSTERMAKER.fort', label: 'Fort', prefix: '+' },
-        { key: 'PF2EMONSTERMAKER.ref', label: 'Ref', prefix: '+' },
-        { key: 'PF2EMONSTERMAKER.wil', label: 'Will', prefix: '+' },
-        { key: 'PF2EMONSTERMAKER.per', label: 'Per', prefix: '+' },
-        { key: 'PF2EMONSTERMAKER.strikeBonus', label: 'Atk', prefix: '+' },
-        { key: 'PF2EMONSTERMAKER.strikeDamage', label: 'Dmg', prefix: '' },
+        {
+            key: 'PF2EMONSTERMAKER.hp',
+            label: 'HP',
+            prefix: '',
+            icon: 'fa-heart',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.ac',
+            label: 'AC',
+            prefix: '',
+            icon: 'fa-shield-alt',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.fort',
+            label: 'Fort',
+            prefix: '+',
+            icon: 'fa-chess-rook',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.ref',
+            label: 'Ref',
+            prefix: '+',
+            icon: 'fa-running',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.wil',
+            label: 'Will',
+            prefix: '+',
+            icon: 'fa-brain',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.per',
+            label: 'Per',
+            prefix: '+',
+            icon: 'fa-eye',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.strikeBonus',
+            label: 'Atk',
+            prefix: '+',
+            icon: 'fa-fist-raised',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.strikeDamage',
+            label: 'Dmg',
+            prefix: '',
+            icon: 'fa-burst',
+        },
         {
             key: 'PF2EMONSTERMAKER.spellcasting',
-            label: 'Spell DC',
+            label: 'DC',
             prefix: '',
+            icon: 'fa-hat-wizard',
             offset: 8,
         },
     ]
@@ -1206,6 +1248,7 @@ class CreatureBuilderFormUI {
             key,
             label,
             prefix,
+            icon,
             offset,
         } of CreatureBuilderFormUI.PREVIEW_STATS) {
             const span = document.querySelector(
@@ -1213,19 +1256,21 @@ class CreatureBuilderFormUI {
             ) as HTMLElement
             if (!span) continue
 
+            const iconHtml = `<i class="fas ${icon}"></i> `
+
             const select = document.getElementById(
                 `creatureBuilder${key}`,
             ) as HTMLSelectElement
 
             if (!select || select.value === 'PF2EMONSTERMAKER.none') {
-                span.textContent = `${label} --`
+                span.innerHTML = `${iconHtml}${label} --`
                 this.applyPreviewHighlight(span, null)
                 continue
             }
 
             const valueTable = statisticValues[key]
             if (!valueTable?.[level]?.[select.value]) {
-                span.textContent = `${label} --`
+                span.innerHTML = `${iconHtml}${label} --`
                 this.applyPreviewHighlight(span, null)
                 continue
             }
@@ -1234,7 +1279,7 @@ class CreatureBuilderFormUI {
             const displayValue = offset
                 ? String(Number(rawValue) + offset)
                 : rawValue
-            span.textContent = `${label} ${prefix}${displayValue}`
+            span.innerHTML = `${iconHtml}${label} ${prefix}${displayValue}`
             this.applyPreviewHighlight(span, select.value)
         }
 
