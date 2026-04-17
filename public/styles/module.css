@@ -334,7 +334,7 @@ summary.collapsibleHeader {
     padding: 8px 6px;
     font-size: 11px;
     line-height: 1.4;
-    width: 120px;
+    width: 135px;
     flex-shrink: 0;
     box-sizing: border-box;
     overflow-y: auto;
@@ -359,9 +359,8 @@ summary.collapsibleHeader {
     margin-bottom: 2px;
     font-size: 12px;
     font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
