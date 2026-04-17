@@ -102,7 +102,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                 id: 'creatureBuilderForm',
                 title: 'Creature Builder Form',
                 height: isClassic ? 833 : 620,
-                width: 400,
+                width: isClassic ? 400 : 510,
                 dragDrop: isClassic
                     ? []
                     : [{ dropSelector: '.creature-builder-drop-zone' }],
@@ -190,8 +190,6 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
               )
 
         const isModern = !CreatureBuilderForm.useClassicUI
-        const appElement =
-            (html[0]?.closest('.app') as HTMLElement) ?? undefined
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
             creatureRoadmaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
@@ -202,7 +200,6 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
             actorLevel,
             isModern,
             droppedItems: this.droppedItems,
-            appElement,
         }
 
         this.formUI = new CreatureBuilderFormUI(config)
@@ -213,7 +210,6 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
      * Clean up when the form is closed
      */
     async close(options?: foundry.appv1.api.FormApplication.CloseOptions) {
-        this.formUI?.destroy()
         this.formUI = null
         this.droppedItems = []
         return super.close(options)
