@@ -1334,12 +1334,14 @@ class CreatureBuilderFormUI {
 
             if (!select || select.value === 'PF2EMONSTERMAKER.none') {
                 span.textContent = `${label} --`
+                this.applyPreviewHighlight(span, null)
                 continue
             }
 
             const valueTable = statisticValues[key]
             if (!valueTable?.[level]?.[select.value]) {
                 span.textContent = `${label} --`
+                this.applyPreviewHighlight(span, null)
                 continue
             }
 
@@ -1347,6 +1349,7 @@ class CreatureBuilderFormUI {
             const num = Number(rawValue)
             const display = num >= 0 ? `+${num}` : `${num}`
             span.textContent = `${label} ${display}`
+            this.applyPreviewHighlight(span, select.value)
         }
     }
 
