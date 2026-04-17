@@ -317,7 +317,7 @@ summary.collapsibleHeader {
     flex: 1;
     min-width: 0;
     overflow-y: auto;
-    padding-right: 8px;
+    padding-right: 15px;
 }
 
 .creatureBuilderFormModern .form-preview-divider {
@@ -333,7 +333,7 @@ summary.collapsibleHeader {
     padding: 8px 6px;
     font-size: 11px;
     line-height: 1.4;
-    width: 100px;
+    width: 120px;
     flex-shrink: 0;
     box-sizing: border-box;
     overflow-y: auto;
