@@ -210,6 +210,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
      * Clean up when the form is closed
      */
     async close(options?: foundry.appv1.api.FormApplication.CloseOptions) {
+        this.formUI?.destroy()
         this.formUI = null
         this.droppedItems = []
         return super.close(options)
