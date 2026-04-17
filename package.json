@@ -30,6 +30,6 @@
     "zod": "^4.3.6"
   },
   "dependencies": {
-    "@yaireo/tagify": "^4.36.0"
+    "@yaireo/tagify": "^4.37.0"
   }
 }
