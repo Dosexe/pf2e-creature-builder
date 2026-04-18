@@ -37,20 +37,20 @@ import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 type DetectedStatValue = Options | MagicalTradition | CasterType
 
 const ALLOWED_DROP_TYPES = new Set([
-    'spell',
-    'equipment',
-    'weapon',
-    'armor',
-    'shield',
-    'feat',
     'action',
-    'consumable',
-    'lore',
-    'condition',
-    'melee',
-    'treasure',
+    'ammo',
+    'armor',
     'backpack',
-    'ammunition',
+    'condition',
+    'consumable',
+    'equipment',
+    'feat',
+    'lore',
+    'melee',
+    'shield',
+    'spell',
+    'treasure',
+    'weapon',
 ])
 
 export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
