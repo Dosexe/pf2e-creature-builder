@@ -291,6 +291,7 @@ class CreatureBuilderFormUI {
             this.setupStatHighlightListeners()
             this.setupStatPreviewListeners()
             this.setupPreviewSidebar()
+            this.setupBadgeToggle()
         }
 
         setTimeout(() => {
@@ -1284,9 +1285,17 @@ class CreatureBuilderFormUI {
             ) as HTMLSelectElement
 
             if (!select || select.value === 'PF2EMONSTERMAKER.none') {
-                span.innerHTML = `${iconHtml}${label} --`
+                if (key === 'PF2EMONSTERMAKER.spellcasting') {
+                    span.style.display = 'none'
+                } else {
+                    span.innerHTML = `${iconHtml}${label} --`
+                }
                 this.applyPreviewHighlight(span, null)
                 continue
+            }
+
+            if (key === 'PF2EMONSTERMAKER.spellcasting') {
+                span.style.display = ''
             }
 
             const valueTable = statisticValues[key]
@@ -1421,6 +1430,20 @@ class CreatureBuilderFormUI {
 
     private setupPreviewSidebar(): void {
         // Preview bar is positioned via CSS inside .form-layout; no JS needed.
+    }
+
+    private setupBadgeToggle(): void {
+        const toggle = document.getElementById(
+            'toggleBadges',
+        ) as HTMLInputElement
+        if (!toggle) return
+
+        const form = toggle.closest('.creatureBuilderFormModern')
+        if (!form) return
+
+        toggle.addEventListener('change', () => {
+            form.classList.toggle('hide-badges', !toggle.checked)
+        })
     }
 
     private setupStatPreviewListeners(): void {

@@ -41,12 +41,16 @@ const ALLOWED_DROP_TYPES = new Set([
     'equipment',
     'weapon',
     'armor',
+    'shield',
     'feat',
     'action',
     'consumable',
     'lore',
     'condition',
     'melee',
+    'treasure',
+    'backpack',
+    'ammunition',
 ])
 
 export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
