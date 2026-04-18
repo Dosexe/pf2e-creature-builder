@@ -1,4 +1,4 @@
-![Build](https://img.shields.io/github/actions/workflow/status/Dosexe/pf2e-creature-builder/build.yml) ![Release](https://img.shields.io/github/v/release/Dosexe/pf2e-creature-builder) ![FoundryVtt](https://img.shields.io/badge/foundry_vtt_module-orange?logo=foundryvirtualtabletop&logoColor=black)
+![Build](https://img.shields.io/github/actions/workflow/status/Dosexe/pf2e-creature-builder/build.yml) ![Release](https://img.shields.io/github/v/release/Dosexe/pf2e-creature-builder) ![FoundryVtt](https://img.shields.io/badge/foundry_vtt_module-orange?logo=foundryvirtualtabletop&logoColor=black) ![FoundryVersion](https://img.shields.io/badge/V14-green?logo=foundryvirtualtabletop&logoColor=black)
 
 # fvtt-module-pf2e-CreatureBuilderForm
 
