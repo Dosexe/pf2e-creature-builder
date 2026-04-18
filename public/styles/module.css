@@ -220,9 +220,9 @@ summary.collapsibleHeader {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 28px;
+    min-width: 24px;
     height: 22px;
-    padding: 0 4px;
+    padding: 0 3px;
     font-size: 11px;
     font-weight: 700;
     border-radius: 4px;
@@ -236,6 +236,25 @@ summary.collapsibleHeader {
 .creatureBuilderFormModern .stat-value-badge[data-stat-badge="PF2EMONSTERMAKER.spellcastingTradition"],
 .creatureBuilderFormModern .stat-value-badge[data-stat-badge="PF2EMONSTERMAKER.spellcastingType"] {
     display: none;
+}
+
+.creatureBuilderFormModern .toggle-badges-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 4px;
+}
+
+.creatureBuilderFormModern .toggle-badges-label input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.creatureBuilderFormModern.hide-badges .stat-value-badge {
+    display: none !important;
 }
 
 .creatureBuilderFormModern .collapsibleContent {
@@ -317,6 +336,7 @@ summary.collapsibleHeader {
     flex: 1;
     min-width: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     padding-left: 2px;
     padding-right: 15px;
 }
@@ -366,8 +386,8 @@ summary.collapsibleHeader {
 
 .creatureBuilderFormModern .preview-ability-scores {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1px 4px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px 3px;
     padding: 3px 6px 4px;
     margin-bottom: 2px;
     font-size: 10px;
@@ -376,9 +396,12 @@ summary.collapsibleHeader {
 }
 
 .creatureBuilderFormModern .preview-ability-scores span {
-    white-space: nowrap;
     border-radius: 2px;
     padding: 1px 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
     transition: background-color 0.2s ease;
 }
 
