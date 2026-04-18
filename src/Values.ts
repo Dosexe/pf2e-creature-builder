@@ -7,7 +7,7 @@ export function detectStatLevel(
     actualValue: number,
 ): Options {
     const valueTable = statisticValues[statisticType]
-    if (!valueTable || !valueTable[creatureLevel]) {
+    if (!valueTable?.[creatureLevel]) {
         return Options.moderate
     }
 
