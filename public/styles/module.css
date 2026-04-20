@@ -379,7 +379,6 @@ summary.collapsibleHeader {
     margin-bottom: 2px;
     font-size: 12px;
     font-weight: 700;
-    word-wrap: break-word;
     overflow-wrap: break-word;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }

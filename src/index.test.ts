@@ -125,6 +125,9 @@ const setupModule = async () => {
             register: vi.fn(),
             get: vi.fn().mockReturnValue(false),
         },
+        i18n: {
+            localize: vi.fn((key: string) => key),
+        },
         user: {},
     }
     ;(globalThis as any).Actor = vi.fn(function (this: any, data: any) {

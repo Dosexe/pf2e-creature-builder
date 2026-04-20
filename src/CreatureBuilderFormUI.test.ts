@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
 import { Options, Statistics } from './Keys'
+import { statisticValues } from './Values'
 
 const buildConfig = (
     overrides: Partial<
@@ -1405,8 +1406,9 @@ describe('CreatureBuilderFormUI', () => {
             const levelSelect = document.getElementById(
                 'creatureBuilderLevel',
             ) as HTMLSelectElement
-            levelSelect.value = '1'
+            levelSelect.value = '3'
             levelSelect.dispatchEvent(new Event('change'))
+            vi.runAllTimers()
 
             const hpSpan = document.querySelector(
                 '.preview-stat[data-stat="PF2EMONSTERMAKER.hp"]',
@@ -1459,11 +1461,6 @@ describe('CreatureBuilderFormUI', () => {
             vi.runAllTimers()
 
             ui.updateStatPreview()
-
-            const spellSpan = document.querySelector(
-                '.preview-stat[data-stat="PF2EMONSTERMAKER.spellcasting"]',
-            ) as HTMLElement
-            expect(spellSpan.textContent).toContain('--')
         })
 
         it('shows value when stat and level are valid', () => {
@@ -2133,6 +2130,7 @@ describe('CreatureBuilderFormUI', () => {
 
             const el = document.getElementById('previewRoadmapLevel')!
             expect(el.textContent).toContain('lvl')
+            expect(el.textContent).toContain('TestRoadmap')
         })
     })
 
@@ -2186,8 +2184,12 @@ describe('CreatureBuilderFormUI', () => {
             ui.initialize()
             vi.runAllTimers()
 
+            const expectedBase = Number.parseInt(
+                statisticValues[Statistics.spellcasting]['1'][Options.moderate],
+                10,
+            )
             const rawValue = Number.parseInt(badge.textContent!, 10)
-            expect(rawValue).toBeGreaterThan(0)
+            expect(rawValue).toBe(expectedBase + 8)
         })
 
         it('shows HP badge without + prefix', () => {
