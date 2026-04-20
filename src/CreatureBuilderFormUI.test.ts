@@ -1459,6 +1459,11 @@ describe('CreatureBuilderFormUI', () => {
             vi.runAllTimers()
 
             ui.updateStatPreview()
+
+            const spellSpan = document.querySelector(
+                '.preview-stat[data-stat="PF2EMONSTERMAKER.spellcasting"]',
+            ) as HTMLElement
+            expect(spellSpan.textContent).toContain('--')
         })
 
         it('shows value when stat and level are valid', () => {
