@@ -169,7 +169,13 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                 }
                 return true
             })
-            if (isDuplicate) return
+            if (isDuplicate) {
+                ui.notifications?.warn?.(
+                    game.i18n?.localize(`${KeyPrefix}.duplicateItemType`) ??
+                        'This item has already been added',
+                )
+                return
+            }
         }
 
         itemData._sourceUuid = data.uuid
