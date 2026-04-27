@@ -1175,62 +1175,62 @@ class CreatureBuilderFormUI {
 
     private static readonly PREVIEW_STATS: {
         key: string
-        label: string
+        labelKey: string
         prefix: string
         icon: string
         offset?: number
     }[] = [
         {
             key: 'PF2EMONSTERMAKER.hp',
-            label: 'HP',
+            labelKey: 'PF2EMONSTERMAKER.hpShort',
             prefix: '',
             icon: 'fa-heart',
         },
         {
             key: 'PF2EMONSTERMAKER.ac',
-            label: 'AC',
+            labelKey: 'PF2EMONSTERMAKER.acShort',
             prefix: '',
             icon: 'fa-shield-alt',
         },
         {
             key: 'PF2EMONSTERMAKER.per',
-            label: 'Perception',
+            labelKey: 'PF2EMONSTERMAKER.perShort',
             prefix: '+',
             icon: 'fa-eye',
         },
         {
             key: 'PF2EMONSTERMAKER.fort',
-            label: 'Fortitude',
+            labelKey: 'PF2EMONSTERMAKER.fortShort',
             prefix: '+',
             icon: 'fa-chess-rook',
         },
         {
             key: 'PF2EMONSTERMAKER.ref',
-            label: 'Reflex',
+            labelKey: 'PF2EMONSTERMAKER.refShort',
             prefix: '+',
             icon: 'fa-running',
         },
         {
             key: 'PF2EMONSTERMAKER.wil',
-            label: 'Will',
+            labelKey: 'PF2EMONSTERMAKER.wilShort',
             prefix: '+',
             icon: 'fa-brain',
         },
         {
             key: 'PF2EMONSTERMAKER.strikeBonus',
-            label: 'Attack',
+            labelKey: 'PF2EMONSTERMAKER.strikeBonusShort',
             prefix: '+',
             icon: 'fa-fist-raised',
         },
         {
             key: 'PF2EMONSTERMAKER.strikeDamage',
-            label: 'Damage',
+            labelKey: 'PF2EMONSTERMAKER.strikeDamageShort',
             prefix: '',
             icon: 'fa-burst',
         },
         {
             key: 'PF2EMONSTERMAKER.spellcasting',
-            label: 'Spell DC',
+            labelKey: 'PF2EMONSTERMAKER.spellcastingShort',
             prefix: '',
             icon: 'fa-wand-sparkles',
             offset: 8,
@@ -1246,13 +1246,17 @@ class CreatureBuilderFormUI {
         'PF2EMONSTERMAKER.cha',
     ] as const
 
-    private static readonly ABILITY_LABELS: Record<string, string> = {
-        'PF2EMONSTERMAKER.str': 'STR',
-        'PF2EMONSTERMAKER.dex': 'DEX',
-        'PF2EMONSTERMAKER.con': 'CON',
-        'PF2EMONSTERMAKER.int': 'INT',
-        'PF2EMONSTERMAKER.wis': 'WIS',
-        'PF2EMONSTERMAKER.cha': 'CHA',
+    private static readonly ABILITY_LABEL_KEYS: Record<string, string> = {
+        'PF2EMONSTERMAKER.str': 'PF2EMONSTERMAKER.strShort',
+        'PF2EMONSTERMAKER.dex': 'PF2EMONSTERMAKER.dexShort',
+        'PF2EMONSTERMAKER.con': 'PF2EMONSTERMAKER.conShort',
+        'PF2EMONSTERMAKER.int': 'PF2EMONSTERMAKER.intShort',
+        'PF2EMONSTERMAKER.wis': 'PF2EMONSTERMAKER.wisShort',
+        'PF2EMONSTERMAKER.cha': 'PF2EMONSTERMAKER.chaShort',
+    }
+
+    private localize(key: string): string {
+        return (window as any).game?.i18n?.localize?.(key) ?? key
     }
 
     public updateStatPreview(): void {
@@ -1268,7 +1272,7 @@ class CreatureBuilderFormUI {
 
         for (const {
             key,
-            label,
+            labelKey,
             prefix,
             icon,
             offset,
@@ -1278,6 +1282,7 @@ class CreatureBuilderFormUI {
             ) as HTMLElement
             if (!span) continue
 
+            const label = this.localize(labelKey)
             const iconHtml = `<i class="fas ${icon}"></i> `
 
             const select = document.getElementById(
@@ -1336,7 +1341,9 @@ class CreatureBuilderFormUI {
             ) as HTMLElement
             if (!span) continue
 
-            const label = CreatureBuilderFormUI.ABILITY_LABELS[key]
+            const label = this.localize(
+                CreatureBuilderFormUI.ABILITY_LABEL_KEYS[key],
+            )
             const select = document.getElementById(
                 `creatureBuilder${key}`,
             ) as HTMLSelectElement

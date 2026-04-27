@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import enLang from '../public/languages/en.json'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
 import { Options, Statistics } from './Keys'
 import { statisticValues } from './Values'
@@ -108,7 +109,10 @@ const setupDom = () => {
 beforeEach(() => {
     setupDom()
     ;(window as any).game = {
-        i18n: { localize: (key: string) => key },
+        i18n: {
+            localize: (key: string) =>
+                (enLang as Record<string, string>)[key] ?? key,
+        },
     }
     if (!HTMLElement.prototype.scrollIntoView) {
         HTMLElement.prototype.scrollIntoView = () => {}
@@ -1441,7 +1445,7 @@ describe('CreatureBuilderFormUI', () => {
             const fortSpan = document.querySelector(
                 '.preview-stat[data-stat="PF2EMONSTERMAKER.fort"]',
             ) as HTMLElement
-            expect(fortSpan.textContent).toContain('Fort')
+            expect(fortSpan.textContent).toContain('FORT')
             expect(fortSpan.textContent).toContain('--')
         })
 
@@ -2110,7 +2114,7 @@ describe('CreatureBuilderFormUI', () => {
                 '.preview-stat[data-stat="PF2EMONSTERMAKER.spellcasting"]',
             ) as HTMLElement
             expect(spellSpan.style.display).not.toBe('none')
-            expect(spellSpan.textContent).toContain('Spell DC')
+            expect(spellSpan.textContent).toContain('SPELL')
         })
 
         it('updates preview when roadmap select changes', () => {
