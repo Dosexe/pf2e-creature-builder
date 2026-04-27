@@ -27,7 +27,7 @@
                 <div class="stat-cell stat-cell--wide">
                     <label for="creatureBuilderRoadmap">{{localize "PF2EMONSTERMAKER.roadmap"}}</label>
                     <select id="creatureBuilderRoadmap" class="stat-select" onchange="setRoadmap(this)">
-                        <option value="Default" selected>Default</option>
+                        <option value="Default" selected>{{localize "PF2EMONSTERMAKER.defaultRoadmap"}}</option>
                         {{#each RoadMaps}}
                         <option value="{{@key}}">{{roadmapLabel @key}}</option>
                         {{/each}}
