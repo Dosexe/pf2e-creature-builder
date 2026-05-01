@@ -109,10 +109,6 @@ Dropped spells are automatically **linked to the creature's spellcasting entry**
 
 ---
 
-### Classic UI
-
-The classic UI is the original form layout from earlier versions. All features (roadmaps, traits, lore, spellcasting) work the same way — the only difference is the visual layout. The classic UI does not include the live preview sidebar, drag-and-drop zone, color highlights, or bonus badges.
-
 Below are the images of the form:
 
 First part contains all the important values like Hit Points, Level, Name etc. and preview block on the right.
