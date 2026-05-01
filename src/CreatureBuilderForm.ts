@@ -36,9 +36,27 @@ import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
 
 type DetectedStatValue = Options | MagicalTradition | CasterType
 
+const ALLOWED_DROP_TYPES = new Set([
+    'action',
+    'ammo',
+    'armor',
+    'backpack',
+    'condition',
+    'consumable',
+    'equipment',
+    'feat',
+    'lore',
+    'melee',
+    'shield',
+    'spell',
+    'treasure',
+    'weapon',
+])
+
 export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
     data = DefaultCreatureStatistics
     level = DefaultCreatureLevel
+    droppedItems: Record<string, unknown>[] = []
     private readonly _uniqueId: string
     private readonly useDefaultLevel: boolean
     private formUI: CreatureBuilderFormUI | null = null
@@ -58,23 +76,112 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
         this.object = value
     }
 
+    static get useClassicUI(): boolean {
+        try {
+            return (
+                game.settings?.get('pf2e-creature-builder', 'useClassicUI') ===
+                true
+            )
+        } catch {
+            return false
+        }
+    }
+
     static get defaultOptions() {
+        const isClassic = CreatureBuilderForm.useClassicUI
         return foundry.utils.mergeObject(
             foundry.appv1.api.FormApplication.defaultOptions,
             {
-                classes: ['form', 'creatureBuilderForm'],
+                classes: isClassic
+                    ? ['form', 'creatureBuilderForm']
+                    : [
+                          'form',
+                          'creatureBuilderForm',
+                          'creatureBuilderFormModern',
+                      ],
                 popOut: true,
-                template: `modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html`,
+                template: isClassic
+                    ? 'modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html'
+                    : 'modules/pf2e-creature-builder/dist/forms/creatureBuilderFormModern.html',
                 id: 'creatureBuilderForm',
                 title: 'Creature Builder Form',
-                height: 833,
-                width: 400,
+                height: isClassic ? 833 : 620,
+                width: isClassic ? 400 : 530,
+                dragDrop: isClassic
+                    ? []
+                    : [{ dropSelector: '.creature-builder-drop-zone' }],
             },
         )
     }
 
     get id() {
         return this._uniqueId
+    }
+
+    protected _canDragDrop(_selector: string): boolean {
+        return !CreatureBuilderForm.useClassicUI
+    }
+
+    protected async _onDrop(event: DragEvent) {
+        if (CreatureBuilderForm.useClassicUI) return
+
+        let data: { type?: string; uuid?: string }
+        try {
+            data = JSON.parse(event.dataTransfer?.getData('text/plain') ?? '{}')
+        } catch {
+            return
+        }
+
+        if (data.type !== 'Item' || !data.uuid) return
+
+        const item = await (globalThis as any).fromUuid(data.uuid)
+        if (!item) return
+
+        const itemType = item.type as string
+        if (!ALLOWED_DROP_TYPES.has(itemType)) {
+            ui.notifications?.warn?.(
+                game.i18n?.localize(`${KeyPrefix}.invalidItemType`) ??
+                    'This item type cannot be added',
+            )
+            return
+        }
+
+        const itemData = item.toObject ? item.toObject() : { ...item }
+        delete itemData._id
+
+        const uniqueTypes = new Set([
+            'spell',
+            'action',
+            'feat',
+            'condition',
+            'lore',
+        ])
+        if (uniqueTypes.has(itemType)) {
+            const getSpellLevel = (obj: Record<string, unknown>) =>
+                (obj.system as Record<string, unknown> | undefined)?.level as
+                    | Record<string, unknown>
+                    | undefined
+            const spellLevel = getSpellLevel(itemData)?.value
+            const isDuplicate = this.droppedItems.some((existing) => {
+                if (existing._sourceUuid !== data.uuid) return false
+                if (itemType === 'spell') {
+                    return getSpellLevel(existing)?.value === spellLevel
+                }
+                return true
+            })
+            if (isDuplicate) {
+                ui.notifications?.warn?.(
+                    game.i18n?.localize(`${KeyPrefix}.duplicateItemType`) ??
+                        'This item has already been added',
+                )
+                return
+            }
+        }
+
+        itemData._sourceUuid = data.uuid
+        this.droppedItems.push(itemData)
+
+        this.formUI?.renderDroppedItem(itemData)
     }
 
     /**
@@ -92,6 +199,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                   ) ?? DefaultCreatureLevel,
               )
 
+        const isModern = !CreatureBuilderForm.useClassicUI
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
             creatureRoadmaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
@@ -100,6 +208,8 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
             actorLevel,
+            isModern,
+            droppedItems: this.droppedItems,
         }
 
         this.formUI = new CreatureBuilderFormUI(config)
@@ -111,6 +221,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
      */
     async close(options?: foundry.appv1.api.FormApplication.CloseOptions) {
         this.formUI = null
+        this.droppedItems = []
         return super.close(options)
     }
 
@@ -384,6 +495,60 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
         }
     }
 
+    private static stripSourceUuid(
+        items: Record<string, unknown>[],
+    ): Record<string, unknown>[] {
+        return items.map(({ _sourceUuid, ...rest }) => rest)
+    }
+
+    async applyDroppedItems(spellcastingEntryId?: string) {
+        if (this.droppedItems.length === 0) return
+
+        const spells: Record<string, unknown>[] = []
+        const nonSpells: Record<string, unknown>[] = []
+        for (const item of this.droppedItems) {
+            if (item.type === 'spell') {
+                spells.push(item)
+            } else {
+                nonSpells.push(item)
+            }
+        }
+
+        const createEmbedded = (
+            this.actor as {
+                createEmbeddedDocuments: (
+                    embeddedName: string,
+                    data: object[],
+                ) => Promise<unknown>
+            }
+        ).createEmbeddedDocuments.bind(this.actor)
+
+        if (nonSpells.length > 0) {
+            await createEmbedded(
+                'Item',
+                CreatureBuilderForm.stripSourceUuid(nonSpells),
+            )
+        }
+
+        if (spells.length > 0 && spellcastingEntryId) {
+            const linkedSpells = CreatureBuilderForm.stripSourceUuid(
+                spells,
+            ).map((spell) => ({
+                ...spell,
+                system: {
+                    ...(spell.system as Record<string, unknown> | undefined),
+                    location: { value: spellcastingEntryId },
+                },
+            }))
+            await createEmbedded('Item', linkedSpells)
+        } else if (spells.length > 0) {
+            globalLog(
+                true,
+                'Dropped spells skipped: no spellcasting entry available',
+            )
+        }
+    }
+
     protected async _updateObject(_event: Event, formData?: object) {
         if (formData) {
             const formLevel = String(formData[Statistics.level])
@@ -440,11 +605,16 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                 await newActor.deleteEmbeddedDocuments('Item', toDelete)
             }
 
-            await Promise.all([
+            const spellcastingEntry = await this.applySpellcasting(formData)
+            const spellcastingEntryId =
+                (spellcastingEntry as { id?: string } | undefined)?.id ??
+                undefined
+
+            await Promise.allSettled([
                 this.applyStrike(formData),
-                this.applySpellcasting(formData),
                 this.applySkills(formData),
                 this.applyLoreSkills(formData),
+                this.applyDroppedItems(spellcastingEntryId),
             ])
             this.actor = originalActor
             ;(newActor as Actor).sheet?.render(true)

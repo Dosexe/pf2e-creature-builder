@@ -1,0 +1,164 @@
+<form>
+    <div class="form-layout">
+        <div class="form-main" id="formMainContent">
+            <h1>{{localize "PF2EMONSTERMAKER.title"}}</h1>
+
+            <label class="toggle-badges-label" for="toggleBadges">
+                <input type="checkbox" id="toggleBadges" checked>
+                {{localize "PF2EMONSTERMAKER.showBonuses"}}
+            </label>
+
+            <h2>{{localize "PF2EMONSTERMAKER.nameLevelRoadmap"}}</h2>
+            <div class="form-group setting">
+                <label for="creatureBuilderName" class="creatureBuilderFormText">
+                    {{localize "PF2EMONSTERMAKER.name"}}
+                </label>
+                <input id="creatureBuilderName" name="PF2EMONSTERMAKER.name" placeholder="{{name}}" class="creatureBuilderFormText">
+            </div>
+            <div class="stat-row">
+                <div class="stat-cell stat-cell--wide">
+                    <label for="creatureBuilderLevel">{{localize "PF2EMONSTERMAKER.level"}}</label>
+                    <select name="PF2EMONSTERMAKER.level" id="creatureBuilderLevel" class="stat-select">
+                        {{#each Levels}}
+                        <option value="{{this}}">{{this}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                <div class="stat-cell stat-cell--wide">
+                    <label for="creatureBuilderRoadmap">{{localize "PF2EMONSTERMAKER.roadmap"}}</label>
+                    <select id="creatureBuilderRoadmap" class="stat-select" onchange="setRoadmap(this)">
+                        <option value="Default" selected>{{localize "pf2e-creature-builder.form.roadmap.default"}}</option>
+                        {{#each RoadMaps}}
+                        <option value="{{@key}}">{{roadmapLabel @key}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group setting">
+                <label for="creatureBuilderTraits" class="creatureBuilderFormText">
+                    {{localize "PF2EMONSTERMAKER.traits"}}
+                </label>
+                <div class="traitsContainer">
+                    <tags class="tagify tags paizo-style" tabindex="-1" id="traitsTagify">
+                        <span contenteditable="true" tabindex="0" data-placeholder="{{localize "PF2EMONSTERMAKER.traitsPlaceholder"}}" class="tagify__input" role="textbox" aria-autocomplete="both" aria-multiline="false" id="creatureBuilderTraitsInput"></span>
+                    </tags>
+                    <div id="creatureBuilderTraitsDropdown" class="creatureBuilderTraitsDropdown tagify__dropdown" role="listbox" aria-labelledby="dropdown" placement="bottom" position="all">
+                        <div data-selector="tagify-suggestions-wrapper" class="tagify__dropdown__wrapper">
+                            <header data-selector="tagify-suggestions-header" class="tagify__dropdown__header"></header>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="PF2EMONSTERMAKER.traits" id="creatureBuilderTraitsHidden" value="">
+            </div>
+
+            {{#each CreatureStatistics}}
+            <details class="collapsibleSection" data-section-name="{{this.name}}" open>
+                <summary class="collapsibleHeader">
+                    <h3>{{localize this.name}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
+                </summary>
+                <div class="collapsibleContent">
+                    <div class="stat-row">
+                        {{#each this.statisticEntries}}
+                        <div class="stat-cell">
+                            <label for="{{concat 'creatureBuilder' this.name}}" title="{{localize this.name}}">
+                                {{#if (eq ../this.name "PF2EMONSTERMAKER.abilityScores")}}
+                                {{localize (concat this.name 'Short')}}
+                                {{else}}
+                                {{localize this.name}}
+                                {{/if}}
+                            </label>
+                            <div class="stat-cell-input">
+                                <select id="{{concat 'creatureBuilder' this.name}}" name="{{this.name}}" class="stat-select">
+                                    {{#if this.availableOptions}}
+                                    {{#each this.availableOptions}}
+                                    <option value="{{this}}">{{localize this}}</option>
+                                    {{/each}}
+                                    {{/if}}
+                                    {{#unless this.availableOptions}}
+                                    {{#each ../this.availableOptions}}
+                                    <option value="{{this}}">{{localize this}}</option>
+                                    {{/each}}
+                                    {{/unless}}
+                                </select>
+                                <span class="stat-value-badge" data-stat-badge="{{this.name}}">--</span>
+                            </div>
+                        </div>
+                        {{/each}}
+                    </div>
+                    {{#if (eq this.name "PF2EMONSTERMAKER.spellcasting")}}
+                    <div class="form-group setting" id="spellListFormGroup" style="display: none;">
+                        <label for="creatureBuilderPF2EMONSTERMAKER.spellList" class="creatureBuilderFormText">
+                            {{localize "PF2EMONSTERMAKER.spellList"}}
+                        </label>
+                        <select id="creatureBuilderPF2EMONSTERMAKER.spellList" name="PF2EMONSTERMAKER.spellList" class="stat-select">
+                            <option value="none" selected>{{localize "PF2EMONSTERMAKER.none"}}</option>
+                            {{#each @root.SpellLists}}
+                            <option value="{{@key}}">{{this.name}}</option>
+                            {{/each}}
+                        </select>
+                    </div>
+                    {{/if}}
+                </div>
+            </details>
+            {{/each}}
+
+            <details class="collapsibleSection" id="sectionLore" open>
+                <summary class="collapsibleHeader">
+                    <h3>{{localize "PF2EMONSTERMAKER.loreSkills"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
+                </summary>
+                <div class="collapsibleContent">
+                    <div id="loreSkillsContainer">
+                        <button type="button" id="addLoreButton" class="creatureBuilderAddButton" title="{{localize "PF2EMONSTERMAKER.addLore"}}">
+                            {{localize "PF2EMONSTERMAKER.addLore"}}
+                        </button>
+                    </div>
+                </div>
+            </details>
+
+            <details class="collapsibleSection" id="sectionItems" open>
+                <summary class="collapsibleHeader">
+                    <h3>{{localize "PF2EMONSTERMAKER.itemsActions"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
+                </summary>
+                <div class="collapsibleContent">
+                    <div class="creature-builder-drop-zone" id="creatureBuilderDropZone">
+                        <p class="drop-zone-hint" id="dropZoneHint">
+                            <i class="fas fa-plus-circle"></i> {{localize "PF2EMONSTERMAKER.dropHint"}}
+                        </p>
+                        <div class="dropped-items-list" id="droppedItemsList"></div>
+                    </div>
+                </div>
+            </details>
+
+            <div class="formDivider"></div>
+            <div class="buttons">
+                <button type="button" id="creatureBuilderResetButton" class="creatureBuilderResetButton">{{localize "PF2EMONSTERMAKER.resetDefaults"}}</button>
+                <button type="submit" id="creatureBuilderFormSubmit">{{localize "PF2EMONSTERMAKER.submit"}}</button>
+            </div>
+        </div>
+
+        <div class="form-preview-divider"></div>
+
+        <div class="stat-preview-bar" id="statPreviewBar">
+            <h4 class="preview-title">{{localize "PF2EMONSTERMAKER.preview"}}</h4>
+            <span class="preview-roadmap-level" id="previewRoadmapLevel">--</span>
+            <div class="preview-ability-scores" id="previewAbilityScores">
+                <span data-ability="PF2EMONSTERMAKER.str">{{localize "PF2EMONSTERMAKER.strShort"}} --</span>
+                <span data-ability="PF2EMONSTERMAKER.dex">{{localize "PF2EMONSTERMAKER.dexShort"}} --</span>
+                <span data-ability="PF2EMONSTERMAKER.con">{{localize "PF2EMONSTERMAKER.conShort"}} --</span>
+                <span data-ability="PF2EMONSTERMAKER.int">{{localize "PF2EMONSTERMAKER.intShort"}} --</span>
+                <span data-ability="PF2EMONSTERMAKER.wis">{{localize "PF2EMONSTERMAKER.wisShort"}} --</span>
+                <span data-ability="PF2EMONSTERMAKER.cha">{{localize "PF2EMONSTERMAKER.chaShort"}} --</span>
+            </div>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.hp"><i class="fas fa-heart"></i> {{localize "PF2EMONSTERMAKER.hpShort"}} --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.ac"><i class="fas fa-shield-alt"></i> {{localize "PF2EMONSTERMAKER.acShort"}} --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.per"><i class="fas fa-eye"></i> {{localize "PF2EMONSTERMAKER.perShort"}} --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.fort"><i class="fas fa-chess-rook"></i> {{localize "PF2EMONSTERMAKER.fortShort"}} --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.ref"><i class="fas fa-running"></i> {{localize "PF2EMONSTERMAKER.refShort"}} --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.wil"><i class="fas fa-brain"></i> {{localize "PF2EMONSTERMAKER.wilShort"}} --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.strikeBonus"><i class="fas fa-fist-raised"></i> {{localize "PF2EMONSTERMAKER.strikeBonusShort"}} --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.strikeDamage"><i class="fas fa-burst"></i> {{localize "PF2EMONSTERMAKER.strikeDamageShort"}} --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.spellcasting"><i class="fas fa-wand-sparkles"></i> {{localize "pf2e-creature-builder.form.preview.spellcasting"}} --</span>
+        </div>
+    </div>
+</form>

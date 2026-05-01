@@ -125,6 +125,9 @@ const setupModule = async () => {
             register: vi.fn(),
             get: vi.fn().mockReturnValue(false),
         },
+        i18n: {
+            localize: vi.fn((key: string) => key),
+        },
         user: {},
     }
     ;(globalThis as any).Actor = vi.fn(function (this: any, data: any) {
@@ -157,7 +160,7 @@ describe('index hooks', () => {
     it('registers settings and initializes RoadMapRegistry on init', async () => {
         hooks.init?.[0]?.()
         const register = (globalThis as any).game.settings.register
-        expect(register).toHaveBeenCalledTimes(2)
+        expect(register).toHaveBeenCalledTimes(3)
         expect(register).toHaveBeenCalledWith(
             'foundryvtt-pf2e-creature-builder',
             'roadmaps',
@@ -166,6 +169,11 @@ describe('index hooks', () => {
         expect(register).toHaveBeenCalledWith(
             'pf2e-creature-builder',
             'abbreviateName',
+            expect.objectContaining({ type: Boolean, default: false }),
+        )
+        expect(register).toHaveBeenCalledWith(
+            'pf2e-creature-builder',
+            'useClassicUI',
             expect.objectContaining({ type: Boolean, default: false }),
         )
         expect(RoadMapRegistryMock.getInstance).toHaveBeenCalled()

@@ -6,6 +6,7 @@
 
 import type { RoadmapCollection } from '@/Keys'
 import type { SpellListCollection } from '@/spellcasting/model/spellList'
+import { statisticValues } from '@/Values'
 
 interface StatisticEntry {
     name: string
@@ -37,6 +38,8 @@ interface CreatureBuilderFormConfig {
     detectedTraits: string[]
     detectedLoreSkills: LoreSkill[]
     actorLevel: string
+    isModern?: boolean
+    droppedItems?: Record<string, unknown>[]
 }
 
 /**
@@ -53,6 +56,8 @@ class CreatureBuilderFormUI {
     private readonly detectedTraits: string[]
     private readonly detectedLoreSkills: LoreSkill[]
     private readonly actorLevel: string
+    private readonly isModern: boolean
+    private readonly droppedItems: Record<string, unknown>[]
     private loreCounter: number = 0
     private traits: string[] = []
     private selectedDropdownIndex: number = -1
@@ -266,6 +271,8 @@ class CreatureBuilderFormUI {
         this.detectedTraits = config.detectedTraits
         this.detectedLoreSkills = config.detectedLoreSkills
         this.actorLevel = String(config.actorLevel)
+        this.isModern = config.isModern === true
+        this.droppedItems = config.droppedItems ?? []
     }
 
     /**
@@ -279,9 +286,21 @@ class CreatureBuilderFormUI {
         this.initCollapsibleSections()
         this.setupSpellcastingVisibility()
 
+        if (this.isModern) {
+            this.setupDropZone()
+            this.setupStatHighlightListeners()
+            this.setupStatPreviewListeners()
+            this.setupPreviewSidebar()
+            this.setupBadgeToggle()
+        }
+
         setTimeout(() => {
             this.setDetectedStats()
             this.updateSpellcastingOptionsVisibility()
+            if (this.isModern) {
+                this.applyAllStatHighlights()
+                this.updateStatPreview()
+            }
         }, 0)
     }
 
@@ -443,28 +462,29 @@ class CreatureBuilderFormUI {
 
         const isNone = spellcastingSelect.value === 'PF2EMONSTERMAKER.none'
 
-        const traditionRow = traditionSelect?.closest('.form-group')
-        const typeRow = typeSelect?.closest('.form-group')
-        const attributeRow = attributeSelect?.closest('.form-group')
-        const spellListRow = spellListSelect?.closest('.form-group')
+        const findParentRow = (el: HTMLElement | null): HTMLElement | null =>
+            (el?.closest('.form-group') as HTMLElement) ??
+            (el?.closest('.stat-cell') as HTMLElement) ??
+            null
+
+        const traditionRow = findParentRow(traditionSelect)
+        const typeRow = findParentRow(typeSelect)
+        const attributeRow = findParentRow(attributeSelect)
+        const spellListRow = findParentRow(spellListSelect)
+
+        const showDisplay = this.isModern ? 'flex' : 'flex'
 
         if (traditionRow) {
-            ;(traditionRow as HTMLElement).style.display = isNone
-                ? 'none'
-                : 'flex'
+            traditionRow.style.display = isNone ? 'none' : showDisplay
         }
         if (typeRow) {
-            ;(typeRow as HTMLElement).style.display = isNone ? 'none' : 'flex'
+            typeRow.style.display = isNone ? 'none' : showDisplay
         }
         if (attributeRow) {
-            ;(attributeRow as HTMLElement).style.display = isNone
-                ? 'none'
-                : 'flex'
+            attributeRow.style.display = isNone ? 'none' : showDisplay
         }
         if (spellListRow) {
-            ;(spellListRow as HTMLElement).style.display = isNone
-                ? 'none'
-                : 'flex'
+            spellListRow.style.display = isNone ? 'none' : showDisplay
         }
     }
 
@@ -518,6 +538,11 @@ class CreatureBuilderFormUI {
                 }
             }
         }
+
+        if (this.isModern) {
+            this.applyAllStatHighlights()
+            this.updateStatPreview()
+        }
     }
 
     /**
@@ -540,6 +565,11 @@ class CreatureBuilderFormUI {
             }
         }
         this.updateSpellcastingOptionsVisibility()
+
+        if (this.isModern) {
+            this.applyAllStatHighlights()
+            this.updateStatPreview()
+        }
     }
 
     /**
@@ -952,6 +982,12 @@ class CreatureBuilderFormUI {
         this.loreCounter = 0
 
         this.updateSpellcastingOptionsVisibility()
+
+        if (this.isModern) {
+            this.clearDroppedItems()
+            this.applyAllStatHighlights()
+            this.updateStatPreview()
+        }
     }
 
     /**
@@ -985,6 +1021,469 @@ class CreatureBuilderFormUI {
             throw new Error(`Element with id '${id}' not found`)
         }
         return element as T
+    }
+
+    // ========================================================================
+    // Modern UI — Drop Zone
+    // ========================================================================
+
+    private setupDropZone(): void {
+        const dropZone = document.getElementById('creatureBuilderDropZone')
+        if (!dropZone) return
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault()
+            dropZone.classList.add('drag-over')
+        })
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over')
+        })
+
+        dropZone.addEventListener('drop', () => {
+            dropZone.classList.remove('drag-over')
+        })
+    }
+
+    public renderDroppedItem(itemData: Record<string, unknown>): void {
+        const list = document.getElementById('droppedItemsList')
+        const hint = document.getElementById('dropZoneHint')
+        if (!list) return
+
+        const index = this.droppedItems.indexOf(itemData)
+
+        const row = document.createElement('div')
+        row.className = 'dropped-item-row'
+        row.setAttribute('data-drop-index', String(index))
+
+        const img = document.createElement('img')
+        img.className = 'dropped-item-img'
+        img.src = (itemData.img as string) || 'icons/svg/item-bag.svg'
+        img.alt = ''
+
+        const name = document.createElement('span')
+        name.className = 'dropped-item-name'
+        name.textContent = (itemData.name as string) || 'Unknown Item'
+
+        const typeBadge = document.createElement('span')
+        typeBadge.className = 'dropped-item-type'
+        typeBadge.textContent = (itemData.type as string) || ''
+
+        const removeBtn = document.createElement('i')
+        removeBtn.className = 'dropped-item-remove fas fa-times'
+        removeBtn.title = 'Remove item'
+        removeBtn.addEventListener('click', () => {
+            const idx = this.droppedItems.indexOf(itemData)
+            if (idx > -1) {
+                this.droppedItems.splice(idx, 1)
+            }
+            row.remove()
+            if (hint && list.children.length === 0) {
+                hint.classList.remove('hidden')
+            }
+        })
+
+        row.appendChild(img)
+        row.appendChild(name)
+        row.appendChild(typeBadge)
+        row.appendChild(removeBtn)
+        list.appendChild(row)
+
+        if (hint) {
+            hint.classList.add('hidden')
+        }
+    }
+
+    private clearDroppedItems(): void {
+        this.droppedItems.length = 0
+        const list = document.getElementById('droppedItemsList')
+        if (list) {
+            list.innerHTML = ''
+        }
+        const hint = document.getElementById('dropZoneHint')
+        if (hint) {
+            hint.classList.remove('hidden')
+        }
+    }
+
+    // ========================================================================
+    // Modern UI — Stat Color Highlights
+    // ========================================================================
+
+    private static readonly STAT_LEVEL_CLASSES = [
+        'stat-level-extreme',
+        'stat-level-high',
+        'stat-level-moderate',
+        'stat-level-low',
+        'stat-level-terrible',
+        'stat-level-abysmal',
+        'stat-level-none',
+    ] as const
+
+    private static readonly OPTION_TO_CLASS: Record<string, string> = {
+        'PF2EMONSTERMAKER.extreme': 'stat-level-extreme',
+        'PF2EMONSTERMAKER.high': 'stat-level-high',
+        'PF2EMONSTERMAKER.moderate': 'stat-level-moderate',
+        'PF2EMONSTERMAKER.low': 'stat-level-low',
+        'PF2EMONSTERMAKER.terrible': 'stat-level-terrible',
+        'PF2EMONSTERMAKER.abysmal': 'stat-level-abysmal',
+        'PF2EMONSTERMAKER.none': 'stat-level-none',
+    }
+
+    private applyStatHighlight(selectElement: HTMLSelectElement): void {
+        for (const cls of CreatureBuilderFormUI.STAT_LEVEL_CLASSES) {
+            selectElement.classList.remove(cls)
+        }
+        const cssClass =
+            CreatureBuilderFormUI.OPTION_TO_CLASS[selectElement.value]
+        if (cssClass) {
+            selectElement.classList.add(cssClass)
+        }
+    }
+
+    private applyAllStatHighlights(): void {
+        for (const category of this.monsterCreatureStatistics) {
+            for (const stat of category.statisticEntries) {
+                const select = document.getElementById(
+                    `creatureBuilder${stat.name}`,
+                ) as HTMLSelectElement
+                if (select) {
+                    this.applyStatHighlight(select)
+                }
+            }
+        }
+    }
+
+    private setupStatHighlightListeners(): void {
+        for (const category of this.monsterCreatureStatistics) {
+            for (const stat of category.statisticEntries) {
+                const select = document.getElementById(
+                    `creatureBuilder${stat.name}`,
+                ) as HTMLSelectElement
+                if (select) {
+                    select.addEventListener('change', () => {
+                        this.applyStatHighlight(select)
+                    })
+                }
+            }
+        }
+    }
+
+    // ========================================================================
+    // Modern UI — Live Stat Preview Bar
+    // ========================================================================
+
+    private static readonly PREVIEW_STATS: {
+        key: string
+        labelKey: string
+        prefix: string
+        icon: string
+        offset?: number
+    }[] = [
+        {
+            key: 'PF2EMONSTERMAKER.hp',
+            labelKey: 'PF2EMONSTERMAKER.hpShort',
+            prefix: '',
+            icon: 'fa-heart',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.ac',
+            labelKey: 'PF2EMONSTERMAKER.acShort',
+            prefix: '',
+            icon: 'fa-shield-alt',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.per',
+            labelKey: 'PF2EMONSTERMAKER.perShort',
+            prefix: '+',
+            icon: 'fa-eye',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.fort',
+            labelKey: 'PF2EMONSTERMAKER.fortShort',
+            prefix: '+',
+            icon: 'fa-chess-rook',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.ref',
+            labelKey: 'PF2EMONSTERMAKER.refShort',
+            prefix: '+',
+            icon: 'fa-running',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.wil',
+            labelKey: 'PF2EMONSTERMAKER.wilShort',
+            prefix: '+',
+            icon: 'fa-brain',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.strikeBonus',
+            labelKey: 'PF2EMONSTERMAKER.strikeBonusShort',
+            prefix: '+',
+            icon: 'fa-fist-raised',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.strikeDamage',
+            labelKey: 'PF2EMONSTERMAKER.strikeDamageShort',
+            prefix: '',
+            icon: 'fa-burst',
+        },
+        {
+            key: 'PF2EMONSTERMAKER.spellcasting',
+            labelKey: 'pf2e-creature-builder.form.preview.spellcasting',
+            prefix: '',
+            icon: 'fa-wand-sparkles',
+            offset: 8,
+        },
+    ]
+
+    private static readonly ABILITY_KEYS = [
+        'PF2EMONSTERMAKER.str',
+        'PF2EMONSTERMAKER.dex',
+        'PF2EMONSTERMAKER.con',
+        'PF2EMONSTERMAKER.int',
+        'PF2EMONSTERMAKER.wis',
+        'PF2EMONSTERMAKER.cha',
+    ] as const
+
+    private static readonly ABILITY_LABEL_KEYS: Record<string, string> = {
+        'PF2EMONSTERMAKER.str': 'PF2EMONSTERMAKER.strShort',
+        'PF2EMONSTERMAKER.dex': 'PF2EMONSTERMAKER.dexShort',
+        'PF2EMONSTERMAKER.con': 'PF2EMONSTERMAKER.conShort',
+        'PF2EMONSTERMAKER.int': 'PF2EMONSTERMAKER.intShort',
+        'PF2EMONSTERMAKER.wis': 'PF2EMONSTERMAKER.wisShort',
+        'PF2EMONSTERMAKER.cha': 'PF2EMONSTERMAKER.chaShort',
+    }
+
+    private localize(key: string): string {
+        return (window as any).game?.i18n?.localize?.(key) ?? key
+    }
+
+    public updateStatPreview(): void {
+        const levelSelect = document.getElementById(
+            'creatureBuilderLevel',
+        ) as HTMLSelectElement
+        if (!levelSelect) return
+
+        const level = levelSelect.value
+
+        this.updatePreviewRoadmapLevel(level)
+        this.updatePreviewAbilityScores(level)
+
+        for (const {
+            key,
+            labelKey,
+            prefix,
+            icon,
+            offset,
+        } of CreatureBuilderFormUI.PREVIEW_STATS) {
+            const span = document.querySelector(
+                `.preview-stat[data-stat="${key}"]`,
+            ) as HTMLElement
+            if (!span) continue
+
+            const label = this.localize(labelKey)
+            const iconHtml = `<i class="fas ${icon}"></i> `
+
+            const select = document.getElementById(
+                `creatureBuilder${key}`,
+            ) as HTMLSelectElement
+
+            if (!select || select.value === 'PF2EMONSTERMAKER.none') {
+                if (key === 'PF2EMONSTERMAKER.spellcasting') {
+                    span.style.display = 'none'
+                } else {
+                    span.innerHTML = `${iconHtml}${label} --`
+                }
+                this.applyPreviewHighlight(span, null)
+                continue
+            }
+
+            if (key === 'PF2EMONSTERMAKER.spellcasting') {
+                span.style.display = ''
+            }
+
+            const valueTable = statisticValues[key]
+            if (!valueTable?.[level]?.[select.value]) {
+                span.innerHTML = `${iconHtml}${label} --`
+                this.applyPreviewHighlight(span, null)
+                continue
+            }
+
+            const rawValue = valueTable[level][select.value]
+            const displayValue = offset
+                ? String(Number(rawValue) + offset)
+                : rawValue
+            span.innerHTML = `${iconHtml}${label} ${prefix}${displayValue}`
+            this.applyPreviewHighlight(span, select.value)
+        }
+
+        this.updateInlineStatBadges(level)
+    }
+
+    private updatePreviewRoadmapLevel(level: string): void {
+        const el = document.getElementById('previewRoadmapLevel')
+        if (!el) return
+
+        const roadmapSelect = document.getElementById(
+            'creatureBuilderRoadmap',
+        ) as HTMLSelectElement
+        const roadmapText =
+            roadmapSelect?.selectedOptions?.[0]?.textContent?.trim() ||
+            'Default'
+        el.textContent = `${roadmapText} lvl ${level}`
+    }
+
+    private updatePreviewAbilityScores(level: string): void {
+        for (const key of CreatureBuilderFormUI.ABILITY_KEYS) {
+            const span = document.querySelector(
+                `[data-ability="${key}"]`,
+            ) as HTMLElement
+            if (!span) continue
+
+            const label = this.localize(
+                CreatureBuilderFormUI.ABILITY_LABEL_KEYS[key],
+            )
+            const select = document.getElementById(
+                `creatureBuilder${key}`,
+            ) as HTMLSelectElement
+
+            if (!select || select.value === 'PF2EMONSTERMAKER.none') {
+                span.textContent = `${label} --`
+                this.applyPreviewHighlight(span, null)
+                continue
+            }
+
+            const valueTable = statisticValues[key]
+            if (!valueTable?.[level]?.[select.value]) {
+                span.textContent = `${label} --`
+                this.applyPreviewHighlight(span, null)
+                continue
+            }
+
+            const rawValue = valueTable[level][select.value]
+            const num = Number(rawValue)
+            const display = num >= 0 ? `+${num}` : `${num}`
+            span.textContent = `${label} ${display}`
+            this.applyPreviewHighlight(span, select.value)
+        }
+    }
+
+    private updateInlineStatBadges(level: string): void {
+        const badges = Array.from(
+            document.querySelectorAll<HTMLElement>(
+                '.stat-value-badge[data-stat-badge]',
+            ),
+        )
+        for (const badge of badges) {
+            const statKey = badge.dataset.statBadge
+            if (!statKey) continue
+
+            const select = document.getElementById(
+                `creatureBuilder${statKey}`,
+            ) as HTMLSelectElement
+            if (!select) {
+                badge.textContent = '--'
+                continue
+            }
+
+            const optionValue = select.value
+            if (optionValue === 'PF2EMONSTERMAKER.none') {
+                badge.textContent = '--'
+                continue
+            }
+
+            const valueTable = statisticValues[statKey]
+            if (!valueTable?.[level]?.[optionValue]) {
+                badge.textContent = '--'
+                continue
+            }
+
+            const rawValue = valueTable[level][optionValue]
+            const numValue = Number.parseInt(rawValue, 10)
+            const noSignPrefix = new Set([
+                'PF2EMONSTERMAKER.hp',
+                'PF2EMONSTERMAKER.ac',
+            ])
+            if (!Number.isNaN(numValue) && String(numValue) === rawValue) {
+                if (statKey === 'PF2EMONSTERMAKER.spellcasting') {
+                    badge.textContent = String(numValue + 8)
+                } else if (noSignPrefix.has(statKey)) {
+                    badge.textContent = String(numValue)
+                } else {
+                    badge.textContent =
+                        numValue >= 0 ? `+${numValue}` : `${numValue}`
+                }
+            } else {
+                badge.textContent = rawValue
+            }
+        }
+    }
+
+    private applyPreviewHighlight(
+        span: HTMLElement,
+        optionValue: string | null,
+    ): void {
+        for (const cls of CreatureBuilderFormUI.STAT_LEVEL_CLASSES) {
+            span.classList.remove(cls)
+        }
+        if (optionValue) {
+            const cssClass = CreatureBuilderFormUI.OPTION_TO_CLASS[optionValue]
+            if (cssClass) {
+                span.classList.add(cssClass)
+            }
+        }
+    }
+
+    private setupPreviewSidebar(): void {
+        // Preview bar is positioned via CSS inside .form-layout; no JS needed.
+    }
+
+    private setupBadgeToggle(): void {
+        const toggle = document.getElementById(
+            'toggleBadges',
+        ) as HTMLInputElement
+        if (!toggle) return
+
+        const form = toggle.closest('.creatureBuilderFormModern')
+        if (!form) return
+
+        toggle.addEventListener('change', () => {
+            form.classList.toggle('hide-badges', !toggle.checked)
+        })
+    }
+
+    private setupStatPreviewListeners(): void {
+        const levelSelect = document.getElementById(
+            'creatureBuilderLevel',
+        ) as HTMLSelectElement
+        if (levelSelect) {
+            levelSelect.addEventListener('change', () => {
+                this.updateStatPreview()
+            })
+        }
+
+        const roadmapSelect = document.getElementById(
+            'creatureBuilderRoadmap',
+        ) as HTMLSelectElement
+        if (roadmapSelect) {
+            roadmapSelect.addEventListener('change', () => {
+                this.updateStatPreview()
+            })
+        }
+
+        for (const category of this.monsterCreatureStatistics) {
+            for (const stat of category.statisticEntries) {
+                const select = document.getElementById(
+                    `creatureBuilder${stat.name}`,
+                ) as HTMLSelectElement
+                if (select) {
+                    select.addEventListener('change', () => {
+                        this.updateStatPreview()
+                    })
+                }
+            }
+        }
     }
 }
 

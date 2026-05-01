@@ -5,6 +5,7 @@ declare global {
     interface SettingConfig {
         'foundryvtt-pf2e-creature-builder.roadmaps': Record<string, unknown>
         'pf2e-creature-builder.abbreviateName': boolean
+        'pf2e-creature-builder.useClassicUI': boolean
     }
 
     // Register PF2e Actor and Item subtypes so that type comparisons

@@ -22,6 +22,21 @@ Hooks.on('init', async () => {
         type: Boolean,
         default: false,
     })
+
+    game.settings?.register('pf2e-creature-builder', 'useClassicUI', {
+        name:
+            game.i18n?.localize(
+                'pf2e-creature-builder.settings.useClassicUI.name',
+            ) ?? 'Use Classic UI',
+        hint:
+            game.i18n?.localize(
+                'pf2e-creature-builder.settings.useClassicUI.hint',
+            ) ?? '',
+        scope: 'world',
+        config: true,
+        type: Boolean,
+        default: false,
+    })
 })
 
 // Load custom roadmaps asynchronously after the game is ready

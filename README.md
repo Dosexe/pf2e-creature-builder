@@ -2,21 +2,23 @@
 
 # fvtt-module-pf2e-CreatureBuilderForm
 
-This is forked from the [pf2e-monster-maker](https://github.com/mikolajg-tt/pf2e-monster-maker). Thanks to the creator **mikolajg-tt** for the solid foundation and great work on the original module.
+The first version was forked from the [pf2e-monster-maker](https://github.com/mikolajg-tt/pf2e-monster-maker). Thanks to the creator **mikolajg-tt** for the solid foundation and great work on the original module.
+Current version is a rework of the original idea.
 
-The download link: https://github.com/dosexe/pf2e-creature-builder/releases/latest/download/module.json
+**Install:** `https://github.com/dosexe/pf2e-creature-builder/releases/latest/download/module.json`
 
-A Foundry VTT module designed for Pathfinder 2E System, that allows you to create combat NPCs from scratch or from existing creature, using values from the [Pathfinder 2e Building Creatures Guide](https://2e.aonprd.com/Rules.aspx?ID=995)
+A Foundry VTT module for the Pathfinder 2E system that lets you create NPCs from scratch or from an existing creature, using values from the [PF2E Building Creatures Guide](https://2e.aonprd.com/Rules.aspx?ID=995).
 
-Main differences from the original module:
- - Added support for all official roadmaps as defined in the [Pathfinder 2e rules](https://2e.aonprd.com/Rules.aspx?ID=2919).
- - Introduced the ability to start a build from an existing creature.
- - Added  support for Lore skills.
- - Added support for traits.
- - Added support for spellcasting
- - Added support for themed spell lists
- - Ability to load custom roadmaps [BETA] (see [ROADMAPS](ROADMAPS.md))
- - Minor UI changes.
+### Key Features
+
+- Support for all official roadmaps from the [Pathfinder 2e rules](https://2e.aonprd.com/Rules.aspx?ID=2919)
+- Build from an existing creature — inherits attributes, skills, traits, and spellcasting
+- Lore skills, traits, and full spellcasting support
+- Support for themed spell lists
+- Custom roadmaps [BETA] (see [ROADMAPS.md](ROADMAPS.md))
+- Live preview, drag-and-drop of items and color-coded stats
+
+## Getting Started
 
 To use the **Creature Builder**, you can create a blank NPC or start with an existing one.
 When starting from an **existing creature**, the new creature will **inherit all data** from the base creature, including:
@@ -31,11 +33,12 @@ Strikes are replaced using the values provided in the Creature Builder form.
 If the resulting creature is a **spellcaster of a higher level than the base creature**, the module will automatically grant additional spell slots:
 - **Prepared spellcasters** receive spell slots based on the **wizard spellcasting table**, for more info see [Wizard Class](https://2e.aonprd.com/Classes.aspx?ID=39)
 - **Spontaneous spellcasters** receive spell slots based on the **sorcerer spellcasting table**, for more info see [Sorcerer Class](https://2e.aonprd.com/Classes.aspx?ID=62)
-- For spellcaster it is also possible to choose a specific themed spell list (see [Themed Spell Lists](https://2e.aonprd.com/Rules.aspx?ID=3383)), which will attoumatically assign spells accroding to the creature level.
+- For spellcaster it is also possible to choose a specific themed spell list (see [Themed Spell Lists](https://2e.aonprd.com/Rules.aspx?ID=3383)), which will automatically assign spells according to the creature level.
 
 ### Accessing the Creature Builder
 
-When you open an actor’s **Character Sheet**, you will find a button at the top labeled **Creature Builder**. Clicking this button opens the creature builder interface.
+- **From an NPC sheet:** Click the **Creature Builder** button in the title bar
+- **From the Actors sidebar:** Click the **Creature Builder** button in the footer to start from a blank NPC
 
 Inside the builder, you can:
 - Select one of the official **roadmaps**, which automatically sets values appropriate for a given monster type
@@ -51,23 +54,84 @@ Once all values are set, click the **Submit** button. This will generate a new c
 
 If you want to start over at any time, click **Reset to Defaults**, which will clear all changes made in the form.
 
-Each group within the form can be expanded or collapsed by clicking its header. By default, all groups are expanded except for **Skills** and **Lore Skills**.
+---
+
+## UI 2.0 — Modern Form
+
+The modern UI is the **default**. If you prefer the original layout, enable **Use Classic UI** in Module Settings.
+
+### Form Layout
+
+The form is split into two areas:
+
+| Left — Main Form                                                                 | Right — Live Preview                                                    |
+|----------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| All stat dropdowns, traits, lore skills, items/actions, and submit/reset buttons | A sticky sidebar showing computed stat values that updates in real time |
+
+Each stat section (Ability Scores, Defence + Perception, Strikes, Spellcasting, Skills) is **collapsible** — click the section header to expand or collapse. **Skills** and **Lore Skills** are collapsed by default.
+
+### Stat Grid
+
+Stats are displayed in a grid with abbreviated labels. Each dropdown has a **bonus badge** next to it showing the computed numeric value for the current level and option.
+
+```
+STR [Extreme v] +7    DEX [High v] +5    CON [Moderate v] +4
+INT [Low v]     +1    WIS [Moderate v] +4 CHA [High v]     +5
+```
+
+Use the **Show Bonuses** checkbox at the top of the form to hide or show the bonus badges.
+
+### Drag-and-Drop Items & Actions
+
+The **Items / Actions** section at the bottom of the form is a drop zone where you can drag items directly from Foundry compendiums, NPCs or other places. Supported item types:
+
+| Category    | Types                                                          |
+|-------------|----------------------------------------------------------------|
+| Equipment   | Weapons, armor, shields, equipment, treasure, ammo, containers |
+| Consumables | Potions, scrolls, wands, and other consumables                 |
+| Abilities   | Actions, feats, conditions                                     |
+| Spells      | Any spell (linked to the spellcasting entry on submit)         |
+| Skills      | Lore items                                                     |
+
+**Deduplication rules:**
+- Stackable items (weapons, equipment, consumables, etc.) can be added multiple times
+- Unique items (spells, actions, feats, conditions, lore) are deduplicated — dropping the same one again is ignored
+- For spells, deduplication also considers the spell level, so the same spell at different levels is allowed
+
+Dropped spells are automatically **linked to the creature's spellcasting entry** when the form is submitted.
+
+### Module Settings
+
+| Setting                         | Default | Description                                           |
+|---------------------------------|---------|-------------------------------------------------------|
+| **Use Classic UI**              | Off     | Switch back to the original single-column form layout |
+| **Abbreviate Creature Builder** | Off     | Show "CB" instead of "Creature Builder" on NPC sheets |
+
+---
+
+### Classic UI
+
+The classic UI is the original form layout from earlier versions. All features (roadmaps, traits, lore, spellcasting) work the same way — the only difference is the visual layout. The classic UI does not include the live preview sidebar, drag-and-drop zone, color highlights, or bonus badges.
 
 Below are the images of the form:
 
-First part contains all the important values like Hit Points, Level, Name etc.
+First part contains all the important values like Hit Points, Level, Name etc. and preview block on the right.
 
 ![Page One of The Form](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/PageOne.png?raw=true)
 
-The Second part contains all the skills as well as the `Submit` button and `Reset to Defaults` button.
+The Second part contains all the skills and item dropdown zone.
 ![Page Two of The Form](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/PageTwo.png?raw=true)
+
+The last part contains `Submit` button and `Reset to Defaults` button
+
+![Page Three of The Form](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/PageThree.png?raw=true)
 
 Traits will show you suggestions from the list of existing ones, or you can add a new one.
 ![Traits](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/TraitsSection.png?raw=true)
 
 Lore section allow to specify any number of additional lore entries if needed.
 
-![Lore Section](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/LoreSection.png?raw=true)
+![Skill Section](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/SkillLoreItemBlock.png?raw=true)
 
 Here is a comparison of size in relation to UI:
 ![Full UI Size](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/FullUIImage.png?raw=true)

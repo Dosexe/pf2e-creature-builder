@@ -104,5 +104,34 @@
     "PF2EMONSTERMAKER.traits": "Traits",
     "PF2EMONSTERMAKER.traitsPlaceholder": "Search traits...",
 
-    "PF2EMONSTERMAKER.resetDefaults": "Reset to Defaults"
+    "PF2EMONSTERMAKER.showBonuses": "Show Bonuses",
+    "PF2EMONSTERMAKER.preview": "Preview",
+    "PF2EMONSTERMAKER.resetDefaults": "Reset to Defaults",
+
+    "PF2EMONSTERMAKER.strShort": "STR",
+    "PF2EMONSTERMAKER.dexShort": "DEX",
+    "PF2EMONSTERMAKER.conShort": "CON",
+    "PF2EMONSTERMAKER.intShort": "INT",
+    "PF2EMONSTERMAKER.wisShort": "WIS",
+    "PF2EMONSTERMAKER.chaShort": "CHA",
+    "PF2EMONSTERMAKER.hpShort": "HP",
+    "PF2EMONSTERMAKER.perShort": "PER",
+    "PF2EMONSTERMAKER.acShort": "AC",
+    "PF2EMONSTERMAKER.fortShort": "FORT",
+    "PF2EMONSTERMAKER.refShort": "REF",
+    "PF2EMONSTERMAKER.wilShort": "WILL",
+    "PF2EMONSTERMAKER.strikeBonusShort": "ATK",
+    "PF2EMONSTERMAKER.strikeDamageShort": "DMG",
+
+    "PF2EMONSTERMAKER.items": "Items",
+    "PF2EMONSTERMAKER.itemsActions": "Items / Actions",
+    "PF2EMONSTERMAKER.dropHint": "Drag items or actions here from a compendium",
+    "PF2EMONSTERMAKER.removeItem": "Remove item",
+    "PF2EMONSTERMAKER.invalidItemType": "This item type cannot be added",
+    "PF2EMONSTERMAKER.submit": "Submit",
+
+    "pf2e-creature-builder.settings.useClassicUI.name": "Use Classic UI",
+    "pf2e-creature-builder.settings.useClassicUI.hint": "Enable this to use the original form layout without the compact stats, drag-and-drop, or stat highlights.",
+    "pf2e-creature-builder.form.roadmap.default": "Default",
+    "pf2e-creature-builder.form.preview.spellcasting": "Spell DC"
 }

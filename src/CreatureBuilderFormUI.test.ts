@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import enLang from '../public/languages/en.json'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
 import { Options, Statistics } from './Keys'
+import { statisticValues } from './Values'
 
 const buildConfig = (
     overrides: Partial<
@@ -107,7 +109,10 @@ const setupDom = () => {
 beforeEach(() => {
     setupDom()
     ;(window as any).game = {
-        i18n: { localize: (key: string) => key },
+        i18n: {
+            localize: (key: string) =>
+                (enLang as Record<string, string>)[key] ?? key,
+        },
     }
     if (!HTMLElement.prototype.scrollIntoView) {
         HTMLElement.prototype.scrollIntoView = () => {}
@@ -1184,6 +1189,1115 @@ describe('CreatureBuilderFormUI', () => {
             vi.runAllTimers()
 
             expect(el.value).toBe(Options.high)
+        })
+    })
+
+    describe('Modern UI — Stat Highlights', () => {
+        const setupModernDom = () => {
+            setupDom()
+            const dropZone = document.createElement('div')
+            dropZone.id = 'creatureBuilderDropZone'
+            dropZone.className = 'creature-builder-drop-zone'
+            document.body.appendChild(dropZone)
+
+            const hint = document.createElement('p')
+            hint.id = 'dropZoneHint'
+            hint.className = 'drop-zone-hint'
+            dropZone.appendChild(hint)
+
+            const list = document.createElement('div')
+            list.id = 'droppedItemsList'
+            list.className = 'dropped-items-list'
+            dropZone.appendChild(list)
+
+            const previewBar = document.createElement('div')
+            previewBar.id = 'statPreviewBar'
+            previewBar.className = 'stat-preview-bar'
+            const previewStats = [
+                'PF2EMONSTERMAKER.hp',
+                'PF2EMONSTERMAKER.ac',
+                'PF2EMONSTERMAKER.fort',
+                'PF2EMONSTERMAKER.ref',
+                'PF2EMONSTERMAKER.wil',
+                'PF2EMONSTERMAKER.per',
+                'PF2EMONSTERMAKER.strikeBonus',
+                'PF2EMONSTERMAKER.strikeDamage',
+                'PF2EMONSTERMAKER.spellcasting',
+            ]
+            for (const key of previewStats) {
+                const span = document.createElement('span')
+                span.className = 'preview-stat'
+                span.dataset.stat = key
+                span.textContent = '--'
+                previewBar.appendChild(span)
+            }
+            document.body.appendChild(previewBar)
+        }
+
+        it('applies stat-level-high class when option is high', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({
+                    detectedStats: { [Statistics.str]: Options.high },
+                    isModern: true,
+                }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const strSelect = document.getElementById(
+                `creatureBuilder${Statistics.str}`,
+            ) as HTMLSelectElement
+            expect(strSelect.classList.contains('stat-level-high')).toBe(true)
+        })
+
+        it('applies stat-level-moderate by default', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const strSelect = document.getElementById(
+                `creatureBuilder${Statistics.str}`,
+            ) as HTMLSelectElement
+            expect(strSelect.classList.contains('stat-level-moderate')).toBe(
+                true,
+            )
+        })
+
+        it('updates highlight class on select change', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const strSelect = document.getElementById(
+                `creatureBuilder${Statistics.str}`,
+            ) as HTMLSelectElement
+            strSelect.value = Options.high
+            strSelect.dispatchEvent(new Event('change'))
+
+            expect(strSelect.classList.contains('stat-level-high')).toBe(true)
+            expect(strSelect.classList.contains('stat-level-moderate')).toBe(
+                false,
+            )
+        })
+
+        it('applies highlight to all selects after roadmap change', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const roadmapSelect = document.getElementById(
+                'creatureBuilderRoadmap',
+            ) as HTMLSelectElement
+            roadmapSelect.value = 'TestRoadmap'
+            ui.setRoadmap(roadmapSelect)
+
+            const dexSelect = document.getElementById(
+                `creatureBuilder${Statistics.dex}`,
+            ) as HTMLSelectElement
+            expect(dexSelect.classList.contains('stat-level-low')).toBe(true)
+        })
+
+        it('does not apply highlights in classic mode', () => {
+            vi.useFakeTimers()
+            setupDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: false }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const strSelect = document.getElementById(
+                `creatureBuilder${Statistics.str}`,
+            ) as HTMLSelectElement
+            const hasHighlightClass = (
+                CreatureBuilderFormUI as any
+            ).STAT_LEVEL_CLASSES.some((cls: string) =>
+                strSelect.classList.contains(cls),
+            )
+            expect(hasHighlightClass).toBe(false)
+        })
+    })
+
+    describe('Modern UI — Live Preview', () => {
+        const setupModernDom = () => {
+            setupDom()
+            const dropZone = document.createElement('div')
+            dropZone.id = 'creatureBuilderDropZone'
+            document.body.appendChild(dropZone)
+
+            const hint = document.createElement('p')
+            hint.id = 'dropZoneHint'
+            dropZone.appendChild(hint)
+
+            const list = document.createElement('div')
+            list.id = 'droppedItemsList'
+            dropZone.appendChild(list)
+
+            const previewBar = document.createElement('div')
+            previewBar.id = 'statPreviewBar'
+            previewBar.className = 'stat-preview-bar'
+            const previewStats = [
+                'PF2EMONSTERMAKER.hp',
+                'PF2EMONSTERMAKER.ac',
+                'PF2EMONSTERMAKER.fort',
+                'PF2EMONSTERMAKER.ref',
+                'PF2EMONSTERMAKER.wil',
+                'PF2EMONSTERMAKER.per',
+                'PF2EMONSTERMAKER.strikeBonus',
+                'PF2EMONSTERMAKER.strikeDamage',
+                'PF2EMONSTERMAKER.spellcasting',
+            ]
+            for (const key of previewStats) {
+                const span = document.createElement('span')
+                span.className = 'preview-stat'
+                span.dataset.stat = key
+                span.textContent = '--'
+                previewBar.appendChild(span)
+            }
+            document.body.appendChild(previewBar)
+        }
+
+        it('shows -- for stats not in the value table', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const hpSpan = document.querySelector(
+                '.preview-stat[data-stat="PF2EMONSTERMAKER.hp"]',
+            ) as HTMLElement
+            expect(hpSpan.textContent).toContain('--')
+        })
+
+        it('updates preview when level changes', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+
+            const hpSelect = document.createElement('select')
+            hpSelect.id = 'creatureBuilderPF2EMONSTERMAKER.hp'
+            const optMod = document.createElement('option')
+            optMod.value = Options.moderate
+            hpSelect.appendChild(optMod)
+            const optHigh = document.createElement('option')
+            optHigh.value = Options.high
+            hpSelect.appendChild(optHigh)
+            document.body.appendChild(hpSelect)
+            hpSelect.value = Options.moderate
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const levelSelect = document.getElementById(
+                'creatureBuilderLevel',
+            ) as HTMLSelectElement
+            levelSelect.value = '3'
+            levelSelect.dispatchEvent(new Event('change'))
+            vi.runAllTimers()
+
+            const hpSpan = document.querySelector(
+                '.preview-stat[data-stat="PF2EMONSTERMAKER.hp"]',
+            ) as HTMLElement
+            expect(hpSpan.textContent).not.toBe('--')
+            expect(hpSpan.textContent).toContain('HP')
+        })
+
+        it('shows -- when stat option has no value for selected level', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+
+            const fortSelect = document.createElement('select')
+            fortSelect.id = 'creatureBuilderPF2EMONSTERMAKER.fort'
+            const optExtreme = document.createElement('option')
+            optExtreme.value = 'PF2EMONSTERMAKER.bogusOption'
+            optExtreme.textContent = 'Bogus'
+            fortSelect.appendChild(optExtreme)
+            document.body.appendChild(fortSelect)
+            fortSelect.value = 'PF2EMONSTERMAKER.bogusOption'
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            ui.updateStatPreview()
+
+            const fortSpan = document.querySelector(
+                '.preview-stat[data-stat="PF2EMONSTERMAKER.fort"]',
+            ) as HTMLElement
+            expect(fortSpan.textContent).toContain('FORT')
+            expect(fortSpan.textContent).toContain('--')
+        })
+
+        it('shows -- for stats with none selected', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+
+            const spellSelect = document.getElementById(
+                'creatureBuilderPF2EMONSTERMAKER.spellcasting',
+            ) as HTMLSelectElement
+            spellSelect.value = 'PF2EMONSTERMAKER.none'
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            ui.updateStatPreview()
+        })
+
+        it('shows value when stat and level are valid', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+
+            const acSelect = document.createElement('select')
+            acSelect.id = 'creatureBuilderPF2EMONSTERMAKER.ac'
+            const optMod = document.createElement('option')
+            optMod.value = Options.moderate
+            acSelect.appendChild(optMod)
+            const optHigh = document.createElement('option')
+            optHigh.value = Options.high
+            acSelect.appendChild(optHigh)
+            document.body.appendChild(acSelect)
+            acSelect.value = Options.moderate
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const acSpan = document.querySelector(
+                '.preview-stat[data-stat="PF2EMONSTERMAKER.ac"]',
+            ) as HTMLElement
+            expect(acSpan.textContent).toContain('AC')
+            expect(acSpan.textContent).not.toContain('--')
+        })
+
+        it('applies preview highlight with a valid option value', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+
+            const acSelect = document.createElement('select')
+            acSelect.id = 'creatureBuilderPF2EMONSTERMAKER.ac'
+            const optHigh = document.createElement('option')
+            optHigh.value = Options.high
+            acSelect.appendChild(optHigh)
+            document.body.appendChild(acSelect)
+            acSelect.value = Options.high
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const acSpan = document.querySelector(
+                '.preview-stat[data-stat="PF2EMONSTERMAKER.ac"]',
+            ) as HTMLElement
+            expect(acSpan.classList.contains('stat-level-high')).toBe(true)
+        })
+
+        it('handles updateStatPreview gracefully when no level select exists', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const levelSelect = document.getElementById('creatureBuilderLevel')
+            levelSelect?.remove()
+
+            ui.updateStatPreview()
+        })
+
+        it('applies no highlight class for an unknown option value', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+
+            const acSelect = document.createElement('select')
+            acSelect.id = 'creatureBuilderPF2EMONSTERMAKER.ac'
+            const optCustom = document.createElement('option')
+            optCustom.value = 'PF2EMONSTERMAKER.unknown'
+            acSelect.appendChild(optCustom)
+            document.body.appendChild(acSelect)
+            acSelect.value = 'PF2EMONSTERMAKER.unknown'
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const acSpan = document.querySelector(
+                '.preview-stat[data-stat="PF2EMONSTERMAKER.ac"]',
+            ) as HTMLElement
+            const hasHighlightClass = (
+                CreatureBuilderFormUI as any
+            ).STAT_LEVEL_CLASSES.some((cls: string) =>
+                acSpan.classList.contains(cls),
+            )
+            expect(hasHighlightClass).toBe(false)
+        })
+
+        it('does not render preview in classic mode', () => {
+            vi.useFakeTimers()
+            setupDom()
+            const previewBar = document.createElement('div')
+            previewBar.className = 'stat-preview-bar'
+            const span = document.createElement('span')
+            span.className = 'preview-stat'
+            span.dataset.stat = 'PF2EMONSTERMAKER.hp'
+            span.textContent = 'HP --'
+            previewBar.appendChild(span)
+            document.body.appendChild(previewBar)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: false }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            expect(span.textContent).toBe('HP --')
+        })
+
+        it('updates inline stat badges with numeric values', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+
+            const strBadge = document.createElement('span')
+            strBadge.className = 'stat-value-badge'
+            strBadge.dataset.statBadge = Statistics.str
+            strBadge.textContent = '--'
+            document.body.appendChild(strBadge)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            expect(strBadge.textContent).toMatch(/^[+-]?\d+$/)
+        })
+
+        it('shows -- in inline badge when stat is set to none', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+
+            const spellBadge = document.createElement('span')
+            spellBadge.className = 'stat-value-badge'
+            spellBadge.dataset.statBadge = 'PF2EMONSTERMAKER.spellcasting'
+            spellBadge.textContent = '--'
+            document.body.appendChild(spellBadge)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            expect(spellBadge.textContent).toBe('--')
+        })
+
+        it('shows raw value in badge for non-numeric stat values', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+
+            const dmgSelect = document.createElement('select')
+            dmgSelect.id = 'creatureBuilderPF2EMONSTERMAKER.strikeDamage'
+            const optMod = document.createElement('option')
+            optMod.value = Options.moderate
+            dmgSelect.appendChild(optMod)
+            document.body.appendChild(dmgSelect)
+            dmgSelect.value = Options.moderate
+
+            const dmgBadge = document.createElement('span')
+            dmgBadge.className = 'stat-value-badge'
+            dmgBadge.dataset.statBadge = 'PF2EMONSTERMAKER.strikeDamage'
+            dmgBadge.textContent = '--'
+            document.body.appendChild(dmgBadge)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            expect(dmgBadge.textContent).not.toBe('--')
+            expect(dmgBadge.textContent).toContain('d')
+        })
+    })
+
+    describe('Modern UI — Drop Zone', () => {
+        const setupModernDom = () => {
+            setupDom()
+            const dropZone = document.createElement('div')
+            dropZone.id = 'creatureBuilderDropZone'
+            dropZone.className = 'creature-builder-drop-zone'
+            document.body.appendChild(dropZone)
+
+            const hint = document.createElement('p')
+            hint.id = 'dropZoneHint'
+            hint.className = 'drop-zone-hint'
+            dropZone.appendChild(hint)
+
+            const list = document.createElement('div')
+            list.id = 'droppedItemsList'
+            list.className = 'dropped-items-list'
+            dropZone.appendChild(list)
+
+            const previewBar = document.createElement('div')
+            previewBar.id = 'statPreviewBar'
+            document.body.appendChild(previewBar)
+        }
+
+        it('adds drag-over class on dragover', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const dropZone = document.getElementById('creatureBuilderDropZone')!
+            dropZone.dispatchEvent(
+                new Event('dragover', { bubbles: true, cancelable: true }),
+            )
+            expect(dropZone.classList.contains('drag-over')).toBe(true)
+        })
+
+        it('removes drag-over class on drop', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const dropZone = document.getElementById('creatureBuilderDropZone')!
+            dropZone.classList.add('drag-over')
+            dropZone.dispatchEvent(new Event('drop'))
+            expect(dropZone.classList.contains('drag-over')).toBe(false)
+        })
+
+        it('removes drag-over class on dragleave', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const dropZone = document.getElementById('creatureBuilderDropZone')!
+            dropZone.classList.add('drag-over')
+            dropZone.dispatchEvent(new Event('dragleave'))
+            expect(dropZone.classList.contains('drag-over')).toBe(false)
+        })
+
+        it('renders a dropped item row', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const droppedItems: Record<string, unknown>[] = []
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, droppedItems }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const itemData = {
+                name: 'Fireball',
+                type: 'spell',
+                img: 'icons/fireball.svg',
+            }
+            droppedItems.push(itemData)
+            ui.renderDroppedItem(itemData)
+
+            const list = document.getElementById('droppedItemsList')!
+            expect(list.children).toHaveLength(1)
+            expect(
+                list.children[0].querySelector('.dropped-item-name')!
+                    .textContent,
+            ).toBe('Fireball')
+            expect(
+                list.children[0].querySelector('.dropped-item-type')!
+                    .textContent,
+            ).toBe('spell')
+        })
+
+        it('removes a dropped item when clicking remove button', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const droppedItems: Record<string, unknown>[] = []
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, droppedItems }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const itemData = {
+                name: 'Fireball',
+                type: 'spell',
+                img: 'icons/fireball.svg',
+            }
+            droppedItems.push(itemData)
+            ui.renderDroppedItem(itemData)
+
+            const removeBtn = document.querySelector(
+                '.dropped-item-remove',
+            ) as HTMLElement
+            removeBtn.click()
+
+            expect(droppedItems).toHaveLength(0)
+            expect(
+                document.getElementById('droppedItemsList')!.children,
+            ).toHaveLength(0)
+        })
+
+        it('hides hint when items are present and shows after clearing', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const droppedItems: Record<string, unknown>[] = []
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, droppedItems }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const hint = document.getElementById('dropZoneHint')!
+
+            const itemData = { name: 'Fireball', type: 'spell' }
+            droppedItems.push(itemData)
+            ui.renderDroppedItem(itemData)
+            expect(hint.classList.contains('hidden')).toBe(true)
+
+            const removeBtn = document.querySelector(
+                '.dropped-item-remove',
+            ) as HTMLElement
+            removeBtn.click()
+            expect(hint.classList.contains('hidden')).toBe(false)
+        })
+
+        it('clears dropped items on reset', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const droppedItems: Record<string, unknown>[] = []
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, droppedItems }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const itemData = { name: 'Fireball', type: 'spell' }
+            droppedItems.push(itemData)
+            ui.renderDroppedItem(itemData)
+
+            const resetBtn = document.getElementById(
+                'creatureBuilderResetButton',
+            )!
+            resetBtn.click()
+
+            expect(droppedItems).toHaveLength(0)
+            expect(
+                document.getElementById('droppedItemsList')!.children,
+            ).toHaveLength(0)
+        })
+    })
+
+    describe('Modern UI — Badge Toggle', () => {
+        const setupModernDomWithToggle = () => {
+            setupDom()
+            const wrapper = document.querySelector('.creatureBuilderForm')!
+            wrapper.classList.add('creatureBuilderFormModern')
+
+            const toggle = document.createElement('input')
+            toggle.type = 'checkbox'
+            toggle.id = 'toggleBadges'
+            toggle.checked = true
+            wrapper.appendChild(toggle)
+
+            const dropZone = document.createElement('div')
+            dropZone.id = 'creatureBuilderDropZone'
+            document.body.appendChild(dropZone)
+            const hint = document.createElement('p')
+            hint.id = 'dropZoneHint'
+            dropZone.appendChild(hint)
+            const list = document.createElement('div')
+            list.id = 'droppedItemsList'
+            dropZone.appendChild(list)
+            const previewBar = document.createElement('div')
+            previewBar.id = 'statPreviewBar'
+            document.body.appendChild(previewBar)
+        }
+
+        it('adds hide-badges class when toggle is unchecked', () => {
+            vi.useFakeTimers()
+            setupModernDomWithToggle()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const toggle = document.getElementById(
+                'toggleBadges',
+            ) as HTMLInputElement
+            const form = toggle.closest(
+                '.creatureBuilderFormModern',
+            ) as HTMLElement
+
+            toggle.checked = false
+            toggle.dispatchEvent(new Event('change'))
+            expect(form.classList.contains('hide-badges')).toBe(true)
+        })
+
+        it('removes hide-badges class when toggle is checked', () => {
+            vi.useFakeTimers()
+            setupModernDomWithToggle()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const toggle = document.getElementById(
+                'toggleBadges',
+            ) as HTMLInputElement
+            const form = toggle.closest(
+                '.creatureBuilderFormModern',
+            ) as HTMLElement
+
+            toggle.checked = false
+            toggle.dispatchEvent(new Event('change'))
+            expect(form.classList.contains('hide-badges')).toBe(true)
+
+            toggle.checked = true
+            toggle.dispatchEvent(new Event('change'))
+            expect(form.classList.contains('hide-badges')).toBe(false)
+        })
+
+        it('does nothing when toggle element is missing', () => {
+            vi.useFakeTimers()
+            setupDom()
+            const dropZone = document.createElement('div')
+            dropZone.id = 'creatureBuilderDropZone'
+            document.body.appendChild(dropZone)
+            const hint = document.createElement('p')
+            hint.id = 'dropZoneHint'
+            dropZone.appendChild(hint)
+            const list = document.createElement('div')
+            list.id = 'droppedItemsList'
+            dropZone.appendChild(list)
+            const previewBar = document.createElement('div')
+            previewBar.id = 'statPreviewBar'
+            document.body.appendChild(previewBar)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true }),
+            )
+            expect(() => {
+                ui.initialize()
+                vi.runAllTimers()
+            }).not.toThrow()
+        })
+    })
+
+    describe('Modern UI — Preview Roadmap Level & Ability Scores', () => {
+        const setupFullModernDom = () => {
+            setupDom()
+            const dropZone = document.createElement('div')
+            dropZone.id = 'creatureBuilderDropZone'
+            document.body.appendChild(dropZone)
+            const hint = document.createElement('p')
+            hint.id = 'dropZoneHint'
+            dropZone.appendChild(hint)
+            const list = document.createElement('div')
+            list.id = 'droppedItemsList'
+            dropZone.appendChild(list)
+
+            const previewBar = document.createElement('div')
+            previewBar.id = 'statPreviewBar'
+            previewBar.className = 'stat-preview-bar'
+
+            const roadmapLevel = document.createElement('span')
+            roadmapLevel.id = 'previewRoadmapLevel'
+            roadmapLevel.className = 'preview-roadmap-level'
+            previewBar.appendChild(roadmapLevel)
+
+            const abilityScores = document.createElement('div')
+            abilityScores.id = 'previewAbilityScores'
+            abilityScores.className = 'preview-ability-scores'
+            const abilities = [
+                'PF2EMONSTERMAKER.str',
+                'PF2EMONSTERMAKER.dex',
+                'PF2EMONSTERMAKER.con',
+                'PF2EMONSTERMAKER.int',
+                'PF2EMONSTERMAKER.wis',
+                'PF2EMONSTERMAKER.cha',
+            ]
+            for (const key of abilities) {
+                const span = document.createElement('span')
+                span.dataset.ability = key
+                span.textContent = '--'
+                abilityScores.appendChild(span)
+            }
+            previewBar.appendChild(abilityScores)
+
+            const previewStats = [
+                'PF2EMONSTERMAKER.hp',
+                'PF2EMONSTERMAKER.ac',
+                'PF2EMONSTERMAKER.per',
+                'PF2EMONSTERMAKER.fort',
+                'PF2EMONSTERMAKER.ref',
+                'PF2EMONSTERMAKER.wil',
+                'PF2EMONSTERMAKER.strikeBonus',
+                'PF2EMONSTERMAKER.strikeDamage',
+                'PF2EMONSTERMAKER.spellcasting',
+            ]
+            for (const key of previewStats) {
+                const span = document.createElement('span')
+                span.className = 'preview-stat'
+                span.dataset.stat = key
+                span.textContent = '--'
+                previewBar.appendChild(span)
+            }
+            document.body.appendChild(previewBar)
+        }
+
+        it('displays roadmap name and level in preview', () => {
+            vi.useFakeTimers()
+            setupFullModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '3' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const el = document.getElementById('previewRoadmapLevel')!
+            expect(el.textContent).toContain('Default')
+            expect(el.textContent).toContain('lvl')
+        })
+
+        it('shows ability score values with + prefix for positive mods', () => {
+            vi.useFakeTimers()
+            setupFullModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const strSpan = document.querySelector(
+                '[data-ability="PF2EMONSTERMAKER.str"]',
+            ) as HTMLElement
+            expect(strSpan.textContent).toContain('STR')
+            expect(strSpan.textContent).toContain('+')
+        })
+
+        it('shows -- for ability score when set to none', () => {
+            vi.useFakeTimers()
+            setupFullModernDom()
+
+            const strSelect = document.getElementById(
+                `creatureBuilder${Statistics.str}`,
+            ) as HTMLSelectElement
+            const optNone = document.createElement('option')
+            optNone.value = 'PF2EMONSTERMAKER.none'
+            strSelect.appendChild(optNone)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            strSelect.value = 'PF2EMONSTERMAKER.none'
+            ui.updateStatPreview()
+
+            const strSpan = document.querySelector(
+                '[data-ability="PF2EMONSTERMAKER.str"]',
+            ) as HTMLElement
+            expect(strSpan.textContent).toContain('STR')
+            expect(strSpan.textContent).toContain('--')
+        })
+
+        it('shows -- for ability score when value table has no match', () => {
+            vi.useFakeTimers()
+            setupFullModernDom()
+
+            const strSelect = document.getElementById(
+                `creatureBuilder${Statistics.str}`,
+            ) as HTMLSelectElement
+            const optBogus = document.createElement('option')
+            optBogus.value = 'PF2EMONSTERMAKER.bogus'
+            strSelect.appendChild(optBogus)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            strSelect.value = 'PF2EMONSTERMAKER.bogus'
+            ui.updateStatPreview()
+
+            const strSpan = document.querySelector(
+                '[data-ability="PF2EMONSTERMAKER.str"]',
+            ) as HTMLElement
+            expect(strSpan.textContent).toContain('--')
+        })
+
+        it('hides spell DC preview when spellcasting is none', () => {
+            vi.useFakeTimers()
+            setupFullModernDom()
+
+            const spellSelect = document.getElementById(
+                'creatureBuilderPF2EMONSTERMAKER.spellcasting',
+            ) as HTMLSelectElement
+            spellSelect.value = 'PF2EMONSTERMAKER.none'
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const spellSpan = document.querySelector(
+                '.preview-stat[data-stat="PF2EMONSTERMAKER.spellcasting"]',
+            ) as HTMLElement
+            expect(spellSpan.style.display).toBe('none')
+        })
+
+        it('shows spell DC preview with offset when spellcasting has a value', () => {
+            vi.useFakeTimers()
+            setupFullModernDom()
+
+            const spellSelect = document.getElementById(
+                'creatureBuilderPF2EMONSTERMAKER.spellcasting',
+            ) as HTMLSelectElement
+            spellSelect.value = 'PF2EMONSTERMAKER.moderate'
+            spellSelect.dispatchEvent(new Event('change', { bubbles: true }))
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const spellSpan = document.querySelector(
+                '.preview-stat[data-stat="PF2EMONSTERMAKER.spellcasting"]',
+            ) as HTMLElement
+            expect(spellSpan.style.display).not.toBe('none')
+            expect(spellSpan.textContent).toContain('Spell DC')
+        })
+
+        it('updates preview when roadmap select changes', () => {
+            vi.useFakeTimers()
+            setupFullModernDom()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const roadmapSelect = document.getElementById(
+                'creatureBuilderRoadmap',
+            ) as HTMLSelectElement
+            roadmapSelect.value = 'TestRoadmap'
+            roadmapSelect.dispatchEvent(new Event('change'))
+
+            const el = document.getElementById('previewRoadmapLevel')!
+            expect(el.textContent).toContain('lvl')
+            expect(el.textContent).toContain('TestRoadmap')
+        })
+    })
+
+    describe('Modern UI — Inline Badge Edge Cases', () => {
+        const setupModernDomWithBadges = () => {
+            setupDom()
+            const dropZone = document.createElement('div')
+            dropZone.id = 'creatureBuilderDropZone'
+            document.body.appendChild(dropZone)
+            const hint = document.createElement('p')
+            hint.id = 'dropZoneHint'
+            dropZone.appendChild(hint)
+            const list = document.createElement('div')
+            list.id = 'droppedItemsList'
+            dropZone.appendChild(list)
+            const previewBar = document.createElement('div')
+            previewBar.id = 'statPreviewBar'
+            previewBar.className = 'stat-preview-bar'
+            const previewStats = [
+                'PF2EMONSTERMAKER.hp',
+                'PF2EMONSTERMAKER.ac',
+                'PF2EMONSTERMAKER.spellcasting',
+            ]
+            for (const key of previewStats) {
+                const span = document.createElement('span')
+                span.className = 'preview-stat'
+                span.dataset.stat = key
+                previewBar.appendChild(span)
+            }
+            document.body.appendChild(previewBar)
+        }
+
+        it('shows spellcasting badge with +8 offset', () => {
+            vi.useFakeTimers()
+            setupModernDomWithBadges()
+
+            const spellSelect = document.getElementById(
+                'creatureBuilderPF2EMONSTERMAKER.spellcasting',
+            ) as HTMLSelectElement
+            spellSelect.value = 'PF2EMONSTERMAKER.moderate'
+
+            const badge = document.createElement('span')
+            badge.className = 'stat-value-badge'
+            badge.dataset.statBadge = 'PF2EMONSTERMAKER.spellcasting'
+            badge.textContent = '--'
+            document.body.appendChild(badge)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const expectedBase = Number.parseInt(
+                statisticValues[Statistics.spellcasting]['1'][Options.moderate],
+                10,
+            )
+            const rawValue = Number.parseInt(badge.textContent!, 10)
+            expect(rawValue).toBe(expectedBase + 8)
+        })
+
+        it('shows HP badge without + prefix', () => {
+            vi.useFakeTimers()
+            setupModernDomWithBadges()
+
+            const hpSelect = document.createElement('select')
+            hpSelect.id = 'creatureBuilderPF2EMONSTERMAKER.hp'
+            const opt = document.createElement('option')
+            opt.value = Options.moderate
+            hpSelect.appendChild(opt)
+            document.body.appendChild(hpSelect)
+            hpSelect.value = Options.moderate
+
+            const badge = document.createElement('span')
+            badge.className = 'stat-value-badge'
+            badge.dataset.statBadge = 'PF2EMONSTERMAKER.hp'
+            badge.textContent = '--'
+            document.body.appendChild(badge)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            expect(badge.textContent).not.toContain('+')
+            expect(badge.textContent).not.toBe('--')
+        })
+
+        it('shows AC badge without + prefix', () => {
+            vi.useFakeTimers()
+            setupModernDomWithBadges()
+
+            const acSelect = document.createElement('select')
+            acSelect.id = 'creatureBuilderPF2EMONSTERMAKER.ac'
+            const opt = document.createElement('option')
+            opt.value = Options.moderate
+            acSelect.appendChild(opt)
+            document.body.appendChild(acSelect)
+            acSelect.value = Options.moderate
+
+            const badge = document.createElement('span')
+            badge.className = 'stat-value-badge'
+            badge.dataset.statBadge = 'PF2EMONSTERMAKER.ac'
+            badge.textContent = '--'
+            document.body.appendChild(badge)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            expect(badge.textContent).not.toContain('+')
+            expect(badge.textContent).not.toBe('--')
+        })
+
+        it('shows -- in badge when no matching select exists', () => {
+            vi.useFakeTimers()
+            setupModernDomWithBadges()
+
+            const badge = document.createElement('span')
+            badge.className = 'stat-value-badge'
+            badge.dataset.statBadge = 'PF2EMONSTERMAKER.nonexistent'
+            badge.textContent = 'old'
+            document.body.appendChild(badge)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            expect(badge.textContent).toBe('--')
+        })
+
+        it('shows -- in badge when value table has no match for option', () => {
+            vi.useFakeTimers()
+            setupModernDomWithBadges()
+
+            const strSelect = document.getElementById(
+                `creatureBuilder${Statistics.str}`,
+            ) as HTMLSelectElement
+            const optBogus = document.createElement('option')
+            optBogus.value = 'PF2EMONSTERMAKER.bogus'
+            strSelect.appendChild(optBogus)
+
+            const badge = document.createElement('span')
+            badge.className = 'stat-value-badge'
+            badge.dataset.statBadge = Statistics.str
+            badge.textContent = 'old'
+            document.body.appendChild(badge)
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ isModern: true, actorLevel: '1' }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            strSelect.value = 'PF2EMONSTERMAKER.bogus'
+            ui.updateStatPreview()
+
+            expect(badge.textContent).toBe('--')
         })
     })
 })
