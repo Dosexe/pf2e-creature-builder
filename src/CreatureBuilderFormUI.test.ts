@@ -2114,7 +2114,7 @@ describe('CreatureBuilderFormUI', () => {
                 '.preview-stat[data-stat="PF2EMONSTERMAKER.spellcasting"]',
             ) as HTMLElement
             expect(spellSpan.style.display).not.toBe('none')
-            expect(spellSpan.textContent).toContain('SPELL')
+            expect(spellSpan.textContent).toContain('Spell DC')
         })
 
         it('updates preview when roadmap select changes', () => {

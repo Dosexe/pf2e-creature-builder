@@ -27,7 +27,7 @@
                 <div class="stat-cell stat-cell--wide">
                     <label for="creatureBuilderRoadmap">{{localize "PF2EMONSTERMAKER.roadmap"}}</label>
                     <select id="creatureBuilderRoadmap" class="stat-select" onchange="setRoadmap(this)">
-                        <option value="Default" selected>{{localize "PF2EMONSTERMAKER.defaultRoadmap"}}</option>
+                        <option value="Default" selected>{{localize "pf2e-creature-builder.form.roadmap.default"}}</option>
                         {{#each RoadMaps}}
                         <option value="{{@key}}">{{roadmapLabel @key}}</option>
                         {{/each}}
@@ -158,7 +158,7 @@
             <span class="preview-stat" data-stat="PF2EMONSTERMAKER.wil"><i class="fas fa-brain"></i> {{localize "PF2EMONSTERMAKER.wilShort"}} --</span>
             <span class="preview-stat" data-stat="PF2EMONSTERMAKER.strikeBonus"><i class="fas fa-fist-raised"></i> {{localize "PF2EMONSTERMAKER.strikeBonusShort"}} --</span>
             <span class="preview-stat" data-stat="PF2EMONSTERMAKER.strikeDamage"><i class="fas fa-burst"></i> {{localize "PF2EMONSTERMAKER.strikeDamageShort"}} --</span>
-            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.spellcasting"><i class="fas fa-wand-sparkles"></i> {{localize "PF2EMONSTERMAKER.spellcastingShort"}} --</span>
+            <span class="preview-stat" data-stat="PF2EMONSTERMAKER.spellcasting"><i class="fas fa-wand-sparkles"></i> {{localize "pf2e-creature-builder.form.preview.spellcasting"}} --</span>
         </div>
     </div>
 </form>

@@ -122,7 +122,6 @@
     "PF2EMONSTERMAKER.wilShort": "WILL",
     "PF2EMONSTERMAKER.strikeBonusShort": "ATK",
     "PF2EMONSTERMAKER.strikeDamageShort": "DMG",
-    "PF2EMONSTERMAKER.spellcastingShort": "SPELL",
 
     "PF2EMONSTERMAKER.items": "Items",
     "PF2EMONSTERMAKER.itemsActions": "Items / Actions",
@@ -132,5 +131,7 @@
     "PF2EMONSTERMAKER.submit": "Submit",
 
     "pf2e-creature-builder.settings.useClassicUI.name": "Use Classic UI",
-    "pf2e-creature-builder.settings.useClassicUI.hint": "Enable this to use the original form layout without the compact stats, drag-and-drop, or stat highlights."
+    "pf2e-creature-builder.settings.useClassicUI.hint": "Enable this to use the original form layout without the compact stats, drag-and-drop, or stat highlights.",
+    "pf2e-creature-builder.form.roadmap.default": "Default",
+    "pf2e-creature-builder.form.preview.spellcasting": "Spell DC"
 }

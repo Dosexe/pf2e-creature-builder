@@ -1230,7 +1230,7 @@ class CreatureBuilderFormUI {
         },
         {
             key: 'PF2EMONSTERMAKER.spellcasting',
-            labelKey: 'PF2EMONSTERMAKER.spellcastingShort',
+            labelKey: 'pf2e-creature-builder.form.preview.spellcasting',
             prefix: '',
             icon: 'fa-wand-sparkles',
             offset: 8,
