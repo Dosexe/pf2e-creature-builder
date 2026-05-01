@@ -113,10 +113,11 @@ Below are the images of the form:
 
 First part contains all the important values like Hit Points, Level, Name etc. and preview block on the right.
 
-![Page One of The Form](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/PageOne.png?raw=true)
+![Page One of The Form](https://raw.githubusercontent.com/Dosexe/pf2e-creature-builder/refs/heads/main/images/PageOne.png)
 
 The Second part contains all the skills and item dropdown zone.
-![Page Two of The Form](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/PageTwo.png?raw=true)
+
+![Page Two of The Form](https://raw.githubusercontent.com/Dosexe/pf2e-creature-builder/refs/heads/main/images/PageTwo.png)
 
 The last part contains `Submit` button and `Reset to Defaults` button
 
@@ -130,4 +131,4 @@ Lore section allow to specify any number of additional lore entries if needed.
 ![Skill Section](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/SkillLoreItemBlock.png?raw=true)
 
 Here is a comparison of size in relation to UI:
-![Full UI Size](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/FullUIImage.png?raw=true)
+![Full UI Size](https://raw.githubusercontent.com/Dosexe/pf2e-creature-builder/refs/heads/main/images/FullUIImage.png)
