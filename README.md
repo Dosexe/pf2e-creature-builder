@@ -1,6 +1,6 @@
 ![Build](https://img.shields.io/github/actions/workflow/status/Dosexe/pf2e-creature-builder/build.yml) ![Release](https://img.shields.io/github/v/release/Dosexe/pf2e-creature-builder) ![FoundryVtt](https://img.shields.io/badge/foundry_vtt_module-orange?logo=foundryvirtualtabletop&logoColor=black) ![FoundryVersion](https://img.shields.io/badge/V14-green?logo=foundryvirtualtabletop&logoColor=black)
 
-# fvtt-module-pf2e-CreatureBuilderForm
+# Foundry VTT PF2e Creature Builder
 
 The first version was forked from the [pf2e-monster-maker](https://github.com/mikolajg-tt/pf2e-monster-maker). Thanks to the creator **mikolajg-tt** for the solid foundation and great work on the original module.
 Current version is a rework of the original idea.
