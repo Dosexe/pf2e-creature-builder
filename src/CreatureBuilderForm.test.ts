@@ -1577,6 +1577,8 @@ describe('CreatureBuilderForm', () => {
         })
 
         it('rejects duplicate feats with the same uuid', async () => {
+            const warnSpy = vi.fn()
+            vi.stubGlobal('ui', { notifications: { warn: warnSpy } })
             ;(globalThis as any).fromUuid = async () => ({
                 type: 'feat',
                 name: 'Toughness',
@@ -1593,6 +1595,9 @@ describe('CreatureBuilderForm', () => {
             await (form as any)._onDrop(event)
             await (form as any)._onDrop(event)
             expect(form.droppedItems).toHaveLength(1)
+            expect(warnSpy).toHaveBeenCalledWith(
+                'loc:PF2EMONSTERMAKER.duplicateItemType',
+            )
 
             delete (globalThis as any).fromUuid
         })
