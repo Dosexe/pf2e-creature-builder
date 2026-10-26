@@ -231,6 +231,16 @@ describe('CreatureBuilderFormUI', () => {
         expect(box.checked).toBe(true)
         label.click()
         expect(box.checked).toBe(false)
+        const nameInput = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilderName`)}`,
+        ) as HTMLInputElement
+        expect(nameInput.type).toBe('text')
+        expect(root.querySelector('footer.form-footer')).toBeTruthy()
+        ui.addLoreSkill('Forest')
+        const loreInput = root.querySelector(
+            '.loreNameInput',
+        ) as HTMLInputElement
+        expect(loreInput.type).toBe(nameInput.type)
         expect(root.querySelector('[data-action="addLore"]')).toBeTruthy()
         expect(root.querySelector('[data-action="resetDefaults"]')).toBeTruthy()
 

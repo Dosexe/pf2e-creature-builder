@@ -126,6 +126,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         window: {
             title: 'PF2EMONSTERMAKER.title',
             icon: 'fas fa-book',
+            resizable: true,
         },
         position: {
             width: 530,

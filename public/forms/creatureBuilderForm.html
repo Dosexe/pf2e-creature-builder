@@ -8,11 +8,13 @@
             </label>
 
             <h2>{{localize "PF2EMONSTERMAKER.nameLevelRoadmap"}}</h2>
-            <div class="form-group setting">
-                <label for="{{fieldId}}creatureBuilderName" class="creatureBuilderFormText">
+            <div class="form-group">
+                <label for="{{fieldId}}creatureBuilderName">
                     {{localize "PF2EMONSTERMAKER.name"}}
                 </label>
-                <input id="{{fieldId}}creatureBuilderName" name="PF2EMONSTERMAKER.name" placeholder="{{name}}" class="creatureBuilderFormText">
+                <div class="form-fields">
+                    <input type="text" id="{{fieldId}}creatureBuilderName" name="PF2EMONSTERMAKER.name" placeholder="{{name}}">
+                </div>
             </div>
             <div class="stat-row">
                 <div class="stat-cell stat-cell--wide">
@@ -34,8 +36,8 @@
                 </div>
             </div>
 
-            <div class="form-group setting">
-                <label id="{{fieldId}}creatureBuilderTraitsLabel" class="creatureBuilderFormText">
+            <div class="form-group">
+                <label id="{{fieldId}}creatureBuilderTraitsLabel">
                     {{localize "PF2EMONSTERMAKER.traits"}}
                 </label>
                 <div class="traitsContainer">
@@ -86,16 +88,18 @@
                         {{/each}}
                     </div>
                     {{#if (eq this.name "PF2EMONSTERMAKER.spellcasting")}}
-                    <div class="form-group setting" id="{{@root.fieldId}}spellListFormGroup" style="display: none;">
-                        <label for="{{@root.fieldId}}creatureBuilderPF2EMONSTERMAKER.spellList" class="creatureBuilderFormText">
-                            {{localize "PF2EMONSTERMAKER.spellList"}}
-                        </label>
-                        <select id="{{@root.fieldId}}creatureBuilderPF2EMONSTERMAKER.spellList" name="PF2EMONSTERMAKER.spellList" class="stat-select">
-                            <option value="none" selected>{{localize "PF2EMONSTERMAKER.none"}}</option>
-                            {{#each @root.SpellLists}}
-                            <option value="{{@key}}">{{this.name}}</option>
-                            {{/each}}
-                        </select>
+                    <div class="stat-row" id="{{@root.fieldId}}spellListFormGroup" style="display: none;">
+                        <div class="stat-cell stat-cell--wide">
+                            <label for="{{@root.fieldId}}creatureBuilderPF2EMONSTERMAKER.spellList">
+                                {{localize "PF2EMONSTERMAKER.spellList"}}
+                            </label>
+                            <select id="{{@root.fieldId}}creatureBuilderPF2EMONSTERMAKER.spellList" name="PF2EMONSTERMAKER.spellList" class="stat-select">
+                                <option value="none" selected>{{localize "PF2EMONSTERMAKER.none"}}</option>
+                                {{#each @root.SpellLists}}
+                                <option value="{{@key}}">{{this.name}}</option>
+                                {{/each}}
+                            </select>
+                        </div>
                     </div>
                     {{/if}}
                 </div>
@@ -129,11 +133,10 @@
                 </div>
             </details>
 
-            <div class="formDivider"></div>
-            <div class="buttons">
-                <button type="button" data-action="resetDefaults" id="{{fieldId}}creatureBuilderResetButton" class="creatureBuilderResetButton">{{localize "PF2EMONSTERMAKER.resetDefaults"}}</button>
+            <footer class="form-footer">
+                <button type="button" data-action="resetDefaults" id="{{fieldId}}creatureBuilderResetButton">{{localize "PF2EMONSTERMAKER.resetDefaults"}}</button>
                 <button type="submit" id="{{fieldId}}creatureBuilderFormSubmit">{{localize "PF2EMONSTERMAKER.submit"}}</button>
-            </div>
+            </footer>
         </div>
 
         <div class="form-preview-divider"></div>

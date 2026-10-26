@@ -494,7 +494,10 @@ class CreatureBuilderFormUI {
         const traditionRow = findParentRow(traditionSelect)
         const typeRow = findParentRow(typeSelect)
         const attributeRow = findParentRow(attributeSelect)
-        const spellListRow = findParentRow(spellListSelect)
+        const spellListRow =
+            (spellListSelect?.closest(
+                '[id$="spellListFormGroup"]',
+            ) as HTMLElement | null) ?? findParentRow(spellListSelect)
 
         if (traditionRow) {
             traditionRow.style.display = isNone ? 'none' : 'flex'
@@ -943,7 +946,7 @@ class CreatureBuilderFormUI {
         const loreId = this.loreCounter++
 
         const loreDiv = document.createElement('div')
-        loreDiv.className = 'form-group setting loreEntry'
+        loreDiv.className = 'form-group loreEntry'
         loreDiv.id = this.elementId(`loreEntry${loreId}`)
 
         const nameInput = document.createElement('input')
@@ -953,12 +956,10 @@ class CreatureBuilderFormUI {
         nameInput.placeholder =
             (window as any).game?.i18n?.localize('PF2EMONSTERMAKER.loreName') ||
             'Lore Name'
-        nameInput.className = 'creatureBuilderFormText loreNameInput'
+        nameInput.className = 'loreNameInput'
 
         const levelSelect = document.createElement('select')
         levelSelect.name = `loreLevel${loreId}`
-        levelSelect.className = 'creatureBuilderFormTextSmall'
-
         for (const option of this.loreOptions) {
             const opt = document.createElement('option')
             opt.value = option

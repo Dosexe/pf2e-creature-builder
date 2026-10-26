@@ -1120,6 +1120,9 @@ describe('CreatureBuilderForm', () => {
             expect(CreatureBuilderForm.DEFAULT_OPTIONS.window.title).toBe(
                 'PF2EMONSTERMAKER.title',
             )
+            expect(CreatureBuilderForm.DEFAULT_OPTIONS.window.resizable).toBe(
+                true,
+            )
             expect(CreatureBuilderForm.PARTS.body.scrollable).toEqual([
                 '.form-main',
             ])
