@@ -130,8 +130,6 @@
     "PF2EMONSTERMAKER.invalidItemType": "This item type cannot be added",
     "PF2EMONSTERMAKER.submit": "Submit",
 
-    "pf2e-creature-builder.settings.useClassicUI.name": "Use Classic UI",
-    "pf2e-creature-builder.settings.useClassicUI.hint": "Enable this to use the original form layout without the compact stats, drag-and-drop, or stat highlights.",
     "pf2e-creature-builder.form.roadmap.default": "Default",
     "pf2e-creature-builder.form.preview.spellcasting": "Spell DC"
 }

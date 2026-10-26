@@ -1,10 +1,14 @@
 import { DefaultCreatureLevel } from '@/Keys'
 import { RoadMapRegistry } from '@/roadmaps/RoadMapRegistry'
-import { CreatureBuilderForm } from './CreatureBuilderForm'
+import {
+    CreatureBuilderForm,
+    registerCreatureBuilderHelpers,
+} from './CreatureBuilderForm'
 
 const SHORT_MODULE_NAME = 'CB'
 
 Hooks.on('init', async () => {
+    registerCreatureBuilderHelpers()
     RoadMapRegistry.getInstance()
 
     game.settings?.register('foundryvtt-pf2e-creature-builder', 'roadmaps', {
@@ -17,21 +21,6 @@ Hooks.on('init', async () => {
     game.settings?.register('pf2e-creature-builder', 'abbreviateName', {
         name: 'Abbreviate Creature Builder',
         hint: 'Turn this on if you prefer to see CB instead of the full title Creature Builder in the monster sheet.',
-        scope: 'world',
-        config: true,
-        type: Boolean,
-        default: false,
-    })
-
-    game.settings?.register('pf2e-creature-builder', 'useClassicUI', {
-        name:
-            game.i18n?.localize(
-                'pf2e-creature-builder.settings.useClassicUI.name',
-            ) ?? 'Use Classic UI',
-        hint:
-            game.i18n?.localize(
-                'pf2e-creature-builder.settings.useClassicUI.hint',
-            ) ?? '',
         scope: 'world',
         config: true,
         type: Boolean,

@@ -1,7 +1,7 @@
 /**
  * Creature Builder Form UI Controller
  * Handles client-side form interactions: traits management, lore skills, and roadmap selection
- * This class is instantiated by the CreatureBuilderForm FormApplication after rendering
+ * This class is instantiated by the CreatureBuilderForm Application V2 after rendering
  */
 
 import type { RoadmapCollection } from '@/Keys'
@@ -38,13 +38,15 @@ interface CreatureBuilderFormConfig {
     detectedTraits: string[]
     detectedLoreSkills: LoreSkill[]
     actorLevel: string
-    isModern?: boolean
     droppedItems?: Record<string, unknown>[]
+    root: HTMLElement
+    idPrefix: string
+    preservedControls?: Record<string, string>
 }
 
 /**
  * UI Controller for Creature Builder form interactions
- * Separated from the FormApplication to handle client-side behavior
+ * Client-side behavior for one Creature Builder window
  */
 class CreatureBuilderFormUI {
     private readonly monsterCreatureStatistics: CreatureStatistic[]
@@ -56,8 +58,10 @@ class CreatureBuilderFormUI {
     private readonly detectedTraits: string[]
     private readonly detectedLoreSkills: LoreSkill[]
     private readonly actorLevel: string
-    private readonly isModern: boolean
     private readonly droppedItems: Record<string, unknown>[]
+    private readonly root: HTMLElement
+    private readonly idPrefix: string
+    private readonly preservedControls: Record<string, string> | null
     private loreCounter: number = 0
     private traits: string[] = []
     private selectedDropdownIndex: number = -1
@@ -262,6 +266,31 @@ class CreatureBuilderFormUI {
     private traitsHidden!: HTMLInputElement
     private creatureBuilderTraitsDropdown!: HTMLElement
     private traitsDropdownWrapper!: HTMLElement
+    private initTimer: ReturnType<typeof setTimeout> | undefined
+
+    private readonly onDocumentClick = (event: Event) => {
+        const target = event.target as Node
+        const traitsLabel = this.queryById('creatureBuilderTraitsLabel')
+        if (
+            !this.traitsTagify.contains(target) &&
+            !this.creatureBuilderTraitsDropdown.contains(target) &&
+            !traitsLabel?.contains(target)
+        ) {
+            this.hideDropdown()
+        }
+    }
+
+    private readonly onWindowScroll = () => {
+        if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
+            this.positionDropdown()
+        }
+    }
+
+    private readonly onWindowResize = () => {
+        if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
+            this.positionDropdown()
+        }
+    }
 
     constructor(config: CreatureBuilderFormConfig) {
         this.monsterCreatureStatistics = config.creatureStatistics
@@ -271,8 +300,10 @@ class CreatureBuilderFormUI {
         this.detectedTraits = config.detectedTraits
         this.detectedLoreSkills = config.detectedLoreSkills
         this.actorLevel = String(config.actorLevel)
-        this.isModern = config.isModern === true
         this.droppedItems = config.droppedItems ?? []
+        this.root = config.root
+        this.idPrefix = config.idPrefix
+        this.preservedControls = config.preservedControls ?? null
     }
 
     /**
@@ -285,23 +316,40 @@ class CreatureBuilderFormUI {
         this.initializeLoreSkills()
         this.initCollapsibleSections()
         this.setupSpellcastingVisibility()
-
-        if (this.isModern) {
-            this.setupDropZone()
-            this.setupStatHighlightListeners()
-            this.setupStatPreviewListeners()
-            this.setupPreviewSidebar()
-            this.setupBadgeToggle()
+        this.setupDropZone()
+        this.setupStatHighlightListeners()
+        this.setupStatPreviewListeners()
+        this.setupBadgeToggle()
+        for (const item of this.droppedItems) {
+            this.renderDroppedItem(item)
         }
 
-        setTimeout(() => {
+        this.initTimer = setTimeout(() => {
+            this.initTimer = undefined
             this.setDetectedStats()
+            this.applyPreservedControls()
             this.updateSpellcastingOptionsVisibility()
-            if (this.isModern) {
-                this.applyAllStatHighlights()
-                this.updateStatPreview()
-            }
+            this.applyAllStatHighlights()
+            this.updateStatPreview()
         }, 0)
+    }
+
+    /**
+     * Remove document and window listeners and detach the traits dropdown
+     * that was moved onto document.body.
+     */
+    public destroy(): void {
+        if (this.initTimer !== undefined) {
+            clearTimeout(this.initTimer)
+            this.initTimer = undefined
+        }
+
+        document.removeEventListener('click', this.onDocumentClick)
+        window.removeEventListener('scroll', this.onWindowScroll, true)
+        window.removeEventListener('resize', this.onWindowResize)
+
+        this.creatureBuilderTraitsDropdown?.classList.remove('show')
+        this.creatureBuilderTraitsDropdown?.remove()
     }
 
     /**
@@ -342,59 +390,35 @@ class CreatureBuilderFormUI {
             ) {
                 return
             }
-            this.traitsInput.focus()
-            this.showDropdown(this.getInputText())
+            this.focusTraitsInput()
         })
 
-        document.addEventListener('click', (e) => {
-            if (
-                !this.traitsTagify.contains(e.target as Node) &&
-                !this.creatureBuilderTraitsDropdown.contains(e.target as Node)
-            ) {
-                this.hideDropdown()
-            }
-        })
-
-        window.addEventListener(
-            'scroll',
+        this.queryById('creatureBuilderTraitsLabel')?.addEventListener(
+            'click',
             () => {
-                if (
-                    this.creatureBuilderTraitsDropdown.classList.contains(
-                        'show',
-                    )
-                ) {
-                    this.positionDropdown()
-                }
+                this.focusTraitsInput()
             },
-            true,
         )
 
-        window.addEventListener('resize', () => {
-            if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
-                this.positionDropdown()
-            }
-        })
+        document.addEventListener('click', this.onDocumentClick)
 
-        const addLoreButton = this.getElement('addLoreButton')
-        addLoreButton.addEventListener('click', () => {
-            this.addLoreSkill()
-        })
+        window.addEventListener('scroll', this.onWindowScroll, true)
 
-        const resetButton = this.getElement('creatureBuilderResetButton')
-        resetButton.addEventListener('click', () => {
-            this.resetToDefaults()
-        })
+        window.addEventListener('resize', this.onWindowResize)
 
-        ;(window as any).setRoadmap = (selectedRoadmap: HTMLSelectElement) => {
-            this.setRoadmap(selectedRoadmap)
-        }
+        const roadmapSelect = this.queryById<HTMLSelectElement>(
+            'creatureBuilderRoadmap',
+        )
+        roadmapSelect?.addEventListener('change', () => {
+            this.setRoadmap(roadmapSelect)
+        })
     }
 
     /**
      * Setup event listeners for spellcasting dropdowns to toggle visibility and defaults
      */
     private setupSpellcastingVisibility(): void {
-        const spellcastingSelect = document.getElementById(
+        const spellcastingSelect = this.queryById(
             'creatureBuilderPF2EMONSTERMAKER.spellcasting',
         ) as HTMLSelectElement
         if (spellcastingSelect) {
@@ -404,7 +428,7 @@ class CreatureBuilderFormUI {
         }
 
         // Add listener for caster type to auto-update key attribute default
-        const casterTypeSelect = document.getElementById(
+        const casterTypeSelect = this.queryById(
             'creatureBuilderPF2EMONSTERMAKER.spellcastingType',
         ) as HTMLSelectElement
         if (casterTypeSelect) {
@@ -419,10 +443,10 @@ class CreatureBuilderFormUI {
      * Innate/Spontaneous -> Charisma, Prepared -> Intelligence
      */
     private updateKeyAttributeDefault(): void {
-        const casterTypeSelect = document.getElementById(
+        const casterTypeSelect = this.queryById(
             'creatureBuilderPF2EMONSTERMAKER.spellcastingType',
         ) as HTMLSelectElement
-        const attributeSelect = document.getElementById(
+        const attributeSelect = this.queryById(
             'creatureBuilderPF2EMONSTERMAKER.spellcastingAttribute',
         ) as HTMLSelectElement
 
@@ -442,19 +466,19 @@ class CreatureBuilderFormUI {
      * Update visibility of spellcasting tradition, type, and attribute options based on spellcasting value
      */
     private updateSpellcastingOptionsVisibility(): void {
-        const spellcastingSelect = document.getElementById(
+        const spellcastingSelect = this.queryById(
             'creatureBuilderPF2EMONSTERMAKER.spellcasting',
         ) as HTMLSelectElement
-        const traditionSelect = document.getElementById(
+        const traditionSelect = this.queryById(
             'creatureBuilderPF2EMONSTERMAKER.spellcastingTradition',
         ) as HTMLSelectElement
-        const typeSelect = document.getElementById(
+        const typeSelect = this.queryById(
             'creatureBuilderPF2EMONSTERMAKER.spellcastingType',
         ) as HTMLSelectElement
-        const attributeSelect = document.getElementById(
+        const attributeSelect = this.queryById(
             'creatureBuilderPF2EMONSTERMAKER.spellcastingAttribute',
         ) as HTMLSelectElement
-        const spellListSelect = document.getElementById(
+        const spellListSelect = this.queryById(
             'creatureBuilderPF2EMONSTERMAKER.spellList',
         ) as HTMLSelectElement
 
@@ -472,19 +496,17 @@ class CreatureBuilderFormUI {
         const attributeRow = findParentRow(attributeSelect)
         const spellListRow = findParentRow(spellListSelect)
 
-        const showDisplay = this.isModern ? 'flex' : 'flex'
-
         if (traditionRow) {
-            traditionRow.style.display = isNone ? 'none' : showDisplay
+            traditionRow.style.display = isNone ? 'none' : 'flex'
         }
         if (typeRow) {
-            typeRow.style.display = isNone ? 'none' : showDisplay
+            typeRow.style.display = isNone ? 'none' : 'flex'
         }
         if (attributeRow) {
-            attributeRow.style.display = isNone ? 'none' : showDisplay
+            attributeRow.style.display = isNone ? 'none' : 'flex'
         }
         if (spellListRow) {
-            spellListRow.style.display = isNone ? 'none' : showDisplay
+            spellListRow.style.display = isNone ? 'none' : 'flex'
         }
     }
 
@@ -494,7 +516,7 @@ class CreatureBuilderFormUI {
     private setDefaults(): void {
         for (const category of this.monsterCreatureStatistics) {
             for (const statistic of category.statisticEntries) {
-                const element = document.getElementById(
+                const element = this.queryById(
                     `creatureBuilder${statistic.name}`,
                 ) as HTMLSelectElement
                 if (element) {
@@ -512,7 +534,7 @@ class CreatureBuilderFormUI {
     private setDetectedStats(): void {
         this.setDefaults()
 
-        const levelSelect = document.getElementById(
+        const levelSelect = this.queryById(
             'creatureBuilderLevel',
         ) as HTMLSelectElement
         if (
@@ -530,7 +552,7 @@ class CreatureBuilderFormUI {
             Object.keys(this.detectedStats).length > 0
         ) {
             for (const [key, value] of Object.entries(this.detectedStats)) {
-                const select = document.getElementById(
+                const select = this.queryById(
                     `creatureBuilder${key}`,
                 ) as HTMLSelectElement
                 if (select) {
@@ -539,14 +561,34 @@ class CreatureBuilderFormUI {
             }
         }
 
-        if (this.isModern) {
-            this.applyAllStatHighlights()
-            this.updateStatPreview()
+        this.applyAllStatHighlights()
+        this.updateStatPreview()
+    }
+
+    /**
+     * Put the dropdown values from the previous render back after detected stats.
+     */
+    private applyPreservedControls(): void {
+        if (!this.preservedControls) return
+
+        for (const [key, value] of Object.entries(this.preservedControls)) {
+            if (key === 'creatureBuilderRoadmap') {
+                const roadmap = this.queryById<HTMLSelectElement>(
+                    'creatureBuilderRoadmap',
+                )
+                if (roadmap) roadmap.value = value
+                continue
+            }
+
+            const field = this.root.querySelector<
+                HTMLSelectElement | HTMLInputElement
+            >(`[name="${key}"]`)
+            if (field) field.value = value
         }
     }
 
     /**
-     * Set roadmap (called from HTML onchange handler)
+     * Apply the selected roadmap to statistics in this window
      */
     public setRoadmap(selectedRoadmap: HTMLSelectElement): void {
         const roadmapValue = selectedRoadmap.value
@@ -556,7 +598,7 @@ class CreatureBuilderFormUI {
             const roadmap = this.monsterCreatureRoadmaps[roadmapValue]
 
             for (const [key, value] of Object.entries(roadmap)) {
-                const select = document.getElementById(
+                const select = this.queryById(
                     `creatureBuilder${key}`,
                 ) as HTMLSelectElement
                 if (select) {
@@ -565,11 +607,8 @@ class CreatureBuilderFormUI {
             }
         }
         this.updateSpellcastingOptionsVisibility()
-
-        if (this.isModern) {
-            this.applyAllStatHighlights()
-            this.updateStatPreview()
-        }
+        this.applyAllStatHighlights()
+        this.updateStatPreview()
     }
 
     /**
@@ -668,6 +707,15 @@ class CreatureBuilderFormUI {
     }
 
     /**
+     * Focus the traits field and open its suggestion list.
+     * The field is a contenteditable span, which a label cannot target.
+     */
+    private focusTraitsInput(): void {
+        this.traitsInput.focus()
+        this.showDropdown(this.getInputText())
+    }
+
+    /**
      * Position the dropdown relative to the tagify container
      */
     private positionDropdown(): void {
@@ -753,9 +801,10 @@ class CreatureBuilderFormUI {
         item.className = isCustom
             ? 'tagify__dropdown__item customEntry'
             : 'tagify__dropdown__item'
-        item.id = isCustom
+        const itemId = isCustom
             ? `custom-${traitName}`
             : traitName.replace(/\s+/g, '-')
+        item.id = this.elementId(itemId)
         item.setAttribute('value', displayText)
         item.setAttribute('mappedvalue', displayText)
         item.setAttribute('data-trait', traitName)
@@ -889,13 +938,13 @@ class CreatureBuilderFormUI {
     /**
      * Add a lore skill entry
      */
-    private addLoreSkill(name: string = '', level: string = ''): void {
+    public addLoreSkill(name: string = '', level: string = ''): void {
         const container = this.getElement('loreSkillsContainer')
         const loreId = this.loreCounter++
 
         const loreDiv = document.createElement('div')
         loreDiv.className = 'form-group setting loreEntry'
-        loreDiv.id = `loreEntry${loreId}`
+        loreDiv.id = this.elementId(`loreEntry${loreId}`)
 
         const nameInput = document.createElement('input')
         nameInput.type = 'text'
@@ -953,20 +1002,20 @@ class CreatureBuilderFormUI {
     /**
      * Reset form to defaults
      */
-    private resetToDefaults(): void {
+    public resetToDefaults(): void {
         this.setDefaults()
 
-        const levelSelect = document.getElementById(
+        const levelSelect = this.queryById(
             'creatureBuilderLevel',
         ) as HTMLSelectElement
         if (levelSelect) levelSelect.value = '-1'
 
-        const roadmapSelect = document.getElementById(
+        const roadmapSelect = this.queryById(
             'creatureBuilderRoadmap',
         ) as HTMLSelectElement
         if (roadmapSelect) roadmapSelect.value = 'Default'
 
-        const spellListSelect = document.getElementById(
+        const spellListSelect = this.queryById(
             'creatureBuilderPF2EMONSTERMAKER.spellList',
         ) as HTMLSelectElement
         if (spellListSelect) spellListSelect.value = 'none'
@@ -982,19 +1031,18 @@ class CreatureBuilderFormUI {
         this.loreCounter = 0
 
         this.updateSpellcastingOptionsVisibility()
-
-        if (this.isModern) {
-            this.clearDroppedItems()
-            this.applyAllStatHighlights()
-            this.updateStatPreview()
-        }
+        this.clearDroppedItems()
+        this.applyAllStatHighlights()
+        this.updateStatPreview()
     }
 
     /**
      * Initialize collapsible sections (collapse Skills and Lore Skills by default)
      */
     private initCollapsibleSections(): void {
-        const sections = document.querySelectorAll('details.collapsibleSection')
+        const sections = this.root.querySelectorAll(
+            'details.collapsibleSection',
+        )
 
         sections.forEach((section) => {
             const sectionName = section.getAttribute('data-section-name')
@@ -1004,7 +1052,7 @@ class CreatureBuilderFormUI {
                 sectionName &&
                 (sectionName.toLowerCase().indexOf('skill') !== -1 ||
                     sectionName === 'PF2EMONSTERMAKER.skills')
-            const isLoreSection = sectionId === 'sectionLore'
+            const isLoreSection = sectionId?.endsWith('sectionLore') ?? false
 
             if (isSkillsSection || isLoreSection) {
                 section.removeAttribute('open')
@@ -1015,20 +1063,30 @@ class CreatureBuilderFormUI {
     /**
      * Get a DOM element by ID with error handling
      */
+    private elementId(id: string): string {
+        return `${this.idPrefix}${id}`
+    }
+
+    private queryById<T extends HTMLElement = HTMLElement>(
+        id: string,
+    ): T | null {
+        return this.root.querySelector<T>(`#${CSS.escape(this.elementId(id))}`)
+    }
+
     private getElement<T extends HTMLElement = HTMLElement>(id: string): T {
-        const element = document.getElementById(id)
+        const element = this.queryById<T>(id)
         if (!element) {
-            throw new Error(`Element with id '${id}' not found`)
+            throw new Error(`Element with id '${this.elementId(id)}' not found`)
         }
-        return element as T
+        return element
     }
 
     // ========================================================================
-    // Modern UI — Drop Zone
+    // Drop Zone
     // ========================================================================
 
     private setupDropZone(): void {
-        const dropZone = document.getElementById('creatureBuilderDropZone')
+        const dropZone = this.queryById('creatureBuilderDropZone')
         if (!dropZone) return
 
         dropZone.addEventListener('dragover', (e) => {
@@ -1046,8 +1104,8 @@ class CreatureBuilderFormUI {
     }
 
     public renderDroppedItem(itemData: Record<string, unknown>): void {
-        const list = document.getElementById('droppedItemsList')
-        const hint = document.getElementById('dropZoneHint')
+        const list = this.queryById('droppedItemsList')
+        const hint = this.queryById('dropZoneHint')
         if (!list) return
 
         const index = this.droppedItems.indexOf(itemData)
@@ -1096,18 +1154,18 @@ class CreatureBuilderFormUI {
 
     private clearDroppedItems(): void {
         this.droppedItems.length = 0
-        const list = document.getElementById('droppedItemsList')
+        const list = this.queryById('droppedItemsList')
         if (list) {
             list.innerHTML = ''
         }
-        const hint = document.getElementById('dropZoneHint')
+        const hint = this.queryById('dropZoneHint')
         if (hint) {
             hint.classList.remove('hidden')
         }
     }
 
     // ========================================================================
-    // Modern UI — Stat Color Highlights
+    // Stat Color Highlights
     // ========================================================================
 
     private static readonly STAT_LEVEL_CLASSES = [
@@ -1144,7 +1202,7 @@ class CreatureBuilderFormUI {
     private applyAllStatHighlights(): void {
         for (const category of this.monsterCreatureStatistics) {
             for (const stat of category.statisticEntries) {
-                const select = document.getElementById(
+                const select = this.queryById(
                     `creatureBuilder${stat.name}`,
                 ) as HTMLSelectElement
                 if (select) {
@@ -1157,7 +1215,7 @@ class CreatureBuilderFormUI {
     private setupStatHighlightListeners(): void {
         for (const category of this.monsterCreatureStatistics) {
             for (const stat of category.statisticEntries) {
-                const select = document.getElementById(
+                const select = this.queryById(
                     `creatureBuilder${stat.name}`,
                 ) as HTMLSelectElement
                 if (select) {
@@ -1170,7 +1228,7 @@ class CreatureBuilderFormUI {
     }
 
     // ========================================================================
-    // Modern UI — Live Stat Preview Bar
+    // Live Stat Preview Bar
     // ========================================================================
 
     private static readonly PREVIEW_STATS: {
@@ -1260,7 +1318,7 @@ class CreatureBuilderFormUI {
     }
 
     public updateStatPreview(): void {
-        const levelSelect = document.getElementById(
+        const levelSelect = this.queryById(
             'creatureBuilderLevel',
         ) as HTMLSelectElement
         if (!levelSelect) return
@@ -1277,7 +1335,7 @@ class CreatureBuilderFormUI {
             icon,
             offset,
         } of CreatureBuilderFormUI.PREVIEW_STATS) {
-            const span = document.querySelector(
+            const span = this.root.querySelector(
                 `.preview-stat[data-stat="${key}"]`,
             ) as HTMLElement
             if (!span) continue
@@ -1285,7 +1343,7 @@ class CreatureBuilderFormUI {
             const label = this.localize(labelKey)
             const iconHtml = `<i class="fas ${icon}"></i> `
 
-            const select = document.getElementById(
+            const select = this.queryById(
                 `creatureBuilder${key}`,
             ) as HTMLSelectElement
 
@@ -1322,10 +1380,10 @@ class CreatureBuilderFormUI {
     }
 
     private updatePreviewRoadmapLevel(level: string): void {
-        const el = document.getElementById('previewRoadmapLevel')
+        const el = this.queryById('previewRoadmapLevel')
         if (!el) return
 
-        const roadmapSelect = document.getElementById(
+        const roadmapSelect = this.queryById(
             'creatureBuilderRoadmap',
         ) as HTMLSelectElement
         const roadmapText =
@@ -1336,7 +1394,7 @@ class CreatureBuilderFormUI {
 
     private updatePreviewAbilityScores(level: string): void {
         for (const key of CreatureBuilderFormUI.ABILITY_KEYS) {
-            const span = document.querySelector(
+            const span = this.root.querySelector(
                 `[data-ability="${key}"]`,
             ) as HTMLElement
             if (!span) continue
@@ -1344,7 +1402,7 @@ class CreatureBuilderFormUI {
             const label = this.localize(
                 CreatureBuilderFormUI.ABILITY_LABEL_KEYS[key],
             )
-            const select = document.getElementById(
+            const select = this.queryById(
                 `creatureBuilder${key}`,
             ) as HTMLSelectElement
 
@@ -1371,7 +1429,7 @@ class CreatureBuilderFormUI {
 
     private updateInlineStatBadges(level: string): void {
         const badges = Array.from(
-            document.querySelectorAll<HTMLElement>(
+            this.root.querySelectorAll<HTMLElement>(
                 '.stat-value-badge[data-stat-badge]',
             ),
         )
@@ -1379,7 +1437,7 @@ class CreatureBuilderFormUI {
             const statKey = badge.dataset.statBadge
             if (!statKey) continue
 
-            const select = document.getElementById(
+            const select = this.queryById(
                 `creatureBuilder${statKey}`,
             ) as HTMLSelectElement
             if (!select) {
@@ -1435,14 +1493,8 @@ class CreatureBuilderFormUI {
         }
     }
 
-    private setupPreviewSidebar(): void {
-        // Preview bar is positioned via CSS inside .form-layout; no JS needed.
-    }
-
     private setupBadgeToggle(): void {
-        const toggle = document.getElementById(
-            'toggleBadges',
-        ) as HTMLInputElement
+        const toggle = this.queryById('toggleBadges') as HTMLInputElement
         if (!toggle) return
 
         const form = toggle.closest('.creatureBuilderFormModern')
@@ -1454,7 +1506,7 @@ class CreatureBuilderFormUI {
     }
 
     private setupStatPreviewListeners(): void {
-        const levelSelect = document.getElementById(
+        const levelSelect = this.queryById(
             'creatureBuilderLevel',
         ) as HTMLSelectElement
         if (levelSelect) {
@@ -1463,7 +1515,7 @@ class CreatureBuilderFormUI {
             })
         }
 
-        const roadmapSelect = document.getElementById(
+        const roadmapSelect = this.queryById(
             'creatureBuilderRoadmap',
         ) as HTMLSelectElement
         if (roadmapSelect) {
@@ -1474,7 +1526,7 @@ class CreatureBuilderFormUI {
 
         for (const category of this.monsterCreatureStatistics) {
             for (const stat of category.statisticEntries) {
-                const select = document.getElementById(
+                const select = this.queryById(
                     `creatureBuilder${stat.name}`,
                 ) as HTMLSelectElement
                 if (select) {

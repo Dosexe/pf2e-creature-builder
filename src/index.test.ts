@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const renderSpy = vi.fn()
+const registerCreatureBuilderHelpers = vi.fn()
 const CreatureBuilderFormMock = vi.fn(function (
     this: any,
     actor: unknown,
@@ -104,11 +105,13 @@ const setupModule = async () => {
     }))
     vi.doMock('./CreatureBuilderForm', () => ({
         CreatureBuilderForm: CreatureBuilderFormMock,
+        registerCreatureBuilderHelpers,
     }))
     vi.doMock('@/roadmaps/RoadMapRegistry', () => ({
         RoadMapRegistry: RoadMapRegistryMock,
     }))
     CreatureBuilderFormMock.mockClear()
+    registerCreatureBuilderHelpers.mockClear()
     renderSpy.mockClear()
     loadCustomRoadmapsSpy.mockClear()
     RoadMapRegistryMock.getInstance.mockClear()
@@ -160,7 +163,7 @@ describe('index hooks', () => {
     it('registers settings and initializes RoadMapRegistry on init', async () => {
         hooks.init?.[0]?.()
         const register = (globalThis as any).game.settings.register
-        expect(register).toHaveBeenCalledTimes(3)
+        expect(register).toHaveBeenCalledTimes(2)
         expect(register).toHaveBeenCalledWith(
             'foundryvtt-pf2e-creature-builder',
             'roadmaps',
@@ -171,12 +174,8 @@ describe('index hooks', () => {
             'abbreviateName',
             expect.objectContaining({ type: Boolean, default: false }),
         )
-        expect(register).toHaveBeenCalledWith(
-            'pf2e-creature-builder',
-            'useClassicUI',
-            expect.objectContaining({ type: Boolean, default: false }),
-        )
         expect(RoadMapRegistryMock.getInstance).toHaveBeenCalled()
+        expect(registerCreatureBuilderHelpers).toHaveBeenCalledOnce()
     })
 
     it('loads custom roadmaps on ready hook', async () => {
