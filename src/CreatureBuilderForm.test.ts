@@ -356,6 +356,40 @@ describe('CreatureBuilderForm', () => {
         expect(options).toEqual({ parent: form.actor })
     })
 
+    it('creates the other lore items when one cannot be added', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        form.level = '1'
+        Item.create.mockImplementation(async (data: { name?: string }) => {
+            if (data.name === 'Broken Lore') {
+                throw new Error('invalid lore')
+            }
+            return { id: 'lore-id' }
+        })
+
+        await expect(
+            form.applyLoreSkills({
+                loreName0: 'Sailing',
+                loreLevel0: Options.moderate,
+                loreName1: 'Broken',
+                loreLevel1: Options.high,
+                loreName2: 'Underworld',
+                loreLevel2: Options.low,
+            }),
+        ).resolves.toBeUndefined()
+
+        expect(Item.create).toHaveBeenCalledTimes(3)
+        expect(Item.create.mock.calls.map((call) => call[0].name)).toEqual([
+            'Sailing Lore',
+            'Broken Lore',
+            'Underworld Lore',
+        ])
+        expect(globalLog).toHaveBeenCalledWith(
+            true,
+            'Failed to add lore "Broken Lore"',
+            expect.any(Error),
+        )
+    })
+
     it('detects actor stats, skills, and spellcasting', () => {
         const actor = buildActor({
             system: {
@@ -985,6 +1019,43 @@ describe('CreatureBuilderForm', () => {
         ])
     })
 
+    it('still adds the other items when spellcasting fails', async () => {
+        const originalActor = buildActor({
+            system: { details: { level: { value: 1 } } },
+        })
+        const newActor = buildActor({
+            deleteEmbeddedDocuments: vi.fn().mockResolvedValue(undefined),
+        })
+        ;(originalActor as any).clone = vi.fn().mockResolvedValue(newActor)
+        const form = new CreatureBuilderForm(originalActor)
+        vi.spyOn(form, 'applyHitPoints').mockReturnValue({})
+        vi.spyOn(form, 'applySpellcasting').mockRejectedValue(
+            new Error('bad entry'),
+        )
+        const strike = vi
+            .spyOn(form, 'applyStrike')
+            .mockResolvedValue(undefined)
+        const dropped = vi
+            .spyOn(form, 'applyDroppedItems')
+            .mockResolvedValue(undefined)
+        vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
+        vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
+
+        // biome-ignore lint/complexity/useLiteralKeys: protected property
+        await form['_updateObject'](undefined as unknown as Event, {
+            [Statistics.name]: 'Test',
+            [Statistics.level]: '1',
+        })
+
+        expect(strike).toHaveBeenCalled()
+        expect(dropped).toHaveBeenCalled()
+        expect(globalLog).toHaveBeenCalledWith(
+            true,
+            'Failed to apply spellcasting',
+            expect.any(Error),
+        )
+    })
+
     it('creates a new actor via clone and applies updates', async () => {
         const originalActor = buildActor({
             system: {
@@ -1313,6 +1384,62 @@ describe('CreatureBuilderForm', () => {
                     system: { location: { value: 'entry-abc' } },
                 },
             ])
+        })
+
+        it('adds the other items when one cannot be created', async () => {
+            const mockCreateEmbedded = vi.fn(
+                async (_type: string, data: { name?: string }[]) => {
+                    if (data[0]?.name === 'Broken Feat') {
+                        throw new Error('invalid item')
+                    }
+                    return data
+                },
+            )
+            const actor = buildActor({
+                createEmbeddedDocuments: mockCreateEmbedded,
+            })
+            const form = new CreatureBuilderForm(actor)
+            form.actor = actor as any
+            form.droppedItems.push(
+                { name: 'Toughness', type: 'feat' },
+                { name: 'Broken Feat', type: 'feat' },
+                { name: 'Longsword', type: 'weapon' },
+                {
+                    name: 'Fireball',
+                    type: 'spell',
+                    system: { level: { value: 3 } },
+                },
+            )
+
+            await expect(
+                form.applyDroppedItems('entry-abc'),
+            ).resolves.toBeUndefined()
+
+            expect(mockCreateEmbedded).toHaveBeenCalledTimes(4)
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                { name: 'Toughness', type: 'feat' },
+            ])
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                { name: 'Broken Feat', type: 'feat' },
+            ])
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                { name: 'Longsword', type: 'weapon' },
+            ])
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                {
+                    name: 'Fireball',
+                    type: 'spell',
+                    system: {
+                        level: { value: 3 },
+                        location: { value: 'entry-abc' },
+                    },
+                },
+            ])
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Failed to add item "Broken Feat"',
+                expect.any(Error),
+            )
         })
 
         it('skips spells when no spellcasting entry ID is provided', async () => {

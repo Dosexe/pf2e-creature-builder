@@ -616,7 +616,11 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 },
             }
 
-            await Item.create(loreItem, { parent: this.actor })
+            try {
+                await Item.create(loreItem, { parent: this.actor })
+            } catch (error) {
+                globalLog(true, `Failed to add lore "${loreItem.name}"`, error)
+            }
         }
     }
 
@@ -648,11 +652,22 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             }
         ).createEmbeddedDocuments.bind(this.actor)
 
+        const createEach = async (items: Record<string, unknown>[]) => {
+            for (const item of items) {
+                try {
+                    await createEmbedded('Item', [item])
+                } catch (error) {
+                    globalLog(
+                        true,
+                        `Failed to add item "${String(item.name ?? item.type ?? 'item')}"`,
+                        error,
+                    )
+                }
+            }
+        }
+
         if (nonSpells.length > 0) {
-            await createEmbedded(
-                'Item',
-                CreatureBuilderForm.stripSourceUuid(nonSpells),
-            )
+            await createEach(CreatureBuilderForm.stripSourceUuid(nonSpells))
         }
 
         if (spells.length > 0 && spellcastingEntryId) {
@@ -665,7 +680,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                     location: { value: spellcastingEntryId },
                 },
             }))
-            await createEmbedded('Item', linkedSpells)
+            await createEach(linkedSpells)
         } else if (spells.length > 0) {
             globalLog(
                 true,
@@ -730,7 +745,12 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 await newActor.deleteEmbeddedDocuments('Item', toDelete)
             }
 
-            const spellcastingEntry = await this.applySpellcasting(formData)
+            let spellcastingEntry: unknown
+            try {
+                spellcastingEntry = await this.applySpellcasting(formData)
+            } catch (error) {
+                globalLog(true, 'Failed to apply spellcasting', error)
+            }
             const spellcastingEntryId =
                 (spellcastingEntry as { id?: string } | undefined)?.id ??
                 undefined
