@@ -105,5 +105,6 @@
     "PF2EMONSTERMAKER.traitsPlaceholder": "Wpisz cechę i naciśnij Enter",
 
     "PF2EMONSTERMAKER.resetDefaults": "Przywróć domyślne",
-    "PF2EMONSTERMAKER.duplicateItemType": "Ten przedmiot został już dodany"
+    "PF2EMONSTERMAKER.duplicateItemType": "Ten przedmiot został już dodany",
+    "PF2EMONSTERMAKER.generateAttacksFromWeapons": "Generuj ataki z broni"
 }

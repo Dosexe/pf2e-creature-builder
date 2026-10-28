@@ -12,6 +12,7 @@ import {
     Statistics,
 } from './Keys'
 import { statisticValues } from './Values'
+import { GENERATE_ATTACKS_FROM_WEAPONS } from './WeaponAttackGenerator'
 
 vi.mock('@/utils', () => ({ globalLog: vi.fn() }))
 
@@ -196,6 +197,7 @@ describe('CreatureBuilderForm', () => {
         form.level = '5'
         expect(form.applyLevel()).toEqual({
             'system.details.level.value': 5,
+            'system.details.level.base': 5,
         })
     })
 
@@ -1028,7 +1030,9 @@ describe('CreatureBuilderForm', () => {
         })
         ;(originalActor as any).clone = vi.fn().mockResolvedValue(newActor)
         const form = new CreatureBuilderForm(originalActor)
-        vi.spyOn(form, 'applyHitPoints').mockReturnValue({})
+        vi.spyOn(form, 'applyHitPoints').mockReturnValue({
+            'system.attributes.hp.value': 1,
+        })
         vi.spyOn(form, 'applySpellcasting').mockRejectedValue(
             new Error('bad entry'),
         )
@@ -1037,7 +1041,7 @@ describe('CreatureBuilderForm', () => {
             .mockResolvedValue(undefined)
         const dropped = vi
             .spyOn(form, 'applyDroppedItems')
-            .mockResolvedValue(undefined)
+            .mockResolvedValue([])
         vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
         vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
 
@@ -1329,6 +1333,60 @@ describe('CreatureBuilderForm', () => {
                 creatureBuilderRoadmap: 'TestRoadmap',
             })
         })
+
+        it('preserves the generate attacks checkbox', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            vi.spyOn(
+                CreatureBuilderFormUI.prototype,
+                'destroy',
+            ).mockImplementation(() => {})
+            vi.spyOn(
+                CreatureBuilderFormUI.prototype,
+                'initialize',
+            ).mockImplementation(() => {})
+            ;(form as any).element = {
+                querySelectorAll: (selector: string) => {
+                    if (selector === 'select') return []
+                    if (selector === 'input[type="checkbox"][name]') {
+                        return [
+                            {
+                                name: '',
+                                checked: true,
+                                getAttribute: () => null,
+                            },
+                            {
+                                name: 'plain',
+                                checked: true,
+                            },
+                            {
+                                checked: false,
+                                name: GENERATE_ATTACKS_FROM_WEAPONS,
+                                getAttribute: (attr: string) =>
+                                    attr === 'name'
+                                        ? GENERATE_ATTACKS_FROM_WEAPONS
+                                        : null,
+                            },
+                            {
+                                name: 'other-toggle',
+                                checked: true,
+                                getAttribute: () => '',
+                            },
+                        ]
+                    }
+                    return []
+                },
+            }
+
+            await (form as any)._preRender({}, {})
+            await (form as any)._onRender({}, {})
+
+            // biome-ignore lint/complexity/useLiteralKeys: private property
+            expect(form['formUI']?.['preservedControls']).toEqual({
+                plain: 'true',
+                [GENERATE_ATTACKS_FROM_WEAPONS]: 'false',
+                'other-toggle': 'true',
+            })
+        })
     })
 
     it('adds lore and resets through application actions', () => {
@@ -1375,7 +1433,7 @@ describe('CreatureBuilderForm', () => {
             const actor = buildActor()
             const form = new CreatureBuilderForm(actor)
             form.actor = actor as any
-            await form.applyDroppedItems()
+            await expect(form.applyDroppedItems()).resolves.toEqual([])
             expect(actor.updateEmbeddedDocuments).not.toHaveBeenCalled()
         })
 
@@ -1468,9 +1526,12 @@ describe('CreatureBuilderForm', () => {
                 },
             )
 
-            await expect(
-                form.applyDroppedItems('entry-abc'),
-            ).resolves.toBeUndefined()
+            await expect(form.applyDroppedItems('entry-abc')).resolves.toEqual([
+                {
+                    source: { name: 'Longsword', type: 'weapon' },
+                    document: { name: 'Longsword', type: 'weapon' },
+                },
+            ])
 
             expect(mockCreateEmbedded).toHaveBeenCalledTimes(4)
             expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
@@ -1512,6 +1573,346 @@ describe('CreatureBuilderForm', () => {
             expect(globalLog).toHaveBeenCalledWith(
                 true,
                 'Dropped spells skipped: no spellcasting entry available',
+            )
+        })
+
+        it('returns the weapon documents that were created', async () => {
+            const mockCreateEmbedded = vi.fn(
+                async (_type: string, data: { name?: string }[]) => {
+                    if (data[0]?.name === 'Empty') return []
+                    if (data[0]?.name === 'Single') return { id: 'single' }
+                    if (data[0]?.name === 'Missing') return null
+                    return [{ id: data[0]?.name }]
+                },
+            )
+            const actor = buildActor({
+                createEmbeddedDocuments: mockCreateEmbedded,
+            })
+            const form = new CreatureBuilderForm(actor)
+            form.actor = actor as any
+            form.droppedItems.push(
+                { name: 'Empty', type: 'weapon' },
+                { name: 'Single', type: 'weapon' },
+                { name: 'Missing', type: 'weapon' },
+                { name: 'Listed', type: 'weapon', _sourceUuid: 'Item.listed' },
+                { name: 'Fireball', type: 'spell' },
+            )
+
+            const weapons = await form.applyDroppedItems('entry-abc')
+
+            expect(weapons.map((weapon) => weapon.document)).toEqual([
+                undefined,
+                { id: 'single' },
+                undefined,
+                { id: 'Listed' },
+            ])
+            expect(weapons[3].source).toEqual({
+                name: 'Listed',
+                type: 'weapon',
+            })
+        })
+
+        it('creates every copy of a weapon that was dropped', async () => {
+            const mockCreateEmbedded = vi.fn(
+                async (_type: string, data: unknown[]) => data,
+            )
+            const actor = buildActor({
+                createEmbeddedDocuments: mockCreateEmbedded,
+            })
+            const form = new CreatureBuilderForm(actor)
+            form.actor = actor as any
+            form.droppedItems.push(
+                { name: 'Sickle', type: 'weapon' },
+                { name: 'Sickle', type: 'weapon' },
+            )
+
+            await form.applyDroppedItems()
+
+            expect(mockCreateEmbedded).toHaveBeenCalledTimes(2)
+            expect(mockCreateEmbedded.mock.calls[0][1][0]).toMatchObject({
+                name: 'Sickle',
+                type: 'weapon',
+            })
+            expect(mockCreateEmbedded.mock.calls[1][1][0]).toMatchObject({
+                name: 'Sickle',
+                type: 'weapon',
+            })
+        })
+    })
+
+    describe('weapon attacks', () => {
+        const strikeForm = {
+            [Statistics.name]: 'Hunter',
+            [Statistics.level]: '1',
+            [Statistics.strikeBonus]: Options.high,
+            [Statistics.strikeDamage]: Options.moderate,
+        }
+        const weapon = {
+            name: 'Longsword',
+            type: 'weapon',
+            system: {
+                damage: { dice: 1, die: 'd8', damageType: 'slashing' },
+                traits: { value: ['agile'] },
+            },
+        }
+
+        const buildUpdate = (
+            createEmbeddedDocuments: ReturnType<typeof vi.fn>,
+        ) => {
+            const originalActor = buildActor()
+            const newActor = buildActor({
+                deleteEmbeddedDocuments: vi.fn().mockResolvedValue(undefined),
+                createEmbeddedDocuments,
+            })
+            ;(originalActor as any).clone = vi.fn().mockResolvedValue(newActor)
+            const form = new CreatureBuilderForm(originalActor)
+            vi.spyOn(form, 'applyHitPoints').mockReturnValue({
+                'system.attributes.hp.value': 1,
+            })
+            vi.spyOn(form, 'applySpellcasting').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
+            return { form, newActor }
+        }
+
+        it('does not generate attacks unless the checkbox is on', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '1'
+            await expect(
+                form.applyGeneratedWeaponAttacks(strikeForm, [
+                    { source: weapon },
+                ]),
+            ).resolves.toBe(false)
+            await expect(
+                form.applyGeneratedWeaponAttacks(
+                    { ...strikeForm, [GENERATE_ATTACKS_FROM_WEAPONS]: true },
+                    [],
+                ),
+            ).resolves.toBe(false)
+            await expect(
+                form.applyGeneratedWeaponAttacks(
+                    { ...strikeForm, [GENERATE_ATTACKS_FROM_WEAPONS]: true },
+                    null,
+                ),
+            ).resolves.toBe(false)
+        })
+
+        it('skips generation when attacks cannot be saved', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '10'
+            await expect(
+                form.applyGeneratedWeaponAttacks(
+                    { ...strikeForm, [GENERATE_ATTACKS_FROM_WEAPONS]: true },
+                    [{ source: weapon }],
+                ),
+            ).resolves.toBe(false)
+        })
+
+        it('uses the weapon die, level, and strength like Generate Attack', async () => {
+            const createEmbeddedDocuments = vi.fn().mockResolvedValue([])
+            const form = new CreatureBuilderForm(
+                buildActor({
+                    system: {
+                        abilities: { str: { mod: 5 }, dex: { mod: 1 } },
+                    },
+                    createEmbeddedDocuments,
+                }),
+            )
+            form.level = '10'
+            const sickle = {
+                name: 'Sickle',
+                type: 'weapon',
+                system: {
+                    damage: { dice: 1, die: 'd4', damageType: 'slashing' },
+                },
+            }
+
+            await expect(
+                form.applyGeneratedWeaponAttacks(
+                    { [GENERATE_ATTACKS_FROM_WEAPONS]: true },
+                    [
+                        { source: sickle },
+                        { source: { ...sickle, name: 'sickle' } },
+                    ],
+                ),
+            ).resolves.toBe(true)
+
+            const attacks = createEmbeddedDocuments.mock.calls.filter(
+                (call) => call[1][0]?.type === 'melee',
+            )
+            expect(attacks).toHaveLength(1)
+            expect(attacks[0][1][0].system).toMatchObject({
+                bonus: { value: 22 },
+                damageRolls: {
+                    strikeDamageID: { damage: '3d4+8', damageType: 'slashing' },
+                },
+            })
+        })
+
+        it('creates a scaled weapon strike and skips the generic strike', async () => {
+            const weaponDoc = {
+                id: 'weapon-1',
+                toNPCAttacks: () => [
+                    {
+                        toObject: () => ({
+                            _id: 'temp',
+                            name: 'Longsword',
+                            type: 'melee',
+                            flags: { pf2e: { linkedWeapon: 'weapon-1' } },
+                            system: {
+                                bonus: { value: 1 },
+                                damageRolls: {
+                                    base: {
+                                        damage: '1d4',
+                                        damageType: 'slashing',
+                                        category: null,
+                                    },
+                                    splash: {
+                                        damage: '2',
+                                        damageType: 'fire',
+                                        category: 'splash',
+                                    },
+                                },
+                            },
+                        }),
+                    },
+                ],
+            }
+            const mockCreate = vi.fn(async (_type: string, data: any[]) => {
+                if (data[0]?.type === 'weapon') return [weaponDoc]
+                return data
+            })
+            const { form } = buildUpdate(mockCreate)
+            form.droppedItems.push(weapon)
+            const strike = vi.spyOn(form, 'applyStrike')
+
+            // biome-ignore lint/complexity/useLiteralKeys: protected method
+            await form['_updateObject'](undefined as unknown as Event, {
+                ...strikeForm,
+                [GENERATE_ATTACKS_FROM_WEAPONS]: true,
+            })
+
+            expect(strike).not.toHaveBeenCalled()
+            const attack = mockCreate.mock.calls.find(
+                (call) => call[1][0]?.type === 'melee',
+            )?.[1][0]
+            expect(attack).toMatchObject({
+                name: 'Longsword',
+                type: 'melee',
+                flags: { pf2e: { linkedWeapon: 'weapon-1' } },
+                system: {
+                    bonus: { value: 1 },
+                    damageRolls: {
+                        base: {
+                            damage: '1d4',
+                            damageType: 'slashing',
+                        },
+                        splash: { damage: '2', category: 'splash' },
+                    },
+                },
+            })
+            expect(attack).not.toHaveProperty('_id')
+        })
+
+        it('keeps the generic strike when weapon attacks cannot be created', async () => {
+            const mockCreate = vi.fn(async (_type: string, data: any[]) => {
+                if (data[0]?.type === 'weapon') {
+                    return [
+                        {
+                            id: data[0].name,
+                            toNPCAttacks: () => [
+                                {
+                                    toObject: () =>
+                                        data[0].name === 'Nameless'
+                                            ? {
+                                                  type: 'melee',
+                                                  system: {
+                                                      damageRolls: {
+                                                          only: {
+                                                              damage: '1',
+                                                              category:
+                                                                  'persistent',
+                                                          },
+                                                      },
+                                                  },
+                                              }
+                                            : {
+                                                  name: 'Longsword',
+                                                  type: 'melee',
+                                                  system: {
+                                                      damageRolls: {
+                                                          base: {
+                                                              damage: '1d8',
+                                                              damageType:
+                                                                  'slashing',
+                                                              category: null,
+                                                          },
+                                                      },
+                                                  },
+                                              },
+                                },
+                            ],
+                        },
+                    ]
+                }
+                throw new Error('rejected attack')
+            })
+            const { form } = buildUpdate(mockCreate)
+            form.droppedItems.push(weapon, { name: 'Nameless', type: 'weapon' })
+
+            // biome-ignore lint/complexity/useLiteralKeys: protected method
+            await form['_updateObject'](undefined as unknown as Event, {
+                ...strikeForm,
+                [GENERATE_ATTACKS_FROM_WEAPONS]: true,
+            })
+
+            expect(Item.create).toHaveBeenCalled()
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Failed to add attack "Longsword"',
+                expect.any(Error),
+            )
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Failed to add attack "attack"',
+                expect.any(Error),
+            )
+        })
+
+        it('keeps the generic strike when attack generation is unchecked', async () => {
+            const mockCreate = vi.fn().mockResolvedValue([{ id: 'weapon-1' }])
+            const { form } = buildUpdate(mockCreate)
+            form.droppedItems.push(weapon)
+
+            // biome-ignore lint/complexity/useLiteralKeys: protected method
+            await form['_updateObject'](undefined as unknown as Event, {
+                ...strikeForm,
+                [GENERATE_ATTACKS_FROM_WEAPONS]: false,
+            })
+
+            expect(mockCreate).toHaveBeenCalledTimes(1)
+            expect(mockCreate.mock.calls[0][1][0].type).toBe('weapon')
+            expect(Item.create).toHaveBeenCalled()
+        })
+
+        it('still creates a strike when dropped items fail', async () => {
+            const { form } = buildUpdate(vi.fn())
+            vi.spyOn(form, 'applyDroppedItems').mockRejectedValue(
+                new Error('drop failed'),
+            )
+            const strike = vi.spyOn(form, 'applyStrike')
+
+            // biome-ignore lint/complexity/useLiteralKeys: protected method
+            await form['_updateObject'](undefined as unknown as Event, {
+                ...strikeForm,
+                [GENERATE_ATTACKS_FROM_WEAPONS]: true,
+            })
+
+            expect(strike).toHaveBeenCalled()
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Failed to apply dropped items',
+                expect.any(Error),
             )
         })
     })
@@ -1756,6 +2157,30 @@ describe('CreatureBuilderForm', () => {
             await (form as any)._onDrop(event)
             await (form as any)._onDrop(event)
             expect(form.droppedItems).toHaveLength(2)
+
+            delete (globalThis as any).fromUuid
+        })
+
+        it('allows a second drop of the same weapon', async () => {
+            const warnSpy = vi.fn()
+            vi.stubGlobal('ui', { notifications: { warn: warnSpy } })
+            ;(globalThis as any).fromUuid = async () => ({
+                type: 'weapon',
+                name: 'Sickle',
+                toObject: () => ({ name: 'Sickle', type: 'weapon' }),
+            })
+
+            const form = new CreatureBuilderForm(buildActor())
+            const event = {
+                dataTransfer: {
+                    getData: () =>
+                        JSON.stringify({ type: 'Item', uuid: 'sickle-1' }),
+                },
+            } as unknown as DragEvent
+            await (form as any)._onDrop(event)
+            await (form as any)._onDrop(event)
+            expect(form.droppedItems).toHaveLength(2)
+            expect(warnSpy).not.toHaveBeenCalled()
 
             delete (globalThis as any).fromUuid
         })

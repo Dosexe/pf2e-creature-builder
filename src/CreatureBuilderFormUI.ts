@@ -317,6 +317,7 @@ class CreatureBuilderFormUI {
         this.initCollapsibleSections()
         this.setupSpellcastingVisibility()
         this.setupDropZone()
+        this.setupGenerateAttacksToggle()
         this.setupStatHighlightListeners()
         this.setupStatPreviewListeners()
         this.setupBadgeToggle()
@@ -328,6 +329,7 @@ class CreatureBuilderFormUI {
             this.initTimer = undefined
             this.setDetectedStats()
             this.applyPreservedControls()
+            this.updateWeaponAttackBadges()
             this.updateSpellcastingOptionsVisibility()
             this.applyAllStatHighlights()
             this.updateStatPreview()
@@ -586,6 +588,13 @@ class CreatureBuilderFormUI {
             const field = this.root.querySelector<
                 HTMLSelectElement | HTMLInputElement
             >(`[name="${key}"]`)
+            if (
+                field instanceof HTMLInputElement &&
+                field.type === 'checkbox'
+            ) {
+                field.checked = value === 'true'
+                continue
+            }
             if (field) field.value = value
         }
     }
@@ -1114,6 +1123,8 @@ class CreatureBuilderFormUI {
         const row = document.createElement('div')
         row.className = 'dropped-item-row'
         row.setAttribute('data-drop-index', String(index))
+        row.dataset.itemType =
+            typeof itemData.type === 'string' ? itemData.type : ''
 
         const img = document.createElement('img')
         img.className = 'dropped-item-img'
@@ -1150,6 +1161,47 @@ class CreatureBuilderFormUI {
 
         if (hint) {
             hint.classList.add('hidden')
+        }
+        this.updateWeaponAttackBadges()
+    }
+
+    private setupGenerateAttacksToggle(): void {
+        this.generateAttacksCheckbox()?.addEventListener('change', () => {
+            this.updateWeaponAttackBadges()
+        })
+    }
+
+    private generateAttacksCheckbox(): HTMLInputElement | null {
+        return this.queryById<HTMLInputElement>('generateAttacksFromWeapons')
+    }
+
+    private strikeBadgeLabel(): string {
+        const localize = (
+            globalThis as {
+                game?: { i18n?: { localize?: (key: string) => string } }
+            }
+        ).game?.i18n?.localize
+        return localize?.('PF2EMONSTERMAKER.strike') || 'Strike'
+    }
+
+    private updateWeaponAttackBadges(): void {
+        const show = this.generateAttacksCheckbox()?.checked ?? false
+        for (const row of Array.from(
+            this.root.querySelectorAll<HTMLElement>('.dropped-item-row'),
+        )) {
+            const badge = row.querySelector('.dropped-item-attack')
+            if (row.dataset.itemType === 'weapon' && show) {
+                if (!badge) {
+                    const marker = document.createElement('span')
+                    marker.className = 'dropped-item-attack'
+                    marker.textContent = this.strikeBadgeLabel()
+                    const remove = row.querySelector('.dropped-item-remove')
+                    if (remove) row.insertBefore(marker, remove)
+                    else row.appendChild(marker)
+                }
+            } else if (badge) {
+                badge.remove()
+            }
         }
     }
 

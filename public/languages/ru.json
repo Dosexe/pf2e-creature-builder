@@ -104,5 +104,6 @@
     "PF2EMONSTERMAKER.traits": "Черты",
     "PF2EMONSTERMAKER.traitsPlaceholder": "Поиск черт...",
     "PF2EMONSTERMAKER.resetDefaults": "Сбросить к умолчаниям",
-    "PF2EMONSTERMAKER.duplicateItemType": "Этот предмет уже добавлен"
+    "PF2EMONSTERMAKER.duplicateItemType": "Этот предмет уже добавлен",
+    "PF2EMONSTERMAKER.generateAttacksFromWeapons": "Создавать атаки из оружия"
 }

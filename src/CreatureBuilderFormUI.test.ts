@@ -244,6 +244,24 @@ describe('CreatureBuilderFormUI', () => {
         expect(root.querySelector('[data-action="addLore"]')).toBeTruthy()
         expect(root.querySelector('[data-action="resetDefaults"]')).toBeTruthy()
 
+        const generateAttacks = root.querySelector(
+            `#${CSS.escape(`${fieldId}generateAttacksFromWeapons`)}`,
+        ) as HTMLInputElement
+        const dropZone = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilderDropZone`)}`,
+        )
+        expect(generateAttacks.checked).toBe(true)
+        expect(generateAttacks.name).toBe(
+            'PF2EMONSTERMAKER.generateAttacksFromWeapons',
+        )
+        expect(generateAttacks.closest('label')?.textContent).toContain(
+            'PF2EMONSTERMAKER.generateAttacksFromWeapons',
+        )
+        expect(
+            generateAttacks.compareDocumentPosition(dropZone!) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+
         ui.destroy()
     })
 
@@ -1963,6 +1981,108 @@ describe('CreatureBuilderFormUI', () => {
             dropZone.classList.add('drag-over')
             dropZone.dispatchEvent(new Event('dragleave'))
             expect(dropZone.classList.contains('drag-over')).toBe(false)
+        })
+
+        const addGenerateAttacksCheckbox = (checked = true) => {
+            const checkbox = document.createElement('input')
+            checkbox.type = 'checkbox'
+            checkbox.id = 'generateAttacksFromWeapons'
+            checkbox.name = 'PF2EMONSTERMAKER.generateAttacksFromWeapons'
+            checkbox.checked = checked
+            document.body.appendChild(checkbox)
+            return checkbox
+        }
+
+        it('marks a dropped weapon as a generated strike', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const checkbox = addGenerateAttacksCheckbox(true)
+            const droppedItems: Record<string, unknown>[] = [
+                { name: 'Longsword', type: 'weapon' },
+                { name: 'Fireball', type: 'spell' },
+            ]
+            const ui = new CreatureBuilderFormUI(buildConfig({ droppedItems }))
+            ui.initialize()
+            vi.runAllTimers()
+
+            const badges = document.querySelectorAll('.dropped-item-attack')
+            expect(checkbox.checked).toBe(true)
+            expect(badges).toHaveLength(1)
+            expect(badges[0].textContent).toBe('Strike')
+            expect(
+                badges[0].parentElement?.querySelector('.dropped-item-name')
+                    ?.textContent,
+            ).toBe('Longsword')
+
+            checkbox.checked = false
+            checkbox.dispatchEvent(new Event('change'))
+            expect(document.querySelector('.dropped-item-attack')).toBeNull()
+
+            checkbox.checked = true
+            checkbox.dispatchEvent(new Event('change'))
+            expect(
+                document.querySelectorAll('.dropped-item-attack'),
+            ).toHaveLength(1)
+        })
+
+        it('uses the localized strike label and skips non-weapon rows', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const checkbox = addGenerateAttacksCheckbox(true)
+            ;(window as any).game = {
+                i18n: { localize: () => '' },
+            }
+            const droppedItems: Record<string, unknown>[] = []
+            const ui = new CreatureBuilderFormUI(buildConfig({ droppedItems }))
+            ui.initialize()
+            vi.runAllTimers()
+
+            const mystery = { name: 'Mystery', type: 4 }
+            droppedItems.push(mystery)
+            ui.renderDroppedItem(mystery)
+            expect(document.querySelector('.dropped-item-attack')).toBeNull()
+
+            const dagger = { name: 'Dagger', type: 'weapon' }
+            droppedItems.push(dagger)
+            ui.renderDroppedItem(dagger)
+            expect(
+                document.querySelector('.dropped-item-attack')?.textContent,
+            ).toBe('Strike')
+            document.querySelector('.dropped-item-attack')?.remove()
+
+            ;(window as any).game.i18n.localize = () => 'Атака'
+            const bare = document.createElement('div')
+            bare.className = 'dropped-item-row'
+            bare.dataset.itemType = 'weapon'
+            document.body.appendChild(bare)
+            checkbox.dispatchEvent(new Event('change'))
+            expect(
+                bare.querySelector('.dropped-item-attack')?.textContent,
+            ).toBe('Атака')
+            expect(
+                document.querySelectorAll('.dropped-item-attack'),
+            ).toHaveLength(2)
+        })
+
+        it('hides weapon strike badges when the checkbox was turned off', () => {
+            vi.useFakeTimers()
+            setupModernDom()
+            const checkbox = addGenerateAttacksCheckbox(true)
+            const droppedItems = [{ name: 'Longsword', type: 'weapon' }]
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({
+                    droppedItems,
+                    preservedControls: {
+                        'PF2EMONSTERMAKER.generateAttacksFromWeapons': 'false',
+                    },
+                }),
+            )
+            ui.initialize()
+            expect(document.querySelector('.dropped-item-attack')).toBeTruthy()
+            vi.runAllTimers()
+
+            expect(checkbox.checked).toBe(false)
+            expect(document.querySelector('.dropped-item-attack')).toBeNull()
         })
 
         it('renders a dropped item row', () => {
