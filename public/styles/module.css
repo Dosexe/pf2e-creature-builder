@@ -1,43 +1,22 @@
-.creatureBuilderForm form {
-    /*display: flex;*/
-    /*flex-direction: column;*/
-}
-
-.creatureBuilderForm .creatureBuilderFormText {
-    /*font-size: 16px;*/
-}
-
-.creatureBuilderForm .creatureBuilderFormTextSmall {
-    /*font-size: 15px;*/
-}
-
-.creatureBuilderForm label {
-    /*font-size: 16px;*/
-}
-
 .creatureBuilderForm .loreEntry {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 5px;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
     justify-content: flex-start;
 }
 
 .creatureBuilderForm .loreNameInput {
-    flex: 5 1 0;
+    flex: 1 1 auto;
     min-width: 0;
-    height: 28px;
-    box-sizing: border-box;
 }
 
 .creatureBuilderForm .loreEntry select {
-    flex: 3 1 0;
+    flex: 0 1 9rem;
     min-width: 0;
-    height: 28px;
-    box-sizing: border-box;
 }
 
-.creatureBuilderForm #sectionLore .collapsibleContent {
+.creatureBuilderForm [id$="sectionLore"] .collapsibleContent {
     padding-top: 6px;
 }
 
@@ -58,8 +37,8 @@
 }
 
 .creatureBuilderForm .creatureBuilderRemoveIcon:hover {
-    background-color: #666;
-    transform: scale(1.15);
+    color: var(--color-text-emphatic, inherit);
+    background: color-mix(in srgb, var(--color-text-primary, currentColor) 12%, transparent);
 }
 
 /* Traits styling - uses Foundry's tagify/paizo-style classes */
@@ -69,36 +48,21 @@
     position: relative;
 }
 
-#creatureBuilderTraitsDropdown {
+.creatureBuilderTraitsDropdown {
     display: none !important;
 }
 
-#creatureBuilderTraitsDropdown.show {
+.creatureBuilderTraitsDropdown.show {
     display: block !important;
 }
 
 /* Custom entry styling for user-typed traits */
-#creatureBuilderTraitsDropdown .tagify__dropdown__item.customEntry {
+.creatureBuilderTraitsDropdown .tagify__dropdown__item.customEntry {
     font-style: italic;
 }
 
-/* Reset button styling */
-.creatureBuilderForm .creatureBuilderResetButton {
-    background-color: #666;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    cursor: pointer;
-    font-size: 14px;
-    margin-right: 10px;
-}
-
-.creatureBuilderForm .creatureBuilderResetButton:hover {
-    background-color: #555;
-}
-
 .creatureBuilderForm details.collapsibleSection {
-    margin-bottom: 10px;
+    margin-bottom: 0.35rem;
 }
 
 .creatureBuilderForm summary.collapsibleHeader {
@@ -158,20 +122,64 @@ summary.collapsibleHeader {
     padding-left: 5px;
 }
 
-.creatureBuilderForm .formDivider {
-    border-top: 2px solid var(--color-underline-header);
-    margin: 10px 0 10px 0;
-}
-
 /* ============================================================================
    Modern Form — Compact Stat Layout
    ============================================================================ */
+
+.creatureBuilderFormModern .form-main > h1 {
+    font-size: var(--font-size-28, 1.75rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 0.25rem;
+    border: none;
+}
+
+.creatureBuilderFormModern .form-main > h2 {
+    font-size: var(--font-size-20, 1.25rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0.35rem 0 0.25rem;
+    padding: 0;
+    border: none;
+}
+
+.creatureBuilderFormModern summary.collapsibleHeader h3 {
+    font-size: var(--font-size-18, 1.125rem);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.creatureBuilderFormModern .form-main > .form-group {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.35rem 0;
+    padding: 0;
+}
+
+.creatureBuilderFormModern .form-main > .form-group > label {
+    flex: 0 0 auto;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.creatureBuilderFormModern .form-main > .form-group > .form-fields,
+.creatureBuilderFormModern .form-main > .form-group > .traitsContainer {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.creatureBuilderFormModern .form-main > .stat-row,
+.creatureBuilderFormModern .collapsibleContent > .stat-row {
+    margin: 0.35rem 0;
+}
 
 .creatureBuilderFormModern .stat-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px 10px;
-    margin-bottom: 6px;
+    margin-bottom: 0;
 }
 
 .creatureBuilderFormModern .stat-cell {
@@ -205,15 +213,35 @@ summary.collapsibleHeader {
     width: 100%;
 }
 
+.creatureBuilderFormModern input[type="text"],
+.creatureBuilderFormModern select,
+.creatureBuilderFormModern tags.tagify {
+    height: var(--form-field-height, 2rem);
+    min-height: var(--form-field-height, 2rem);
+    box-sizing: border-box;
+}
+
+.creatureBuilderFormModern input[type="text"] {
+    width: 100%;
+    color: var(--color-text-primary);
+    background-color: rgba(158, 158, 158, 0.15);
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+    border-radius: 3px;
+}
+
 .creatureBuilderFormModern .stat-select {
     flex: 1;
     min-width: 0;
-    height: 26px;
-    font-size: 12px;
-    padding: 2px 4px;
-    box-sizing: border-box;
+    width: 100%;
+    color: var(--color-text-primary);
+    background-color: rgba(158, 158, 158, 0.15);
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
     border-radius: 3px;
     transition: background-color 0.2s ease;
+}
+
+.creatureBuilderFormModern tags.tagify {
+    width: 100%;
 }
 
 .creatureBuilderFormModern .stat-value-badge {
@@ -226,8 +254,9 @@ summary.collapsibleHeader {
     font-size: 11px;
     font-weight: 700;
     border-radius: 4px;
-    background: rgba(0, 0, 0, 0.07);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--color-text-primary, currentColor) 8%, transparent);
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 25%, transparent));
     white-space: nowrap;
     flex-shrink: 0;
     transition: background-color 0.2s ease, color 0.2s ease;
@@ -245,7 +274,7 @@ summary.collapsibleHeader {
     font-size: 11px;
     cursor: pointer;
     user-select: none;
-    margin-bottom: 4px;
+    margin: 0 0 0.15rem;
 }
 
 .creatureBuilderFormModern .toggle-badges-label input[type="checkbox"] {
@@ -293,7 +322,7 @@ summary.collapsibleHeader {
 }
 
 .creatureBuilderFormModern .stat-level-moderate {
-    background-color: transparent;
+    background-color: rgba(158, 158, 158, 0.15);
 }
 
 .creatureBuilderFormModern .stat-level-low {
@@ -319,9 +348,11 @@ summary.collapsibleHeader {
 .creatureBuilderFormModern .window-content {
     overflow: hidden !important;
     overflow-x: hidden !important;
+    color: var(--color-text-primary);
+    background: var(--color-bg-primary);
 }
 
-.creatureBuilderFormModern .window-content > form {
+.creatureBuilderFormModern .window-content > .form-layout {
     height: 100%;
 }
 
@@ -344,7 +375,7 @@ summary.collapsibleHeader {
 .creatureBuilderFormModern .form-preview-divider {
     width: 1px;
     flex-shrink: 0;
-    background: rgba(0, 0, 0, 0.15);
+    background: var(--color-border, color-mix(in srgb, currentColor 25%, transparent));
 }
 
 .creatureBuilderFormModern .stat-preview-bar {
@@ -370,7 +401,7 @@ summary.collapsibleHeader {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid var(--color-border, color-mix(in srgb, currentColor 20%, transparent));
 }
 
 .creatureBuilderFormModern .preview-roadmap-level {
@@ -380,7 +411,7 @@ summary.collapsibleHeader {
     font-size: 12px;
     font-weight: 700;
     overflow-wrap: break-word;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--color-border, color-mix(in srgb, currentColor 16%, transparent));
 }
 
 .creatureBuilderFormModern .preview-ability-scores {
@@ -391,7 +422,7 @@ summary.collapsibleHeader {
     margin-bottom: 2px;
     font-size: 10px;
     font-weight: 600;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--color-border, color-mix(in srgb, currentColor 16%, transparent));
 }
 
 .creatureBuilderFormModern .preview-ability-scores span {
@@ -428,23 +459,25 @@ summary.collapsibleHeader {
    ============================================================================ */
 
 .creatureBuilderFormModern .creature-builder-drop-zone {
-    border: 2px dashed rgba(0, 0, 0, 0.2);
+    border: 2px dashed var(--color-border, currentColor);
     border-radius: 6px;
     padding: 10px;
     min-height: 60px;
     margin: 8px 0;
+    color: var(--color-text-primary);
+    background: var(--color-bg-secondary, color-mix(in srgb, var(--color-text-primary, currentColor) 6%, transparent));
     transition: border-color 0.2s ease, background-color 0.2s ease;
     position: relative;
 }
 
 .creatureBuilderFormModern .creature-builder-drop-zone.drag-over {
-    border-color: rgba(76, 175, 80, 0.6);
-    background-color: rgba(76, 175, 80, 0.06);
+    border-color: #81c784;
+    background-color: rgba(76, 175, 80, 0.22);
 }
 
 .creatureBuilderFormModern .drop-zone-hint {
     text-align: center;
-    color: rgba(0, 0, 0, 0.4);
+    color: var(--color-text-secondary, inherit);
     font-size: 12px;
     margin: 8px 0;
     pointer-events: none;
@@ -466,12 +499,13 @@ summary.collapsibleHeader {
     padding: 4px 6px;
     border-radius: 4px;
     margin-bottom: 3px;
-    background: rgba(0, 0, 0, 0.04);
+    color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--color-text-primary, currentColor) 8%, transparent);
     font-size: 12px;
 }
 
 .creatureBuilderFormModern .dropped-item-row:hover {
-    background: rgba(0, 0, 0, 0.07);
+    background: color-mix(in srgb, var(--color-text-primary, currentColor) 14%, transparent);
 }
 
 .creatureBuilderFormModern .dropped-item-img {
@@ -480,7 +514,7 @@ summary.collapsibleHeader {
     border-radius: 3px;
     object-fit: cover;
     flex-shrink: 0;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 25%, transparent));
 }
 
 .creatureBuilderFormModern .dropped-item-name {
@@ -494,7 +528,8 @@ summary.collapsibleHeader {
     font-size: 10px;
     padding: 1px 6px;
     border-radius: 8px;
-    background: rgba(0, 0, 0, 0.08);
+    color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--color-text-primary, currentColor) 12%, transparent);
     text-transform: capitalize;
     flex-shrink: 0;
 }

@@ -4,11 +4,23 @@ All notable changes to the PF2E Creature Builder module are documented here.
 
 ---
 
+## Unreleased
+
+### Changed
+
+- **Foundry Application V2** — The creature builder window uses Foundry's Application V2. 
+- The **Use Classic UI** setting is removed.
+
+### Fixed
+
+- Dropping an item that is already on the form shows "This item has already been added" instead of a translation key.
+- If one dropped item, lore skill, or the spellcasting step cannot be created, the actor is still saved and the remaining items are added.
+
 ## 2.0.0 — Modern UI
 
 ### New Features
 
-- **New Form Layout** — Completely redesigned form with a compact stat grid and two-column layout. The new UI is the default; switch back to the classic layout via the **Use Classic UI** module setting.
+- **New Form Layout** — Completely redesigned form with a compact stat grid and two-column layout.
 
 - **Live Preview Sidebar** — A sticky sidebar on the right side of the form displays real-time computed values for all core stats (HP, AC, Perception, saves, attack, damage, Spell DC) and ability score modifiers. Updates instantly on any change to level, roadmap, or stat dropdowns. Spell DC is hidden when spellcasting is set to "None".
 

@@ -104,5 +104,6 @@
     "PF2EMONSTERMAKER.traits": "特性",
     "PF2EMONSTERMAKER.traitsPlaceholder": "输入特性后按回车",
 
-    "PF2EMONSTERMAKER.resetDefaults": "重置为默认值"
+    "PF2EMONSTERMAKER.resetDefaults": "重置为默认值",
+    "PF2EMONSTERMAKER.duplicateItemType": "此物品已经添加"
 }

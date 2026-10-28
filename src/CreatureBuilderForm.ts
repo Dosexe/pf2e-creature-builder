@@ -53,78 +53,132 @@ const ALLOWED_DROP_TYPES = new Set([
     'weapon',
 ])
 
-export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
+const FORM_TEMPLATE =
+    'modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html'
+
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api
+
+let helpersRegistered = false
+
+export function roadmapLabel(key: unknown): string {
+    if (typeof key !== 'string') {
+        return ''
+    }
+
+    const prefix = `${KeyPrefix}.custom.`
+    if (key.startsWith(prefix)) {
+        const raw = key.slice(prefix.length)
+        const normalized = raw
+            .replace(/[_-]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+        if (!normalized) {
+            return key
+        }
+        return normalized
+            .split(' ')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ')
+    }
+
+    return game.i18n?.localize(key) ?? key
+}
+
+export function registerCreatureBuilderHelpers(): void {
+    if (helpersRegistered) return
+    helpersRegistered = true
+    Handlebars.registerHelper('roadmapLabel', roadmapLabel)
+}
+
+function onAddLore(
+    this: CreatureBuilderForm,
+    _event: PointerEvent,
+    _target: HTMLElement,
+) {
+    this.addLore()
+}
+
+function onResetDefaults(
+    this: CreatureBuilderForm,
+    _event: PointerEvent,
+    _target: HTMLElement,
+) {
+    this.resetDefaults()
+}
+
+function onCreatureBuilderSubmit(
+    this: CreatureBuilderForm,
+    event: Event,
+    _form: HTMLFormElement,
+    formData: foundry.applications.ux.FormDataExtended,
+) {
+    const flat = foundry.utils.flattenObject(formData.object)
+    return this._updateObject(event, flat)
+}
+
+export class CreatureBuilderForm extends HandlebarsApplicationMixin(
+    ApplicationV2,
+) {
+    static override DEFAULT_OPTIONS = {
+        id: 'creatureBuilderForm',
+        tag: 'form',
+        classes: ['creatureBuilderForm', 'creatureBuilderFormModern'],
+        window: {
+            title: 'PF2EMONSTERMAKER.title',
+            icon: 'fas fa-book',
+            resizable: true,
+        },
+        position: {
+            width: 530,
+            height: 620,
+        },
+        form: {
+            handler: onCreatureBuilderSubmit,
+            submitOnChange: false,
+            closeOnSubmit: true,
+        },
+        actions: {
+            addLore: onAddLore,
+            resetDefaults: onResetDefaults,
+        },
+    }
+
+    static override PARTS = {
+        body: {
+            template: FORM_TEMPLATE,
+            scrollable: ['.form-main'],
+        },
+    }
+
     data = DefaultCreatureStatistics
     level = DefaultCreatureLevel
     droppedItems: Record<string, unknown>[] = []
-    private readonly _uniqueId: string
+    private actorDocument: Actor
     private readonly useDefaultLevel: boolean
     private formUI: CreatureBuilderFormUI | null = null
+    private preservedControls: Record<string, string> | null = null
 
-    constructor(object: any, options?: any) {
-        super(object, options)
+    constructor(actor: any, options?: { useDefaultLevel?: boolean }) {
+        const uniqueId = `creatureBuilderForm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        super({ id: uniqueId })
 
+        this.actorDocument = actor
         this.useDefaultLevel = options?.useDefaultLevel === true
-        this._uniqueId = `creatureBuilderForm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
     }
 
     get actor(): Actor {
-        return this.object as Actor
+        return this.actorDocument
     }
 
     set actor(value: Actor) {
-        this.object = value
-    }
-
-    static get useClassicUI(): boolean {
-        try {
-            return (
-                game.settings?.get('pf2e-creature-builder', 'useClassicUI') ===
-                true
-            )
-        } catch {
-            return false
-        }
-    }
-
-    static get defaultOptions() {
-        const isClassic = CreatureBuilderForm.useClassicUI
-        return foundry.utils.mergeObject(
-            foundry.appv1.api.FormApplication.defaultOptions,
-            {
-                classes: isClassic
-                    ? ['form', 'creatureBuilderForm']
-                    : [
-                          'form',
-                          'creatureBuilderForm',
-                          'creatureBuilderFormModern',
-                      ],
-                popOut: true,
-                template: isClassic
-                    ? 'modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html'
-                    : 'modules/pf2e-creature-builder/dist/forms/creatureBuilderFormModern.html',
-                id: 'creatureBuilderForm',
-                title: 'Creature Builder Form',
-                height: isClassic ? 833 : 620,
-                width: isClassic ? 400 : 530,
-                dragDrop: isClassic
-                    ? []
-                    : [{ dropSelector: '.creature-builder-drop-zone' }],
-            },
-        )
-    }
-
-    get id() {
-        return this._uniqueId
+        this.actorDocument = value
     }
 
     protected _canDragDrop(_selector: string): boolean {
-        return !CreatureBuilderForm.useClassicUI
+        return true
     }
 
     protected async _onDrop(event: DragEvent) {
-        if (CreatureBuilderForm.useClassicUI) return
-
         let data: { type?: string; uuid?: string }
         try {
             data = JSON.parse(event.dataTransfer?.getData('text/plain') ?? '{}')
@@ -184,12 +238,51 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
         this.formUI?.renderDroppedItem(itemData)
     }
 
+    protected override async _prepareContext(options) {
+        const context = await super._prepareContext(options)
+        return {
+            ...context,
+            ...this.getData(),
+        }
+    }
+
+    /**
+     * Read dropdown values before Foundry replaces the form markup.
+     */
+    protected override async _preRender(context, options) {
+        await super._preRender(context, options)
+        this.preservedControls = this.captureDropdownValues()
+    }
+
+    private captureDropdownValues(): Record<string, string> | null {
+        const root = this.element
+        if (!root?.querySelectorAll) return null
+
+        const values: Record<string, string> = {}
+        for (const select of Array.from(root.querySelectorAll('select'))) {
+            const name = select.getAttribute('name')
+            if (name) {
+                values[name] = select.value
+                continue
+            }
+            if (select.id.endsWith('creatureBuilderRoadmap')) {
+                values.creatureBuilderRoadmap = select.value
+            }
+        }
+
+        return Object.keys(values).length > 0 ? values : null
+    }
+
     /**
      * Called after the form is rendered to initialize client-side UI behavior
      */
-    activateListeners(html: JQuery) {
-        super.activateListeners(html)
+    protected override async _onRender(context, options) {
+        await super._onRender(context, options)
+        this.initializeClientUi()
+        this.bindItemDrop()
+    }
 
+    private initializeClientUi() {
         const actorLevel = this.useDefaultLevel
             ? DefaultCreatureLevel
             : String(
@@ -199,7 +292,6 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                   ) ?? DefaultCreatureLevel,
               )
 
-        const isModern = !CreatureBuilderForm.useClassicUI
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
             creatureRoadmaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
@@ -208,18 +300,51 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
             actorLevel,
-            isModern,
             droppedItems: this.droppedItems,
+            root: this.element,
+            idPrefix: this.fieldIdPrefix(),
+            preservedControls: this.preservedControls ?? undefined,
         }
 
+        this.formUI?.destroy()
         this.formUI = new CreatureBuilderFormUI(config)
         this.formUI.initialize()
+    }
+
+    addLore(): void {
+        this.formUI?.addLoreSkill()
+    }
+
+    resetDefaults(): void {
+        this.formUI?.resetToDefaults()
+    }
+
+    private bindItemDrop() {
+        const element = this.element
+        if (!element) return
+
+        new foundry.applications.ux.DragDrop({
+            dropSelector: '.creature-builder-drop-zone',
+            permissions: {
+                drop: () => this._canDragDrop('.creature-builder-drop-zone'),
+            },
+            callbacks: {
+                drop: (event) => {
+                    void this._onDrop(event)
+                },
+            },
+        }).bind(element)
     }
 
     /**
      * Clean up when the form is closed
      */
-    async close(options?: foundry.appv1.api.FormApplication.CloseOptions) {
+    override async close(
+        options?: Parameters<
+            foundry.applications.api.ApplicationV2['close']
+        >[0],
+    ) {
+        this.formUI?.destroy()
         this.formUI = null
         this.droppedItems = []
         return super.close(options)
@@ -385,7 +510,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                 },
             ])
 
-            await this.applySpellList(
+            await this.applySpellListSafely(
                 formData,
                 existingEntry.id,
                 updatedSlots,
@@ -407,7 +532,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
 
         const created = await Item.create(spellcasting, { parent: this.actor })
         if (created?.id) {
-            await this.applySpellList(
+            await this.applySpellListSafely(
                 formData,
                 created.id,
                 slots,
@@ -415,6 +540,24 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
             )
         }
         return created
+    }
+
+    private async applySpellListSafely(
+        formData: object,
+        spellcastingEntryId: string,
+        slots: Record<string, SpellSlot>,
+        casterType: string,
+    ): Promise<void> {
+        try {
+            await this.applySpellList(
+                formData,
+                spellcastingEntryId,
+                slots,
+                casterType,
+            )
+        } catch (error) {
+            globalLog(true, 'Failed to apply spell list', error)
+        }
     }
 
     async applySpellList(
@@ -491,7 +634,11 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                 },
             }
 
-            await Item.create(loreItem, { parent: this.actor })
+            try {
+                await Item.create(loreItem, { parent: this.actor })
+            } catch (error) {
+                globalLog(true, `Failed to add lore "${loreItem.name}"`, error)
+            }
         }
     }
 
@@ -523,11 +670,22 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
             }
         ).createEmbeddedDocuments.bind(this.actor)
 
+        const createEach = async (items: Record<string, unknown>[]) => {
+            for (const item of items) {
+                try {
+                    await createEmbedded('Item', [item])
+                } catch (error) {
+                    globalLog(
+                        true,
+                        `Failed to add item "${String(item.name ?? item.type ?? 'item')}"`,
+                        error,
+                    )
+                }
+            }
+        }
+
         if (nonSpells.length > 0) {
-            await createEmbedded(
-                'Item',
-                CreatureBuilderForm.stripSourceUuid(nonSpells),
-            )
+            await createEach(CreatureBuilderForm.stripSourceUuid(nonSpells))
         }
 
         if (spells.length > 0 && spellcastingEntryId) {
@@ -540,7 +698,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                     location: { value: spellcastingEntryId },
                 },
             }))
-            await createEmbedded('Item', linkedSpells)
+            await createEach(linkedSpells)
         } else if (spells.length > 0) {
             globalLog(
                 true,
@@ -605,7 +763,12 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
                 await newActor.deleteEmbeddedDocuments('Item', toDelete)
             }
 
-            const spellcastingEntry = await this.applySpellcasting(formData)
+            let spellcastingEntry: unknown
+            try {
+                spellcastingEntry = await this.applySpellcasting(formData)
+            } catch (error) {
+                globalLog(true, 'Failed to apply spellcasting', error)
+            }
             const spellcastingEntryId =
                 (spellcastingEntry as { id?: string } | undefined)?.id ??
                 undefined
@@ -794,43 +957,11 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
         return loreSkills
     }
 
+    private fieldIdPrefix(): string {
+        return `${this.id}-`
+    }
+
     getData() {
-        // console.debug('=== CreatureBuilderForm getData() ===')
-        // console.debug('this.object:', this.object)
-        // console.debug('this.actor:', this.actor)
-        // console.debug('this.actor?.name:', (this.actor as any)?.name)
-        // console.debug('this.actor?.system:', (this.actor as any)?.system)
-        // console.debug(
-        //     'Level raw:',
-        //     foundry.utils.getProperty(this.actor, 'system.details.level.value'),
-        // )
-
-        Handlebars.registerHelper('json', (context) => JSON.stringify(context))
-        Handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b)
-        Handlebars.registerHelper('roadmapLabel', (key) => {
-            if (typeof key !== 'string') {
-                return ''
-            }
-
-            const prefix = `${KeyPrefix}.custom.`
-            if (key.startsWith(prefix)) {
-                const raw = key.slice(prefix.length)
-                const normalized = raw
-                    .replace(/[_-]+/g, ' ')
-                    .replace(/\s+/g, ' ')
-                    .trim()
-                if (!normalized) {
-                    return key
-                }
-                return normalized
-                    .split(' ')
-                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(' ')
-            }
-
-            return game.i18n?.localize(key) ?? key
-        })
-
         const detectedStats = this.detectActorStats()
         const detectedTraits = this.detectTraits()
         const detectedLoreSkills = this.detectLoreSkills()
@@ -853,6 +984,7 @@ export class CreatureBuilderForm extends foundry.appv1.api.FormApplication {
             detectedTraits: detectedTraits,
             detectedLoreSkills: detectedLoreSkills,
             actorLevel: actorLevel,
+            fieldId: this.fieldIdPrefix(),
         }
     }
 }

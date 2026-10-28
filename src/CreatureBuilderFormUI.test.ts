@@ -1,37 +1,42 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs'
+import Handlebars from 'handlebars'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import enLang from '../public/languages/en.json'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
-import { Options, Statistics } from './Keys'
+import { DefaultCreatureStatistics, Levels, Options, Statistics } from './Keys'
 import { statisticValues } from './Values'
 
 const buildConfig = (
     overrides: Partial<
         ConstructorParameters<typeof CreatureBuilderFormUI>[0]
     > = {},
-) => ({
-    creatureStatistics: [
-        {
-            name: 'PF2EMONSTERMAKER.abilityScores',
-            defaultValue: Options.moderate,
-            statisticEntries: [
-                { name: Statistics.str },
-                { name: Statistics.dex },
-            ],
+) =>
+    ({
+        creatureStatistics: [
+            {
+                name: 'PF2EMONSTERMAKER.abilityScores',
+                defaultValue: Options.moderate,
+                statisticEntries: [
+                    { name: Statistics.str },
+                    { name: Statistics.dex },
+                ],
+            },
+        ],
+        creatureRoadmaps: {
+            TestRoadmap: {
+                [Statistics.dex]: Options.low,
+            },
         },
-    ],
-    creatureRoadmaps: {
-        TestRoadmap: {
-            [Statistics.dex]: Options.low,
-        },
-    },
-    spellLists: {},
-    detectedStats: {},
-    detectedTraits: [],
-    detectedLoreSkills: [],
-    actorLevel: '1',
-    ...overrides,
-})
+        spellLists: {},
+        detectedStats: {},
+        detectedTraits: [],
+        detectedLoreSkills: [],
+        actorLevel: '1',
+        root: document.body,
+        idPrefix: '',
+        ...overrides,
+    }) as ConstructorParameters<typeof CreatureBuilderFormUI>[0]
 
 const setupDom = () => {
     document.body.innerHTML = `
@@ -125,11 +130,170 @@ beforeEach(() => {
 afterEach(() => {
     document.body.innerHTML = ''
     delete (window as any).game
-    delete (window as any).setRoadmap
     vi.useRealTimers()
 })
 
 describe('CreatureBuilderFormUI', () => {
+    it('initializes a window rendered from the real template', () => {
+        const source = readFileSync(
+            'public/forms/creatureBuilderForm.html',
+            'utf8',
+        )
+        const bareIds = [...source.matchAll(/\b(?:id|for)="([^"]*)"/g)]
+            .map((match) => match[1])
+            .filter((value) => !value?.includes('fieldId'))
+        expect(bareIds).toEqual([])
+
+        const handlebars = Handlebars.create()
+        handlebars.registerHelper('localize', (key: string) => key)
+        handlebars.registerHelper('concat', (...args: unknown[]) =>
+            args.filter((arg) => typeof arg !== 'object').join(''),
+        )
+        handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b)
+        handlebars.registerHelper('roadmapLabel', (key: unknown) =>
+            String(key ?? ''),
+        )
+
+        const fieldId = 'window-a-'
+        const root = document.createElement('div')
+        root.className = 'creatureBuilderForm creatureBuilderFormModern'
+        root.innerHTML = handlebars.compile(source)({
+            fieldId,
+            name: 'Hero',
+            Levels,
+            RoadMaps: { TestRoadmap: {} },
+            SpellLists: { pyromancer: { name: 'Pyromancer' } },
+            CreatureStatistics: JSON.parse(
+                JSON.stringify(DefaultCreatureStatistics),
+            ),
+        })
+        document.body.replaceChildren(root)
+
+        const ui = new CreatureBuilderFormUI(
+            buildConfig({
+                root,
+                idPrefix: fieldId,
+                creatureStatistics: JSON.parse(
+                    JSON.stringify(DefaultCreatureStatistics),
+                ),
+            }),
+        )
+        vi.useFakeTimers()
+        expect(() => ui.initialize()).not.toThrow()
+        vi.runAllTimers()
+
+        const str = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilder${Statistics.str}`)}`,
+        ) as HTMLSelectElement
+        const spellList = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilderPF2EMONSTERMAKER.spellList`)}`,
+        )
+        const level = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilderLevel`)}`,
+        ) as HTMLSelectElement
+        const preview = root.querySelector(
+            `#${CSS.escape(`${fieldId}previewRoadmapLevel`)}`,
+        )
+        const ability = root.querySelector(`[data-ability="${Statistics.str}"]`)
+        const dropdown = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilderTraitsDropdown`)}`,
+        )
+        expect(str).toBeTruthy()
+        expect(spellList).toBeTruthy()
+        expect(level.value).toBe('1')
+        expect(str.classList.contains('stat-level-moderate')).toBe(true)
+        expect(preview?.textContent).toContain('lvl 1')
+        expect(ability?.textContent).toContain('+3')
+        expect(ability?.classList.contains('stat-level-moderate')).toBe(true)
+        expect(dropdown?.getAttribute('aria-labelledby')).toBe(
+            `${fieldId}creatureBuilderTraitsLabel`,
+        )
+        const traitsLabel = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilderTraitsLabel`)}`,
+        ) as HTMLLabelElement
+        const traitsInput = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilderTraitsInput`)}`,
+        ) as HTMLElement
+        expect(traitsLabel.getAttribute('for')).toBeNull()
+        expect(traitsInput.getAttribute('aria-labelledby')).toBe(
+            `${fieldId}creatureBuilderTraitsLabel`,
+        )
+        traitsLabel.click()
+        expect(document.activeElement).toBe(traitsInput)
+        expect(dropdown?.classList.contains('show')).toBe(true)
+
+        const label = root.querySelector(
+            `label[for="${fieldId}toggleBadges"]`,
+        ) as HTMLLabelElement
+        const box = root.querySelector(
+            `#${CSS.escape(`${fieldId}toggleBadges`)}`,
+        ) as HTMLInputElement
+        expect(box.checked).toBe(true)
+        label.click()
+        expect(box.checked).toBe(false)
+        const nameInput = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilderName`)}`,
+        ) as HTMLInputElement
+        expect(nameInput.type).toBe('text')
+        expect(root.querySelector('footer.form-footer')).toBeTruthy()
+        ui.addLoreSkill('Forest')
+        const loreInput = root.querySelector(
+            '.loreNameInput',
+        ) as HTMLInputElement
+        expect(loreInput.type).toBe(nameInput.type)
+        expect(root.querySelector('[data-action="addLore"]')).toBeTruthy()
+        expect(root.querySelector('[data-action="resetDefaults"]')).toBeTruthy()
+
+        ui.destroy()
+    })
+
+    it('restores edited dropdowns over detected actor values', () => {
+        vi.useFakeTimers()
+        const level = document.getElementById(
+            'creatureBuilderLevel',
+        ) as HTMLSelectElement
+        const roadmap = document.getElementById(
+            'creatureBuilderRoadmap',
+        ) as HTMLSelectElement
+        const str = document.getElementById(
+            `creatureBuilder${Statistics.str}`,
+        ) as HTMLSelectElement
+        level.name = Statistics.level
+        str.name = Statistics.str
+
+        const ui = new CreatureBuilderFormUI(
+            buildConfig({
+                detectedStats: { [Statistics.str]: Options.high },
+                actorLevel: '3',
+                preservedControls: {
+                    [Statistics.str]: Options.moderate,
+                    [Statistics.level]: '1',
+                    creatureBuilderRoadmap: 'TestRoadmap',
+                },
+            }),
+        )
+        ui.initialize()
+        vi.runAllTimers()
+
+        expect(str.value).toBe(Options.moderate)
+        expect(level.value).toBe('1')
+        expect(roadmap.value).toBe('TestRoadmap')
+        expect(str.classList.contains('stat-level-moderate')).toBe(true)
+        ui.destroy()
+    })
+
+    it('restores dropped items when the window is initialized', () => {
+        const list = document.createElement('div')
+        list.id = 'droppedItemsList'
+        document.body.appendChild(list)
+        const droppedItems = [{ name: 'Fireball', type: 'spell' }]
+        const ui = new CreatureBuilderFormUI(buildConfig({ droppedItems }))
+        ui.initialize()
+
+        expect(list.children).toHaveLength(1)
+        ui.destroy()
+    })
+
     it('initializes defaults, detected stats, and collapses sections', () => {
         vi.useFakeTimers()
         const ui = new CreatureBuilderFormUI(
@@ -163,17 +327,14 @@ describe('CreatureBuilderFormUI', () => {
         ) as HTMLDetailsElement
         expect(loreSection.open).toBe(false)
         expect(skillsSection.open).toBe(false)
-        expect(typeof (window as any).setRoadmap).toBe('function')
+        expect((window as any).setRoadmap).toBeUndefined()
     })
 
     it('adds and removes lore entries from the button', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()
 
-        const addButton = document.getElementById(
-            'addLoreButton',
-        ) as HTMLButtonElement
-        addButton.click()
+        ui.addLoreSkill()
 
         const entries = document.querySelectorAll('.loreEntry')
         expect(entries.length).toBe(1)
@@ -240,10 +401,7 @@ describe('CreatureBuilderFormUI', () => {
         )
         ui.initialize()
 
-        const addButton = document.getElementById(
-            'addLoreButton',
-        ) as HTMLButtonElement
-        addButton.click()
+        ui.addLoreSkill()
 
         const level = document.getElementById(
             'creatureBuilderLevel',
@@ -254,10 +412,7 @@ describe('CreatureBuilderFormUI', () => {
         level.value = '3'
         roadmap.value = 'TestRoadmap'
 
-        const resetButton = document.getElementById(
-            'creatureBuilderResetButton',
-        ) as HTMLButtonElement
-        resetButton.click()
+        ui.resetToDefaults()
 
         const hidden = document.getElementById(
             'creatureBuilderTraitsHidden',
@@ -441,6 +596,149 @@ describe('CreatureBuilderFormUI', () => {
         expect(dropdown.parentElement).toBe(document.body)
     })
 
+    describe('destroy', () => {
+        it('removes document and window listeners and the traits dropdown', () => {
+            const documentAdd = vi.spyOn(document, 'addEventListener')
+            const documentRemove = vi.spyOn(document, 'removeEventListener')
+            const windowAdd = vi.spyOn(window, 'addEventListener')
+            const windowRemove = vi.spyOn(window, 'removeEventListener')
+
+            const ui = new CreatureBuilderFormUI(buildConfig())
+            ui.initialize()
+
+            const documentClick = documentAdd.mock.calls.find(
+                (call) => call[0] === 'click',
+            )
+            const windowScroll = windowAdd.mock.calls.find(
+                (call) => call[0] === 'scroll',
+            )
+            const windowResize = windowAdd.mock.calls.find(
+                (call) => call[0] === 'resize',
+            )
+            expect(documentClick?.[1]).toEqual(expect.any(Function))
+            expect(windowScroll?.[2]).toBe(true)
+            expect(windowResize?.[1]).toEqual(expect.any(Function))
+
+            const input = document.getElementById(
+                'creatureBuilderTraitsInput',
+            ) as HTMLElement
+            input.textContent = 'undead'
+            input.dispatchEvent(new Event('input', { bubbles: true }))
+            const dropdown = document.getElementById(
+                'creatureBuilderTraitsDropdown',
+            ) as HTMLElement
+            expect(dropdown.parentElement).toBe(document.body)
+            expect(dropdown.classList.contains('show')).toBe(true)
+
+            ui.destroy()
+
+            expect(documentRemove).toHaveBeenCalledWith(
+                'click',
+                documentClick?.[1],
+            )
+            expect(windowRemove).toHaveBeenCalledWith(
+                'scroll',
+                windowScroll?.[1],
+                true,
+            )
+            expect(windowRemove).toHaveBeenCalledWith(
+                'resize',
+                windowResize?.[1],
+            )
+            expect(
+                document.getElementById('creatureBuilderTraitsDropdown'),
+            ).toBeNull()
+            expect(dropdown.classList.contains('show')).toBe(false)
+            expect((window as any).setRoadmap).toBeUndefined()
+
+            document.body.dispatchEvent(
+                new MouseEvent('click', { bubbles: true }),
+            )
+            window.dispatchEvent(new Event('scroll'))
+            window.dispatchEvent(new Event('resize'))
+
+            documentAdd.mockRestore()
+            documentRemove.mockRestore()
+            windowAdd.mockRestore()
+            windowRemove.mockRestore()
+        })
+
+        it('leaves the other window intact when one is destroyed', () => {
+            const markup = document.body.innerHTML
+            const firstHost = document.createElement('div')
+            const secondHost = document.createElement('div')
+            firstHost.innerHTML = markup
+            secondHost.innerHTML = markup
+            document.body.replaceChildren(firstHost, secondHost)
+
+            const first = new CreatureBuilderFormUI(
+                buildConfig({ root: firstHost }),
+            )
+            const second = new CreatureBuilderFormUI(
+                buildConfig({ root: secondHost }),
+            )
+            first.initialize()
+            second.initialize()
+
+            const firstInput = firstHost.querySelector(
+                '#creatureBuilderTraitsInput',
+            ) as HTMLElement
+            firstInput.textContent = 'undead'
+            firstInput.dispatchEvent(new Event('input', { bubbles: true }))
+
+            const firstDropdown = document.body.querySelector(
+                '#creatureBuilderTraitsDropdown.show',
+            ) as HTMLElement
+            const secondDropdown = secondHost.querySelector(
+                '#creatureBuilderTraitsDropdown',
+            ) as HTMLElement
+            expect(firstDropdown).toBeTruthy()
+            expect(secondDropdown.classList.contains('show')).toBe(false)
+
+            first.destroy()
+
+            expect(firstDropdown.isConnected).toBe(false)
+            expect(secondDropdown.isConnected).toBe(true)
+            second.destroy()
+            expect(
+                document.querySelector('#creatureBuilderTraitsDropdown'),
+            ).toBeNull()
+        })
+
+        it('cancels deferred initialization', () => {
+            vi.useFakeTimers()
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({
+                    detectedStats: { [Statistics.str]: Options.high },
+                    actorLevel: '3',
+                }),
+            )
+            ui.initialize()
+            ui.destroy()
+            vi.runAllTimers()
+
+            const level = document.getElementById(
+                'creatureBuilderLevel',
+            ) as HTMLSelectElement
+            const str = document.getElementById(
+                `creatureBuilder${Statistics.str}`,
+            ) as HTMLSelectElement
+            expect(level.value).toBe('-1')
+            expect(str.value).toBe(Options.moderate)
+        })
+
+        it('is safe to call before initialize and more than once', () => {
+            const ui = new CreatureBuilderFormUI(buildConfig())
+            expect(() => ui.destroy()).not.toThrow()
+            ui.initialize()
+            ui.destroy()
+            expect(() => ui.destroy()).not.toThrow()
+            expect(
+                document.getElementById('creatureBuilderTraitsDropdown'),
+            ).toBeNull()
+        })
+    })
+
     it('throws when required elements are missing', () => {
         document.getElementById('creatureBuilderTraitsHidden')?.remove()
         const ui = new CreatureBuilderFormUI(buildConfig())
@@ -614,10 +912,7 @@ describe('CreatureBuilderFormUI', () => {
             ) as HTMLSelectElement
             spellListSelect.value = 'pyromancer'
 
-            const resetButton = document.getElementById(
-                'creatureBuilderResetButton',
-            ) as HTMLButtonElement
-            resetButton.click()
+            ui.resetToDefaults()
 
             expect(spellListSelect.value).toBe('none')
         })
@@ -929,23 +1224,42 @@ describe('CreatureBuilderFormUI', () => {
             expect(dex.value).toBe(Options.low)
         })
 
-        it('window.setRoadmap callback delegates to instance method', () => {
-            const ui = new CreatureBuilderFormUI(buildConfig())
-            ui.initialize()
+        it('applies a roadmap change only inside that window', () => {
+            const markup = document.body.innerHTML
+            const firstHost = document.createElement('div')
+            const secondHost = document.createElement('div')
+            firstHost.innerHTML = markup
+            secondHost.innerHTML = markup
+            document.body.replaceChildren(firstHost, secondHost)
 
-            const setRoadmapFn = (window as any).setRoadmap
-            expect(typeof setRoadmapFn).toBe('function')
+            const first = new CreatureBuilderFormUI(
+                buildConfig({ root: firstHost }),
+            )
+            const second = new CreatureBuilderFormUI(
+                buildConfig({ root: secondHost }),
+            )
+            first.initialize()
+            second.initialize()
 
-            const roadmapSelect = document.getElementById(
-                'creatureBuilderRoadmap',
+            const roadmapSelect = firstHost.querySelector(
+                '#creatureBuilderRoadmap',
             ) as HTMLSelectElement
             roadmapSelect.value = 'TestRoadmap'
-            setRoadmapFn(roadmapSelect)
+            roadmapSelect.dispatchEvent(new Event('change'))
 
-            const dex = document.getElementById(
-                `creatureBuilder${Statistics.dex}`,
+            const dexSelector = `#${CSS.escape(`creatureBuilder${Statistics.dex}`)}`
+            const firstDex = firstHost.querySelector(
+                dexSelector,
             ) as HTMLSelectElement
-            expect(dex.value).toBe(Options.low)
+            const secondDex = secondHost.querySelector(
+                dexSelector,
+            ) as HTMLSelectElement
+            expect(firstDex.value).toBe(Options.low)
+            expect(secondDex.value).toBe(Options.moderate)
+            expect((window as any).setRoadmap).toBeUndefined()
+
+            first.destroy()
+            second.destroy()
         })
 
         it('handles detected stat key with no matching DOM element', () => {
@@ -1098,10 +1412,7 @@ describe('CreatureBuilderFormUI', () => {
             const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
 
-            const addButton = document.getElementById(
-                'addLoreButton',
-            ) as HTMLButtonElement
-            addButton.click()
+            ui.addLoreSkill()
 
             const entry = document.querySelector('.loreEntry') as HTMLElement
             const input = entry.querySelector('input') as HTMLInputElement
@@ -1122,10 +1433,7 @@ describe('CreatureBuilderFormUI', () => {
                 .getElementById('creatureBuilderPF2EMONSTERMAKER.spellList')
                 ?.remove()
 
-            const resetButton = document.getElementById(
-                'creatureBuilderResetButton',
-            ) as HTMLButtonElement
-            expect(() => resetButton.click()).not.toThrow()
+            expect(() => ui.resetToDefaults()).not.toThrow()
         })
 
         it('handles collapsible section with sectionName equal to PF2EMONSTERMAKER.skills', () => {
@@ -1192,7 +1500,7 @@ describe('CreatureBuilderFormUI', () => {
         })
     })
 
-    describe('Modern UI — Stat Highlights', () => {
+    describe('Stat Highlights', () => {
         const setupModernDom = () => {
             setupDom()
             const dropZone = document.createElement('div')
@@ -1240,7 +1548,6 @@ describe('CreatureBuilderFormUI', () => {
             const ui = new CreatureBuilderFormUI(
                 buildConfig({
                     detectedStats: { [Statistics.str]: Options.high },
-                    isModern: true,
                 }),
             )
             ui.initialize()
@@ -1255,9 +1562,7 @@ describe('CreatureBuilderFormUI', () => {
         it('applies stat-level-moderate by default', () => {
             vi.useFakeTimers()
             setupModernDom()
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1272,9 +1577,7 @@ describe('CreatureBuilderFormUI', () => {
         it('updates highlight class on select change', () => {
             vi.useFakeTimers()
             setupModernDom()
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1293,9 +1596,7 @@ describe('CreatureBuilderFormUI', () => {
         it('applies highlight to all selects after roadmap change', () => {
             vi.useFakeTimers()
             setupModernDom()
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1310,29 +1611,9 @@ describe('CreatureBuilderFormUI', () => {
             ) as HTMLSelectElement
             expect(dexSelect.classList.contains('stat-level-low')).toBe(true)
         })
-
-        it('does not apply highlights in classic mode', () => {
-            vi.useFakeTimers()
-            setupDom()
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: false }),
-            )
-            ui.initialize()
-            vi.runAllTimers()
-
-            const strSelect = document.getElementById(
-                `creatureBuilder${Statistics.str}`,
-            ) as HTMLSelectElement
-            const hasHighlightClass = (
-                CreatureBuilderFormUI as any
-            ).STAT_LEVEL_CLASSES.some((cls: string) =>
-                strSelect.classList.contains(cls),
-            )
-            expect(hasHighlightClass).toBe(false)
-        })
     })
 
-    describe('Modern UI — Live Preview', () => {
+    describe('Live Preview', () => {
         const setupModernDom = () => {
             setupDom()
             const dropZone = document.createElement('div')
@@ -1374,9 +1655,7 @@ describe('CreatureBuilderFormUI', () => {
         it('shows -- for stats not in the value table', () => {
             vi.useFakeTimers()
             setupModernDom()
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1401,9 +1680,7 @@ describe('CreatureBuilderFormUI', () => {
             document.body.appendChild(hpSelect)
             hpSelect.value = Options.moderate
 
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1435,7 +1712,7 @@ describe('CreatureBuilderFormUI', () => {
             fortSelect.value = 'PF2EMONSTERMAKER.bogusOption'
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -1458,9 +1735,7 @@ describe('CreatureBuilderFormUI', () => {
             ) as HTMLSelectElement
             spellSelect.value = 'PF2EMONSTERMAKER.none'
 
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1483,7 +1758,7 @@ describe('CreatureBuilderFormUI', () => {
             acSelect.value = Options.moderate
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -1508,7 +1783,7 @@ describe('CreatureBuilderFormUI', () => {
             acSelect.value = Options.high
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -1523,9 +1798,7 @@ describe('CreatureBuilderFormUI', () => {
             vi.useFakeTimers()
             setupModernDom()
 
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1548,7 +1821,7 @@ describe('CreatureBuilderFormUI', () => {
             acSelect.value = 'PF2EMONSTERMAKER.unknown'
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -1564,27 +1837,6 @@ describe('CreatureBuilderFormUI', () => {
             expect(hasHighlightClass).toBe(false)
         })
 
-        it('does not render preview in classic mode', () => {
-            vi.useFakeTimers()
-            setupDom()
-            const previewBar = document.createElement('div')
-            previewBar.className = 'stat-preview-bar'
-            const span = document.createElement('span')
-            span.className = 'preview-stat'
-            span.dataset.stat = 'PF2EMONSTERMAKER.hp'
-            span.textContent = 'HP --'
-            previewBar.appendChild(span)
-            document.body.appendChild(previewBar)
-
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: false }),
-            )
-            ui.initialize()
-            vi.runAllTimers()
-
-            expect(span.textContent).toBe('HP --')
-        })
-
         it('updates inline stat badges with numeric values', () => {
             vi.useFakeTimers()
             setupModernDom()
@@ -1596,7 +1848,7 @@ describe('CreatureBuilderFormUI', () => {
             document.body.appendChild(strBadge)
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -1614,9 +1866,7 @@ describe('CreatureBuilderFormUI', () => {
             spellBadge.textContent = '--'
             document.body.appendChild(spellBadge)
 
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1642,7 +1892,7 @@ describe('CreatureBuilderFormUI', () => {
             document.body.appendChild(dmgBadge)
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -1652,7 +1902,7 @@ describe('CreatureBuilderFormUI', () => {
         })
     })
 
-    describe('Modern UI — Drop Zone', () => {
+    describe('Drop Zone', () => {
         const setupModernDom = () => {
             setupDom()
             const dropZone = document.createElement('div')
@@ -1678,9 +1928,7 @@ describe('CreatureBuilderFormUI', () => {
         it('adds drag-over class on dragover', () => {
             vi.useFakeTimers()
             setupModernDom()
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1694,9 +1942,7 @@ describe('CreatureBuilderFormUI', () => {
         it('removes drag-over class on drop', () => {
             vi.useFakeTimers()
             setupModernDom()
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1709,9 +1955,7 @@ describe('CreatureBuilderFormUI', () => {
         it('removes drag-over class on dragleave', () => {
             vi.useFakeTimers()
             setupModernDom()
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1725,9 +1969,7 @@ describe('CreatureBuilderFormUI', () => {
             vi.useFakeTimers()
             setupModernDom()
             const droppedItems: Record<string, unknown>[] = []
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, droppedItems }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig({ droppedItems }))
             ui.initialize()
             vi.runAllTimers()
 
@@ -1755,9 +1997,7 @@ describe('CreatureBuilderFormUI', () => {
             vi.useFakeTimers()
             setupModernDom()
             const droppedItems: Record<string, unknown>[] = []
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, droppedItems }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig({ droppedItems }))
             ui.initialize()
             vi.runAllTimers()
 
@@ -1784,9 +2024,7 @@ describe('CreatureBuilderFormUI', () => {
             vi.useFakeTimers()
             setupModernDom()
             const droppedItems: Record<string, unknown>[] = []
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, droppedItems }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig({ droppedItems }))
             ui.initialize()
             vi.runAllTimers()
 
@@ -1808,9 +2046,7 @@ describe('CreatureBuilderFormUI', () => {
             vi.useFakeTimers()
             setupModernDom()
             const droppedItems: Record<string, unknown>[] = []
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, droppedItems }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig({ droppedItems }))
             ui.initialize()
             vi.runAllTimers()
 
@@ -1818,10 +2054,7 @@ describe('CreatureBuilderFormUI', () => {
             droppedItems.push(itemData)
             ui.renderDroppedItem(itemData)
 
-            const resetBtn = document.getElementById(
-                'creatureBuilderResetButton',
-            )!
-            resetBtn.click()
+            ui.resetToDefaults()
 
             expect(droppedItems).toHaveLength(0)
             expect(
@@ -1830,7 +2063,7 @@ describe('CreatureBuilderFormUI', () => {
         })
     })
 
-    describe('Modern UI — Badge Toggle', () => {
+    describe('Badge Toggle', () => {
         const setupModernDomWithToggle = () => {
             setupDom()
             const wrapper = document.querySelector('.creatureBuilderForm')!
@@ -1859,9 +2092,7 @@ describe('CreatureBuilderFormUI', () => {
         it('adds hide-badges class when toggle is unchecked', () => {
             vi.useFakeTimers()
             setupModernDomWithToggle()
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1880,9 +2111,7 @@ describe('CreatureBuilderFormUI', () => {
         it('removes hide-badges class when toggle is checked', () => {
             vi.useFakeTimers()
             setupModernDomWithToggle()
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             ui.initialize()
             vi.runAllTimers()
 
@@ -1918,9 +2147,7 @@ describe('CreatureBuilderFormUI', () => {
             previewBar.id = 'statPreviewBar'
             document.body.appendChild(previewBar)
 
-            const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true }),
-            )
+            const ui = new CreatureBuilderFormUI(buildConfig())
             expect(() => {
                 ui.initialize()
                 vi.runAllTimers()
@@ -1928,7 +2155,7 @@ describe('CreatureBuilderFormUI', () => {
         })
     })
 
-    describe('Modern UI — Preview Roadmap Level & Ability Scores', () => {
+    describe('Preview Roadmap Level & Ability Scores', () => {
         const setupFullModernDom = () => {
             setupDom()
             const dropZone = document.createElement('div')
@@ -1994,7 +2221,7 @@ describe('CreatureBuilderFormUI', () => {
             vi.useFakeTimers()
             setupFullModernDom()
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '3' }),
+                buildConfig({ actorLevel: '3' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2008,7 +2235,7 @@ describe('CreatureBuilderFormUI', () => {
             vi.useFakeTimers()
             setupFullModernDom()
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2032,7 +2259,7 @@ describe('CreatureBuilderFormUI', () => {
             strSelect.appendChild(optNone)
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2059,7 +2286,7 @@ describe('CreatureBuilderFormUI', () => {
             strSelect.appendChild(optBogus)
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2083,7 +2310,7 @@ describe('CreatureBuilderFormUI', () => {
             spellSelect.value = 'PF2EMONSTERMAKER.none'
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2105,7 +2332,7 @@ describe('CreatureBuilderFormUI', () => {
             spellSelect.dispatchEvent(new Event('change', { bubbles: true }))
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2121,7 +2348,7 @@ describe('CreatureBuilderFormUI', () => {
             vi.useFakeTimers()
             setupFullModernDom()
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2138,7 +2365,7 @@ describe('CreatureBuilderFormUI', () => {
         })
     })
 
-    describe('Modern UI — Inline Badge Edge Cases', () => {
+    describe('Inline Badge Edge Cases', () => {
         const setupModernDomWithBadges = () => {
             setupDom()
             const dropZone = document.createElement('div')
@@ -2183,7 +2410,7 @@ describe('CreatureBuilderFormUI', () => {
             document.body.appendChild(badge)
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2215,7 +2442,7 @@ describe('CreatureBuilderFormUI', () => {
             document.body.appendChild(badge)
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2243,7 +2470,7 @@ describe('CreatureBuilderFormUI', () => {
             document.body.appendChild(badge)
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2263,7 +2490,7 @@ describe('CreatureBuilderFormUI', () => {
             document.body.appendChild(badge)
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()
@@ -2289,7 +2516,7 @@ describe('CreatureBuilderFormUI', () => {
             document.body.appendChild(badge)
 
             const ui = new CreatureBuilderFormUI(
-                buildConfig({ isModern: true, actorLevel: '1' }),
+                buildConfig({ actorLevel: '1' }),
             )
             ui.initialize()
             vi.runAllTimers()

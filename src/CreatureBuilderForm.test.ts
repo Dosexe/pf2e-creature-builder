@@ -68,27 +68,71 @@ const buildActor = (overrides: Record<string, unknown> = {}) => ({
 })
 
 beforeAll(async () => {
-    class MockFormApplication {
-        static defaultOptions = {}
-        object: any
-        options: any
+    class MockApplicationV2 {
+        static DEFAULT_OPTIONS = {}
+        static PARTS = {}
+        options: any = {}
+        element: unknown
 
-        constructor(object: any, options?: any) {
-            this.object = object
-            this.options = options
+        constructor(options?: any) {
+            this.options = this._initializeApplicationOptions(options ?? {})
         }
 
-        activateListeners() {}
+        _initializeApplicationOptions(options: any) {
+            const defaults = (this.constructor as any).DEFAULT_OPTIONS ?? {}
+            return { ...defaults, ...options }
+        }
+
+        _configureRenderParts() {
+            return {
+                ...((this.constructor as any).PARTS ?? {}),
+            }
+        }
+
+        async _prepareContext() {
+            return {}
+        }
+
+        async _preRender() {}
+
+        async _onRender() {}
+
+        get id() {
+            return this.options.id
+        }
 
         close() {
-            return Promise.resolve()
+            return Promise.resolve(this)
         }
     }
 
+    const HandlebarsApplicationMixin = (Base: any) =>
+        class extends Base {
+            static PARTS = {}
+        }
+
     vi.stubGlobal('foundry', {
-        appv1: {
+        applications: {
             api: {
-                FormApplication: MockFormApplication,
+                ApplicationV2: MockApplicationV2,
+                HandlebarsApplicationMixin,
+            },
+            ux: {
+                DragDrop: class MockDragDrop {
+                    static instances: MockDragDrop[] = []
+                    config: any
+                    boundTo: unknown
+
+                    constructor(config: any) {
+                        this.config = config
+                        MockDragDrop.instances.push(this)
+                    }
+
+                    bind(element: unknown) {
+                        this.boundTo = element
+                        return this
+                    }
+                },
             },
         },
         utils: {
@@ -310,6 +354,40 @@ describe('CreatureBuilderForm', () => {
             system: { mod: { value: expectedValue } },
         })
         expect(options).toEqual({ parent: form.actor })
+    })
+
+    it('creates the other lore items when one cannot be added', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        form.level = '1'
+        Item.create.mockImplementation(async (data: { name?: string }) => {
+            if (data.name === 'Broken Lore') {
+                throw new Error('invalid lore')
+            }
+            return { id: 'lore-id' }
+        })
+
+        await expect(
+            form.applyLoreSkills({
+                loreName0: 'Sailing',
+                loreLevel0: Options.moderate,
+                loreName1: 'Broken',
+                loreLevel1: Options.high,
+                loreName2: 'Underworld',
+                loreLevel2: Options.low,
+            }),
+        ).resolves.toBeUndefined()
+
+        expect(Item.create).toHaveBeenCalledTimes(3)
+        expect(Item.create.mock.calls.map((call) => call[0].name)).toEqual([
+            'Sailing Lore',
+            'Broken Lore',
+            'Underworld Lore',
+        ])
+        expect(globalLog).toHaveBeenCalledWith(
+            true,
+            'Failed to add lore "Broken Lore"',
+            expect.any(Error),
+        )
     })
 
     it('detects actor stats, skills, and spellcasting', () => {
@@ -536,10 +614,11 @@ describe('CreatureBuilderForm', () => {
         const data = form.getData()
         expect(
             (globalThis as any).Handlebars.registerHelper,
-        ).toHaveBeenCalledWith('json', expect.any(Function))
-        const jsonHelper = (globalThis as any).Handlebars.registerHelper.mock
-            .calls[0][1]
-        expect(jsonHelper({ foo: 'bar' })).toBe('{"foo":"bar"}')
+        ).not.toHaveBeenCalled()
+        form.getData()
+        expect(
+            (globalThis as any).Handlebars.registerHelper,
+        ).not.toHaveBeenCalled()
         expect(data.name).toBe('Hero')
         expect(data.detectedStats).toEqual({
             [Statistics.str]: Options.high,
@@ -551,25 +630,40 @@ describe('CreatureBuilderForm', () => {
         expect(data.actorLevel).toBe('1')
     })
 
-    it('formats roadmap labels for custom keys', () => {
-        const form = new CreatureBuilderForm(buildActor())
-        form.getData()
+    it('registers Handlebars helpers only once', async () => {
+        const { registerCreatureBuilderHelpers } = await import(
+            './CreatureBuilderForm'
+        )
+        const registerHelper = (globalThis as any).Handlebars.registerHelper
 
-        const roadmapLabelHelper = (
-            globalThis as any
-        ).Handlebars.registerHelper.mock.calls.find(
-            (call: [string, unknown]) => call[0] === 'roadmapLabel',
-        )?.[1] as (key: string) => string
+        registerCreatureBuilderHelpers()
+        registerCreatureBuilderHelpers()
 
-        expect(roadmapLabelHelper('PF2EMONSTERMAKER.custom.tank')).toBe('Tank')
-        expect(
-            roadmapLabelHelper('PF2EMONSTERMAKER.custom.tank-healer_v2_0'),
-        ).toBe('Tank Healer V2 0')
-        expect(roadmapLabelHelper('PF2EMONSTERMAKER.custom._')).toBe(
+        expect(registerHelper).toHaveBeenCalledTimes(1)
+        expect(registerHelper).toHaveBeenCalledWith(
+            'roadmapLabel',
+            expect.any(Function),
+        )
+        const roadmapLabelHelper = registerHelper.mock.calls[0][1] as (
+            key: string,
+        ) => string
+        expect(roadmapLabelHelper('PF2EMONSTERMAKER.custom.skirmisher')).toBe(
+            'Skirmisher',
+        )
+    })
+
+    it('formats roadmap labels for custom keys', async () => {
+        const { roadmapLabel } = await import('./CreatureBuilderForm')
+
+        expect(roadmapLabel('PF2EMONSTERMAKER.custom.tank')).toBe('Tank')
+        expect(roadmapLabel('PF2EMONSTERMAKER.custom.tank-healer_v2_0')).toBe(
+            'Tank Healer V2 0',
+        )
+        expect(roadmapLabel('PF2EMONSTERMAKER.custom._')).toBe(
             'PF2EMONSTERMAKER.custom._',
         )
-        expect(roadmapLabelHelper(null as unknown as string)).toBe('')
-        expect(roadmapLabelHelper('PF2EMONSTERMAKER.brute')).toBe(
+        expect(roadmapLabel(null)).toBe('')
+        expect(roadmapLabel('PF2EMONSTERMAKER.brute')).toBe(
             'loc:PF2EMONSTERMAKER.brute',
         )
     })
@@ -733,9 +827,45 @@ describe('CreatureBuilderForm', () => {
     })
 
     it('exposes default options for the form', () => {
-        const options = CreatureBuilderForm.defaultOptions
+        const options = CreatureBuilderForm.DEFAULT_OPTIONS
         expect(options.classes).toContain('creatureBuilderForm')
         expect(options.id).toBe('creatureBuilderForm')
+        expect(options.tag).toBe('form')
+        expect(options.form.closeOnSubmit).toBe(true)
+    })
+
+    it('prepares template context from actor data', async () => {
+        const form = new CreatureBuilderForm(
+            buildActor({
+                name: 'Hero',
+                system: { details: { level: { value: 3 } } },
+            }),
+        )
+        const context = await (form as any)._prepareContext({
+            isFirstRender: true,
+        })
+        expect(context.name).toBe('Hero')
+        expect(context.actorLevel).toBe('3')
+        expect(context.Levels).toBeDefined()
+    })
+
+    it('flattens Application V2 form data before applying updates', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        const update = vi
+            .spyOn(form as any, '_updateObject')
+            .mockResolvedValue(undefined)
+        const handler = CreatureBuilderForm.DEFAULT_OPTIONS.form.handler
+
+        await handler.call(form, {} as Event, {} as HTMLFormElement, {
+            object: {
+                PF2EMONSTERMAKER: { name: 'Nested', level: '1' },
+            },
+        })
+
+        expect(update).toHaveBeenCalledWith(expect.any(Object), {
+            'PF2EMONSTERMAKER.name': 'Nested',
+            'PF2EMONSTERMAKER.level': '1',
+        })
     })
 
     it('exposes instance id getter', () => {
@@ -743,7 +873,7 @@ describe('CreatureBuilderForm', () => {
         expect(form.id).toMatch(/^creatureBuilderForm-\d+-[a-z0-9]+$/)
     })
 
-    it('activates listeners and initializes the UI', () => {
+    it('initializes the client UI after render', async () => {
         const actor = buildActor({
             system: { details: { level: { value: 2 } } },
         })
@@ -757,12 +887,12 @@ describe('CreatureBuilderForm', () => {
         vi.spyOn(form, 'detectTraits').mockReturnValue(['undead'])
         vi.spyOn(form, 'detectLoreSkills').mockReturnValue([])
 
-        form.activateListeners({} as JQuery)
+        await (form as any)._onRender({} as any, {} as any)
 
         expect(initSpy).toHaveBeenCalled()
     })
 
-    it('uses default level in activateListeners when actor has no level', () => {
+    it('uses the default level after render when the actor has no level', async () => {
         const actor = buildActor({ system: {} })
         const form = new CreatureBuilderForm(actor)
         const initSpy = vi
@@ -772,13 +902,13 @@ describe('CreatureBuilderForm', () => {
         vi.spyOn(form, 'detectTraits').mockReturnValue([])
         vi.spyOn(form, 'detectLoreSkills').mockReturnValue([])
 
-        form.activateListeners({} as JQuery)
+        await (form as any)._onRender({} as any, {} as any)
 
         expect(initSpy).toHaveBeenCalled()
         expect((form as any).formUI).not.toBeNull()
     })
 
-    it('uses the default level when requested', () => {
+    it('uses the default level when requested', async () => {
         const actor = buildActor({
             system: { details: { level: { value: 2 } } },
         })
@@ -787,7 +917,7 @@ describe('CreatureBuilderForm', () => {
             .spyOn(CreatureBuilderFormUI.prototype, 'initialize')
             .mockImplementation(() => {})
 
-        form.activateListeners({} as JQuery)
+        await (form as any)._onRender({} as any, {} as any)
 
         // biome-ignore lint/complexity/useLiteralKeys: private property
         const actorLevel = (form['formUI'] as any).actorLevel
@@ -797,11 +927,47 @@ describe('CreatureBuilderForm', () => {
 
     it('clears form UI reference on close', async () => {
         const form = new CreatureBuilderForm(buildActor())
+        const destroy = vi.fn()
         // biome-ignore lint/complexity/useLiteralKeys: private property
-        form['formUI'] = {} as CreatureBuilderFormUI
+        form['formUI'] = { destroy } as unknown as CreatureBuilderFormUI
         await form.close()
+        expect(destroy).toHaveBeenCalledOnce()
         // biome-ignore lint/complexity/useLiteralKeys: private property
         expect(form['formUI']).toBeNull()
+    })
+
+    it('destroys the previous UI when the form renders again', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        const destroy = vi
+            .spyOn(CreatureBuilderFormUI.prototype, 'destroy')
+            .mockImplementation(() => {})
+        vi.spyOn(
+            CreatureBuilderFormUI.prototype,
+            'initialize',
+        ).mockImplementation(() => {})
+
+        await (form as any)._onRender({} as any, {} as any)
+        expect(destroy).not.toHaveBeenCalled()
+
+        await (form as any)._onRender({} as any, {} as any)
+        expect(destroy).toHaveBeenCalledOnce()
+
+        destroy.mockRestore()
+    })
+
+    it('initializes the UI against the window element', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        const element = { id: 'window-root' }
+        ;(form as any).element = element
+        vi.spyOn(
+            CreatureBuilderFormUI.prototype,
+            'initialize',
+        ).mockImplementation(() => {})
+
+        await (form as any)._onRender({} as any, {} as any)
+
+        // biome-ignore lint/complexity/useLiteralKeys: private property
+        expect(form['formUI']?.['root']).toBe(element)
     })
 
     it('logs and returns when actor clone fails', async () => {
@@ -851,6 +1017,43 @@ describe('CreatureBuilderForm', () => {
             'strike1',
             'lore1',
         ])
+    })
+
+    it('still adds the other items when spellcasting fails', async () => {
+        const originalActor = buildActor({
+            system: { details: { level: { value: 1 } } },
+        })
+        const newActor = buildActor({
+            deleteEmbeddedDocuments: vi.fn().mockResolvedValue(undefined),
+        })
+        ;(originalActor as any).clone = vi.fn().mockResolvedValue(newActor)
+        const form = new CreatureBuilderForm(originalActor)
+        vi.spyOn(form, 'applyHitPoints').mockReturnValue({})
+        vi.spyOn(form, 'applySpellcasting').mockRejectedValue(
+            new Error('bad entry'),
+        )
+        const strike = vi
+            .spyOn(form, 'applyStrike')
+            .mockResolvedValue(undefined)
+        const dropped = vi
+            .spyOn(form, 'applyDroppedItems')
+            .mockResolvedValue(undefined)
+        vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
+        vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
+
+        // biome-ignore lint/complexity/useLiteralKeys: protected property
+        await form['_updateObject'](undefined as unknown as Event, {
+            [Statistics.name]: 'Test',
+            [Statistics.level]: '1',
+        })
+
+        expect(strike).toHaveBeenCalled()
+        expect(dropped).toHaveBeenCalled()
+        expect(globalLog).toHaveBeenCalledWith(
+            true,
+            'Failed to apply spellcasting',
+            expect.any(Error),
+        )
     })
 
     it('creates a new actor via clone and applies updates', async () => {
@@ -977,75 +1180,177 @@ describe('CreatureBuilderForm', () => {
         applySpellListSpy.mockRestore()
     })
 
-    describe('useClassicUI and template selection', () => {
-        it('defaults to modern template when useClassicUI setting is not available', () => {
-            const options = CreatureBuilderForm.defaultOptions
-            expect(options.template).toContain('creatureBuilderFormModern.html')
-            expect(options.classes).toContain('creatureBuilderFormModern')
-            expect(options.height).toBeLessThan(833)
+    it('returns the new spellcasting entry when the spell list fails', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        form.level = '1'
+        Item.create.mockResolvedValue({ id: 'new-entry-id' })
+        vi.spyOn(form, 'applySpellList').mockRejectedValue(
+            new Error('bad spell'),
+        )
+
+        const created = await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellList]: 'pyromancer',
         })
 
-        it('includes dragDrop config in modern mode', () => {
-            const options = CreatureBuilderForm.defaultOptions
-            expect(options.dragDrop).toEqual([
-                { dropSelector: '.creature-builder-drop-zone' },
+        expect(created).toEqual({ id: 'new-entry-id' })
+        expect(globalLog).toHaveBeenCalledWith(
+            true,
+            'Failed to apply spell list',
+            expect.any(Error),
+        )
+    })
+
+    it('returns the existing spellcasting entry when the spell list fails', async () => {
+        const actor = buildActor({
+            items: [
+                {
+                    id: 'entry1',
+                    type: 'spellcastingEntry',
+                    system: {
+                        slots: { slot0: { max: 1, value: 1, prepared: [] } },
+                    },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        form.level = '1'
+        vi.spyOn(form, 'applySpellList').mockRejectedValue(
+            new Error('bad spell'),
+        )
+
+        const updated = await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingTradition]: MagicalTradition.arcane,
+            [Statistics.spellcastingType]: CasterType.innate,
+            [Statistics.spellList]: 'pyromancer',
+        })
+
+        expect(updated).toMatchObject({
+            id: 'entry1',
+            type: 'spellcastingEntry',
+        })
+        expect(globalLog).toHaveBeenCalledWith(
+            true,
+            'Failed to apply spell list',
+            expect.any(Error),
+        )
+    })
+
+    describe('form template and item drops', () => {
+        it('uses the creature builder template', () => {
+            expect(CreatureBuilderForm.PARTS.body.template).toContain(
+                'creatureBuilderForm.html',
+            )
+            expect(CreatureBuilderForm.DEFAULT_OPTIONS.position).toEqual(
+                expect.objectContaining({ width: 530, height: 620 }),
+            )
+            expect(CreatureBuilderForm.DEFAULT_OPTIONS.window.title).toBe(
+                'PF2EMONSTERMAKER.title',
+            )
+            expect(CreatureBuilderForm.DEFAULT_OPTIONS.window.resizable).toBe(
+                true,
+            )
+            expect(CreatureBuilderForm.PARTS.body.scrollable).toEqual([
+                '.form-main',
             ])
         })
 
-        it('returns false for useClassicUI when settings throw', () => {
-            const originalGame = (globalThis as any).game
-            vi.stubGlobal('game', {
-                settings: {
-                    get: () => {
-                        throw new Error('Setting not registered')
-                    },
-                },
+        it('binds item drops on the application element', async () => {
+            const DragDrop = (globalThis as any).foundry.applications.ux
+                .DragDrop
+            DragDrop.instances = []
+            const form = new CreatureBuilderForm(buildActor())
+            vi.spyOn(
+                CreatureBuilderFormUI.prototype,
+                'destroy',
+            ).mockImplementation(() => {})
+            vi.spyOn(
+                CreatureBuilderFormUI.prototype,
+                'initialize',
+            ).mockImplementation(() => {})
+            const element = { id: 'drop-root' }
+            ;(form as any).element = element
+            await (form as any)._onRender({} as any, {} as any)
+
+            expect(DragDrop.instances).toHaveLength(1)
+            expect(DragDrop.instances[0].boundTo).toBe(element)
+            expect(DragDrop.instances[0].config.dropSelector).toBe(
+                '.creature-builder-drop-zone',
+            )
+            expect(DragDrop.instances[0].config.permissions.drop()).toBe(true)
+
+            const onDrop = vi
+                .spyOn(form as any, '_onDrop')
+                .mockResolvedValue(undefined)
+            DragDrop.instances[0].config.callbacks.drop({
+                dataTransfer: { getData: () => '{}' },
             })
-            try {
-                expect(CreatureBuilderForm.useClassicUI).toBe(false)
-            } finally {
-                vi.stubGlobal('game', originalGame)
-            }
+            expect(onDrop).toHaveBeenCalled()
+
+            await (form as any)._onRender({} as any, {} as any)
+            expect(DragDrop.instances).toHaveLength(2)
+            expect(DragDrop.instances[1].boundTo).toBe(element)
         })
 
-        it('returns modern UI when useClassicUI is explicitly false', () => {
-            vi.stubGlobal('game', {
-                ...game,
-                settings: {
-                    get: (_ns: string, key: string) =>
-                        key === 'useClassicUI' ? false : undefined,
-                },
-            })
-            expect(CreatureBuilderForm.useClassicUI).toBe(false)
-        })
-
-        it('returns classic UI when useClassicUI is true', () => {
-            const originalGame = (globalThis as any).game
-            vi.stubGlobal('game', {
-                ...game,
-                settings: {
-                    get: (_ns: string, key: string) =>
-                        key === 'useClassicUI' ? true : undefined,
-                },
-            })
-            try {
-                expect(CreatureBuilderForm.useClassicUI).toBe(true)
-                const options = CreatureBuilderForm.defaultOptions
-                expect(options.template).toContain('creatureBuilderForm.html')
-                expect(options.template).not.toContain('Modern')
-                expect(options.classes).not.toContain(
-                    'creatureBuilderFormModern',
-                )
-                expect(options.height).toBe(833)
-                expect(options.dragDrop).toEqual([])
-            } finally {
-                vi.stubGlobal('game', originalGame)
+        it('passes the current dropdown values into the next render', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            vi.spyOn(
+                CreatureBuilderFormUI.prototype,
+                'destroy',
+            ).mockImplementation(() => {})
+            vi.spyOn(
+                CreatureBuilderFormUI.prototype,
+                'initialize',
+            ).mockImplementation(() => {})
+            const str = {
+                id: 'window-creatureBuilderPF2EMONSTERMAKER.str',
+                value: Options.low,
+                getAttribute: (name: string) =>
+                    name === 'name' ? Statistics.str : null,
             }
+            const roadmap = {
+                id: 'window-creatureBuilderRoadmap',
+                value: 'TestRoadmap',
+                getAttribute: () => null,
+            }
+            ;(form as any).element = {
+                querySelectorAll: (selector: string) =>
+                    selector === 'select' ? [str, roadmap] : [],
+            }
+
+            await (form as any)._preRender({}, {})
+            await (form as any)._onRender({}, {})
+
+            // biome-ignore lint/complexity/useLiteralKeys: private property
+            const preserved = form['formUI']?.['preservedControls']
+            expect(preserved).toEqual({
+                [Statistics.str]: Options.low,
+                creatureBuilderRoadmap: 'TestRoadmap',
+            })
         })
     })
 
+    it('adds lore and resets through application actions', () => {
+        const form = new CreatureBuilderForm(buildActor())
+        const addLoreSkill = vi.fn()
+        const resetToDefaults = vi.fn()
+        // biome-ignore lint/complexity/useLiteralKeys: private property
+        form['formUI'] = {
+            addLoreSkill,
+            resetToDefaults,
+        } as unknown as CreatureBuilderFormUI
+
+        const actions = CreatureBuilderForm.DEFAULT_OPTIONS.actions
+        actions.addLore.call(form, {} as PointerEvent, {} as HTMLElement)
+        actions.resetDefaults.call(form, {} as PointerEvent, {} as HTMLElement)
+
+        expect(addLoreSkill).toHaveBeenCalledOnce()
+        expect(resetToDefaults).toHaveBeenCalledOnce()
+    })
+
     describe('_canDragDrop', () => {
-        it('returns true in modern mode', () => {
+        it('allows drops', () => {
             const form = new CreatureBuilderForm(buildActor())
             expect((form as any)._canDragDrop('.drop-zone')).toBe(true)
         })
@@ -1136,6 +1441,62 @@ describe('CreatureBuilderForm', () => {
                     system: { location: { value: 'entry-abc' } },
                 },
             ])
+        })
+
+        it('adds the other items when one cannot be created', async () => {
+            const mockCreateEmbedded = vi.fn(
+                async (_type: string, data: { name?: string }[]) => {
+                    if (data[0]?.name === 'Broken Feat') {
+                        throw new Error('invalid item')
+                    }
+                    return data
+                },
+            )
+            const actor = buildActor({
+                createEmbeddedDocuments: mockCreateEmbedded,
+            })
+            const form = new CreatureBuilderForm(actor)
+            form.actor = actor as any
+            form.droppedItems.push(
+                { name: 'Toughness', type: 'feat' },
+                { name: 'Broken Feat', type: 'feat' },
+                { name: 'Longsword', type: 'weapon' },
+                {
+                    name: 'Fireball',
+                    type: 'spell',
+                    system: { level: { value: 3 } },
+                },
+            )
+
+            await expect(
+                form.applyDroppedItems('entry-abc'),
+            ).resolves.toBeUndefined()
+
+            expect(mockCreateEmbedded).toHaveBeenCalledTimes(4)
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                { name: 'Toughness', type: 'feat' },
+            ])
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                { name: 'Broken Feat', type: 'feat' },
+            ])
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                { name: 'Longsword', type: 'weapon' },
+            ])
+            expect(mockCreateEmbedded).toHaveBeenCalledWith('Item', [
+                {
+                    name: 'Fireball',
+                    type: 'spell',
+                    system: {
+                        level: { value: 3 },
+                        location: { value: 'entry-abc' },
+                    },
+                },
+            ])
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Failed to add item "Broken Feat"',
+                expect.any(Error),
+            )
         })
 
         it('skips spells when no spellcasting entry ID is provided', async () => {
@@ -1400,6 +1761,8 @@ describe('CreatureBuilderForm', () => {
         })
 
         it('rejects duplicate feats with the same uuid', async () => {
+            const warnSpy = vi.fn()
+            vi.stubGlobal('ui', { notifications: { warn: warnSpy } })
             ;(globalThis as any).fromUuid = async () => ({
                 type: 'feat',
                 name: 'Toughness',
@@ -1416,6 +1779,9 @@ describe('CreatureBuilderForm', () => {
             await (form as any)._onDrop(event)
             await (form as any)._onDrop(event)
             expect(form.droppedItems).toHaveLength(1)
+            expect(warnSpy).toHaveBeenCalledWith(
+                'loc:PF2EMONSTERMAKER.duplicateItemType',
+            )
 
             delete (globalThis as any).fromUuid
         })

@@ -58,7 +58,7 @@ If you want to start over at any time, click **Reset to Defaults**, which will c
 
 ## UI 2.0 — Modern Form
 
-The modern UI is the **default**. If you prefer the original layout, enable **Use Classic UI** in Module Settings.
+The builder has one layout: a compact stat grid with a live preview sidebar.
 
 ### Form Layout
 
@@ -104,7 +104,6 @@ Dropped spells are automatically **linked to the creature's spellcasting entry**
 
 | Setting                         | Default | Description                                           |
 |---------------------------------|---------|-------------------------------------------------------|
-| **Use Classic UI**              | Off     | Switch back to the original single-column form layout |
 | **Abbreviate Creature Builder** | Off     | Show "CB" instead of "Creature Builder" on NPC sheets |
 
 ---
