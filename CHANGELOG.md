@@ -8,9 +8,13 @@ All notable changes to the PF2E Creature Builder module are documented here.
 
 ### Changed
 
-- **Foundry Application V2** — The creature builder window uses Foundry's Application V2. The **Use Classic UI** setting is removed, and the modern layout is the only form.
-- Closing the window removes its listeners and the traits dropdown. Two open builder windows no longer edit each other's fields.
-- The form keeps its scroll position when it re-renders, and the window title uses the translated form title.
+- **Foundry Application V2** — The creature builder window uses Foundry's Application V2. 
+- The **Use Classic UI** setting is removed.
+
+### Fixed
+
+- Dropping an item that is already on the form shows "This item has already been added" instead of a translation key.
+- If one dropped item, lore skill, or the spellcasting step cannot be created, the actor is still saved and the remaining items are added.
 
 ## 2.0.0 — Modern UI
 

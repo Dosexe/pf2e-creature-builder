@@ -510,7 +510,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 },
             ])
 
-            await this.applySpellList(
+            await this.applySpellListSafely(
                 formData,
                 existingEntry.id,
                 updatedSlots,
@@ -532,7 +532,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
 
         const created = await Item.create(spellcasting, { parent: this.actor })
         if (created?.id) {
-            await this.applySpellList(
+            await this.applySpellListSafely(
                 formData,
                 created.id,
                 slots,
@@ -540,6 +540,24 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             )
         }
         return created
+    }
+
+    private async applySpellListSafely(
+        formData: object,
+        spellcastingEntryId: string,
+        slots: Record<string, SpellSlot>,
+        casterType: string,
+    ): Promise<void> {
+        try {
+            await this.applySpellList(
+                formData,
+                spellcastingEntryId,
+                slots,
+                casterType,
+            )
+        } catch (error) {
+            globalLog(true, 'Failed to apply spell list', error)
+        }
     }
 
     async applySpellList(

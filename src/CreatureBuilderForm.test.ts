@@ -1180,6 +1180,63 @@ describe('CreatureBuilderForm', () => {
         applySpellListSpy.mockRestore()
     })
 
+    it('returns the new spellcasting entry when the spell list fails', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        form.level = '1'
+        Item.create.mockResolvedValue({ id: 'new-entry-id' })
+        vi.spyOn(form, 'applySpellList').mockRejectedValue(
+            new Error('bad spell'),
+        )
+
+        const created = await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellList]: 'pyromancer',
+        })
+
+        expect(created).toEqual({ id: 'new-entry-id' })
+        expect(globalLog).toHaveBeenCalledWith(
+            true,
+            'Failed to apply spell list',
+            expect.any(Error),
+        )
+    })
+
+    it('returns the existing spellcasting entry when the spell list fails', async () => {
+        const actor = buildActor({
+            items: [
+                {
+                    id: 'entry1',
+                    type: 'spellcastingEntry',
+                    system: {
+                        slots: { slot0: { max: 1, value: 1, prepared: [] } },
+                    },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        form.level = '1'
+        vi.spyOn(form, 'applySpellList').mockRejectedValue(
+            new Error('bad spell'),
+        )
+
+        const updated = await form.applySpellcasting({
+            [Statistics.spellcasting]: Options.high,
+            [Statistics.spellcastingTradition]: MagicalTradition.arcane,
+            [Statistics.spellcastingType]: CasterType.innate,
+            [Statistics.spellList]: 'pyromancer',
+        })
+
+        expect(updated).toMatchObject({
+            id: 'entry1',
+            type: 'spellcastingEntry',
+        })
+        expect(globalLog).toHaveBeenCalledWith(
+            true,
+            'Failed to apply spell list',
+            expect.any(Error),
+        )
+    })
+
     describe('form template and item drops', () => {
         it('uses the creature builder template', () => {
             expect(CreatureBuilderForm.PARTS.body.template).toContain(
