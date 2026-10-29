@@ -63,6 +63,7 @@ class CreatureBuilderFormUI {
     private readonly idPrefix: string
     private readonly preservedControls: Record<string, string> | null
     private loreCounter: number = 0
+    private attackCounter: number = 0
     private traits: string[] = []
     private selectedDropdownIndex: number = -1
 
@@ -314,9 +315,11 @@ class CreatureBuilderFormUI {
         this.setupEventListeners()
         this.initializeTraits()
         this.initializeLoreSkills()
+        this.restoreManualAttacks()
         this.initCollapsibleSections()
         this.setupSpellcastingVisibility()
         this.setupDropZone()
+        this.setupGenerateAttacksToggle()
         this.setupStatHighlightListeners()
         this.setupStatPreviewListeners()
         this.setupBadgeToggle()
@@ -328,6 +331,7 @@ class CreatureBuilderFormUI {
             this.initTimer = undefined
             this.setDetectedStats()
             this.applyPreservedControls()
+            this.updateWeaponAttackBadges()
             this.updateSpellcastingOptionsVisibility()
             this.applyAllStatHighlights()
             this.updateStatPreview()
@@ -586,6 +590,13 @@ class CreatureBuilderFormUI {
             const field = this.root.querySelector<
                 HTMLSelectElement | HTMLInputElement
             >(`[name="${key}"]`)
+            if (
+                field instanceof HTMLInputElement &&
+                field.type === 'checkbox'
+            ) {
+                field.checked = value === 'true'
+                continue
+            }
             if (field) field.value = value
         }
     }
@@ -990,6 +1001,116 @@ class CreatureBuilderFormUI {
     }
 
     /**
+     * Add a manual attack entry
+     */
+    public addAttack(
+        name: string = '',
+        bonus: string = '',
+        damage: string = '',
+        attackId?: number,
+    ): void {
+        const container = this.queryById('manualAttacksContainer')
+        if (!container) return
+
+        const id = attackId ?? this.attackCounter
+        this.attackCounter = Math.max(this.attackCounter, id + 1)
+
+        const attackDiv = document.createElement('div')
+        attackDiv.className = 'form-group attackEntry'
+        attackDiv.id = this.elementId(`attackEntry${id}`)
+
+        const nameInput = document.createElement('input')
+        nameInput.type = 'text'
+        nameInput.name = `attackName${id}`
+        nameInput.value = name || ''
+        nameInput.placeholder =
+            (window as any).game?.i18n?.localize(
+                'pf2e-creature-builder.form.strikes.attack-name',
+            ) || 'Attack name'
+        nameInput.className = 'attackNameInput'
+
+        const removeIcon = document.createElement('span')
+        removeIcon.className =
+            'creatureBuilderRemoveIcon fa-solid fa-fw fa-trash'
+        removeIcon.addEventListener('click', () => {
+            container.removeChild(attackDiv)
+        })
+
+        attackDiv.appendChild(nameInput)
+        this.appendStrikeSelect(
+            attackDiv,
+            `attackBonus${id}`,
+            bonus || this.currentStrikeOption('PF2EMONSTERMAKER.strikeBonus'),
+        )
+        this.appendStrikeSelect(
+            attackDiv,
+            `attackDamage${id}`,
+            damage || this.currentStrikeOption('PF2EMONSTERMAKER.strikeDamage'),
+        )
+        attackDiv.appendChild(removeIcon)
+        container.appendChild(attackDiv)
+    }
+
+    private appendStrikeSelect(
+        parent: HTMLElement,
+        name: string,
+        selected: string,
+    ): void {
+        const select = document.createElement('select')
+        select.name = name
+        select.className = 'stat-select'
+        for (const option of this.strikeChoices()) {
+            const opt = document.createElement('option')
+            opt.value = option
+            opt.textContent =
+                (window as any).game?.i18n?.localize(option) || option
+            if (option === selected) opt.selected = true
+            select.appendChild(opt)
+        }
+        parent.appendChild(select)
+    }
+
+    private strikeChoices(): string[] {
+        const strikes = this.monsterCreatureStatistics.find(
+            (category) => category.name === 'PF2EMONSTERMAKER.strikes',
+        )
+        if (strikes?.availableOptions?.length) return strikes.availableOptions
+        return [
+            'PF2EMONSTERMAKER.low',
+            'PF2EMONSTERMAKER.moderate',
+            'PF2EMONSTERMAKER.high',
+            'PF2EMONSTERMAKER.extreme',
+        ]
+    }
+
+    private currentStrikeOption(statisticName: string): string {
+        const select = this.queryById<HTMLSelectElement>(
+            `creatureBuilder${statisticName}`,
+        )
+        return select?.value || 'PF2EMONSTERMAKER.moderate'
+    }
+
+    private restoreManualAttacks(): void {
+        if (!this.preservedControls) return
+        if (!this.queryById('manualAttacksContainer')) return
+
+        const ids = Object.keys(this.preservedControls)
+            .filter((key) => key.startsWith('attackName'))
+            .map((key) => key.slice('attackName'.length))
+            .sort((a, b) => Number(a) - Number(b))
+
+        for (const id of ids) {
+            const numericId = Number(id)
+            this.addAttack(
+                this.preservedControls[`attackName${id}`] ?? '',
+                this.preservedControls[`attackBonus${id}`] ?? '',
+                this.preservedControls[`attackDamage${id}`] ?? '',
+                Number.isInteger(numericId) ? numericId : undefined,
+            )
+        }
+    }
+
+    /**
      * Initialize lore skills from detected lore skills
      */
     private initializeLoreSkills(): void {
@@ -1030,6 +1151,13 @@ class CreatureBuilderFormUI {
             entry.remove()
         })
         this.loreCounter = 0
+
+        this.queryById('manualAttacksContainer')
+            ?.querySelectorAll('.attackEntry')
+            .forEach((entry) => {
+                entry.remove()
+            })
+        this.attackCounter = 0
 
         this.updateSpellcastingOptionsVisibility()
         this.clearDroppedItems()
@@ -1114,6 +1242,8 @@ class CreatureBuilderFormUI {
         const row = document.createElement('div')
         row.className = 'dropped-item-row'
         row.setAttribute('data-drop-index', String(index))
+        row.dataset.itemType =
+            typeof itemData.type === 'string' ? itemData.type : ''
 
         const img = document.createElement('img')
         img.className = 'dropped-item-img'
@@ -1150,6 +1280,47 @@ class CreatureBuilderFormUI {
 
         if (hint) {
             hint.classList.add('hidden')
+        }
+        this.updateWeaponAttackBadges()
+    }
+
+    private setupGenerateAttacksToggle(): void {
+        this.generateAttacksCheckbox()?.addEventListener('change', () => {
+            this.updateWeaponAttackBadges()
+        })
+    }
+
+    private generateAttacksCheckbox(): HTMLInputElement | null {
+        return this.queryById<HTMLInputElement>('generateAttacksFromWeapons')
+    }
+
+    private strikeBadgeLabel(): string {
+        const localize = (
+            globalThis as {
+                game?: { i18n?: { localize?: (key: string) => string } }
+            }
+        ).game?.i18n?.localize
+        return localize?.('PF2EMONSTERMAKER.strike') || 'Strike'
+    }
+
+    private updateWeaponAttackBadges(): void {
+        const show = this.generateAttacksCheckbox()?.checked ?? false
+        for (const row of Array.from(
+            this.root.querySelectorAll<HTMLElement>('.dropped-item-row'),
+        )) {
+            const badge = row.querySelector('.dropped-item-attack')
+            if (row.dataset.itemType === 'weapon' && show) {
+                if (!badge) {
+                    const marker = document.createElement('span')
+                    marker.className = 'dropped-item-attack'
+                    marker.textContent = this.strikeBadgeLabel()
+                    const remove = row.querySelector('.dropped-item-remove')
+                    if (remove) row.insertBefore(marker, remove)
+                    else row.appendChild(marker)
+                }
+            } else if (badge) {
+                badge.remove()
+            }
         }
     }
 

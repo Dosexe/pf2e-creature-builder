@@ -33,6 +33,12 @@ import {
 } from './Keys'
 import { RoadMapRegistry } from './roadmaps/RoadMapRegistry'
 import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
+import {
+    attacksFromWeapon,
+    isGenerateAttacksEnabled,
+    type NpcAttackContext,
+    type WeaponAttackInput,
+} from './WeaponAttackGenerator'
 
 type DetectedStatValue = Options | MagicalTradition | CasterType
 
@@ -55,6 +61,46 @@ const ALLOWED_DROP_TYPES = new Set([
 
 const FORM_TEMPLATE =
     'modules/pf2e-creature-builder/dist/forms/creatureBuilderForm.html'
+
+function firstCreatedDocument(created: unknown): unknown {
+    if (Array.isArray(created)) return created[0]
+    return created ?? undefined
+}
+
+function weaponIdentity(item: Record<string, unknown>): string {
+    const name =
+        typeof item.name === 'string' ? item.name.trim().toLowerCase() : ''
+    if (name) return `name:${name}`
+    const uuid = item._sourceUuid
+    if (typeof uuid === 'string' && uuid) return `uuid:${uuid}`
+    return ''
+}
+
+function dedupeWeaponAttacks(
+    weapons: WeaponAttackInput[],
+): WeaponAttackInput[] {
+    return dedupeByWeaponIdentity(weapons, (weapon) => weapon.source)
+}
+
+function dedupeByWeaponIdentity<T>(
+    items: T[],
+    sourceOf: (item: T) => Record<string, unknown>,
+): T[] {
+    const seen = new Set<string>()
+    const unique: T[] = []
+    for (const item of items) {
+        const source = sourceOf(item)
+        if (source.type !== undefined && source.type !== 'weapon') {
+            unique.push(item)
+            continue
+        }
+        const key = weaponIdentity(source)
+        if (key && seen.has(key)) continue
+        if (key) seen.add(key)
+        unique.push(item)
+    }
+    return unique
+}
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api
 
@@ -98,6 +144,14 @@ function onAddLore(
     this.addLore()
 }
 
+function onAddAttack(
+    this: CreatureBuilderForm,
+    _event: PointerEvent,
+    _target: HTMLElement,
+) {
+    this.addAttack()
+}
+
 function onResetDefaults(
     this: CreatureBuilderForm,
     _event: PointerEvent,
@@ -139,6 +193,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         },
         actions: {
             addLore: onAddLore,
+            addAttack: onAddAttack,
             resetDefaults: onResetDefaults,
         },
     }
@@ -270,6 +325,26 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             }
         }
 
+        for (const input of Array.from(
+            root.querySelectorAll<HTMLInputElement>(
+                'input[type="checkbox"][name]',
+            ),
+        )) {
+            const name = input.getAttribute?.('name') || input.name
+            if (!name) continue
+            values[name] = input.checked ? 'true' : 'false'
+        }
+
+        for (const input of Array.from(
+            root.querySelectorAll<HTMLInputElement>(
+                'input[type="text"][name], input[type="hidden"][name]',
+            ),
+        )) {
+            const name = input.getAttribute?.('name') || input.name
+            if (!name?.startsWith('attackName')) continue
+            values[name] = input.value
+        }
+
         return Object.keys(values).length > 0 ? values : null
     }
 
@@ -313,6 +388,10 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
 
     addLore(): void {
         this.formUI?.addLoreSkill()
+    }
+
+    addAttack(): void {
+        this.formUI?.addAttack()
     }
 
     resetDefaults(): void {
@@ -370,7 +449,11 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
     }
 
     applyLevel() {
-        return { 'system.details.level.value': parseInt(this.level, 10) }
+        const level = parseInt(this.level, 10)
+        return {
+            'system.details.level.value': level,
+            'system.details.level.base': level,
+        }
     }
 
     applyHitPoints(formData: object) {
@@ -383,20 +466,65 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
     }
 
     applyStrike(formData: object) {
-        const strikeBonusOption = formData[Statistics.strikeBonus]
-        const strikeDamageOption = formData[Statistics.strikeDamage]
-        const strikeBonus = parseInt(
-            statisticValues[Statistics.strikeBonus][this.level][
-                strikeBonusOption
-            ],
-            10,
+        const strike = this.manualStrikeItem(
+            game.i18n!.localize(`${KeyPrefix}.strike`),
+            formData[Statistics.strikeBonus],
+            formData[Statistics.strikeDamage],
         )
+        if (!strike) return
+        return Item.create(strike, { parent: this.actor })
+    }
+
+    async applyManualAttacks(formData: object) {
+        const ids = Object.keys(formData)
+            .filter((key) => key.startsWith('attackName'))
+            .map((key) => key.slice('attackName'.length))
+            .sort((a, b) => Number(a) - Number(b))
+
+        for (const id of ids) {
+            const rawName = formData[`attackName${id}`]
+            const name =
+                typeof rawName === 'string' && rawName.trim() !== ''
+                    ? rawName.trim()
+                    : game.i18n!.localize(`${KeyPrefix}.strike`)
+            const strike = this.manualStrikeItem(
+                name,
+                formData[`attackBonus${id}`],
+                formData[`attackDamage${id}`],
+            )
+            if (!strike) {
+                globalLog(true, `Failed to add attack "${name}"`)
+                continue
+            }
+            try {
+                await Item.create(strike, { parent: this.actor })
+            } catch (error) {
+                globalLog(true, `Failed to add attack "${name}"`, error)
+            }
+        }
+    }
+
+    private manualStrikeItem(
+        name: string,
+        bonusOption: unknown,
+        damageOption: unknown,
+    ): ItemData | undefined {
+        if (
+            typeof bonusOption !== 'string' ||
+            typeof damageOption !== 'string'
+        ) {
+            return undefined
+        }
+        const bonusRaw =
+            statisticValues[Statistics.strikeBonus][this.level]?.[bonusOption]
         const strikeDamage =
-            statisticValues[Statistics.strikeDamage][this.level][
-                strikeDamageOption
-            ]
-        const strike: ItemData = {
-            name: game.i18n!.localize(`${KeyPrefix}.strike`),
+            statisticValues[Statistics.strikeDamage][this.level]?.[damageOption]
+        if (bonusRaw === undefined || strikeDamage === undefined)
+            return undefined
+        const strikeBonus = parseInt(bonusRaw, 10)
+        if (Number.isNaN(strikeBonus)) return undefined
+        return {
+            name,
             type: 'melee',
             system: {
                 damageRolls: {
@@ -411,8 +539,6 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 },
             },
         }
-
-        return Item.create(strike, { parent: this.actor })
     }
 
     async applySpellcasting(formData: object) {
@@ -648,8 +774,10 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         return items.map(({ _sourceUuid, ...rest }) => rest)
     }
 
-    async applyDroppedItems(spellcastingEntryId?: string) {
-        if (this.droppedItems.length === 0) return
+    async applyDroppedItems(
+        spellcastingEntryId?: string,
+    ): Promise<WeaponAttackInput[]> {
+        if (this.droppedItems.length === 0) return []
 
         const spells: Record<string, unknown>[] = []
         const nonSpells: Record<string, unknown>[] = []
@@ -670,10 +798,17 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             }
         ).createEmbeddedDocuments.bind(this.actor)
 
+        const weapons: WeaponAttackInput[] = []
         const createEach = async (items: Record<string, unknown>[]) => {
             for (const item of items) {
                 try {
-                    await createEmbedded('Item', [item])
+                    const created = await createEmbedded('Item', [item])
+                    if (item.type === 'weapon') {
+                        weapons.push({
+                            source: item,
+                            document: firstCreatedDocument(created),
+                        })
+                    }
                 } catch (error) {
                     globalLog(
                         true,
@@ -705,6 +840,85 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 'Dropped spells skipped: no spellcasting entry available',
             )
         }
+
+        return weapons
+    }
+
+    /**
+     * Create NPC strikes for dropped weapons with PF2E's Generate Attack values.
+     */
+    async applyGeneratedWeaponAttacks(
+        formData: object,
+        weapons?: WeaponAttackInput[] | null,
+    ): Promise<boolean> {
+        if (!isGenerateAttacksEnabled(formData) || !weapons?.length) {
+            return false
+        }
+
+        const createEmbedded = (
+            this.actor as {
+                createEmbeddedDocuments?: (
+                    embeddedName: string,
+                    data: object[],
+                ) => Promise<unknown>
+            }
+        ).createEmbeddedDocuments?.bind(this.actor)
+        if (!createEmbedded) return false
+
+        const context = this.npcAttackContext()
+        let createdAny = false
+        for (const weapon of dedupeWeaponAttacks(weapons)) {
+            for (const attack of attacksFromWeapon(weapon, context)) {
+                try {
+                    await createEmbedded('Item', [attack])
+                    createdAny = true
+                } catch (error) {
+                    globalLog(
+                        true,
+                        `Failed to add attack "${String(attack.name ?? 'attack')}"`,
+                        error,
+                    )
+                }
+            }
+        }
+        return createdAny
+    }
+
+    private npcAttackContext(): NpcAttackContext {
+        return {
+            level: Number.parseInt(this.level, 10) || 0,
+            strength: this.abilityMod('str'),
+            dexterity: this.abilityMod('dex'),
+        }
+    }
+
+    private abilityMod(ability: 'str' | 'dex'): number {
+        const prepared = (
+            this.actor as { abilities?: Record<string, { mod?: unknown }> }
+        ).abilities?.[ability]?.mod
+        if (typeof prepared === 'number' && Number.isFinite(prepared)) {
+            return prepared
+        }
+        const stored = foundry.utils.getProperty(
+            this.actor,
+            `system.abilities.${ability}.mod`,
+        )
+        const value = Number(stored)
+        return Number.isFinite(value) ? value : 0
+    }
+
+    private async applyItemsAndStrikes(
+        formData: object,
+        spellcastingEntryId?: string,
+    ) {
+        try {
+            const weapons = await this.applyDroppedItems(spellcastingEntryId)
+            await this.applyGeneratedWeaponAttacks(formData, weapons)
+        } catch (error) {
+            globalLog(true, 'Failed to apply dropped items', error)
+        }
+        await this.applyStrike(formData)
+        await this.applyManualAttacks(formData)
     }
 
     protected async _updateObject(_event: Event, formData?: object) {
@@ -774,10 +988,9 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 undefined
 
             await Promise.allSettled([
-                this.applyStrike(formData),
+                this.applyItemsAndStrikes(formData, spellcastingEntryId),
                 this.applySkills(formData),
                 this.applyLoreSkills(formData),
-                this.applyDroppedItems(spellcastingEntryId),
             ])
             this.actor = originalActor
             ;(newActor as Actor).sheet?.render(true)

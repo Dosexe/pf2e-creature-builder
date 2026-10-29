@@ -104,5 +104,9 @@
     "PF2EMONSTERMAKER.traits": "Черты",
     "PF2EMONSTERMAKER.traitsPlaceholder": "Поиск черт...",
     "PF2EMONSTERMAKER.resetDefaults": "Сбросить к умолчаниям",
-    "PF2EMONSTERMAKER.duplicateItemType": "Этот предмет уже добавлен"
+    "PF2EMONSTERMAKER.duplicateItemType": "Этот предмет уже добавлен",
+
+    "pf2e-creature-builder.form.strikes.add-attack": "Добавить атаку",
+    "pf2e-creature-builder.form.strikes.attack-name": "Название атаки",
+    "pf2e-creature-builder.form.items.generate-attacks": "Создавать атаки из оружия"
 }

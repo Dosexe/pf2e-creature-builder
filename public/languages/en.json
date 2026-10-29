@@ -132,5 +132,8 @@
     "PF2EMONSTERMAKER.submit": "Submit",
 
     "pf2e-creature-builder.form.roadmap.default": "Default",
-    "pf2e-creature-builder.form.preview.spellcasting": "Spell DC"
+    "pf2e-creature-builder.form.preview.spellcasting": "Spell DC",
+    "pf2e-creature-builder.form.strikes.add-attack": "Add Attack",
+    "pf2e-creature-builder.form.strikes.attack-name": "Attack name",
+    "pf2e-creature-builder.form.items.generate-attacks": "Generate Attacks from Weapons"
 }

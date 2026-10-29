@@ -16,6 +16,24 @@
     min-width: 0;
 }
 
+.creatureBuilderForm .attackEntry {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.creatureBuilderForm .attackEntry .attackNameInput {
+    flex: 1 1 8rem;
+    min-width: 0;
+}
+
+.creatureBuilderForm .attackEntry select {
+    flex: 1 1 6.5rem;
+    min-width: 0;
+}
+
 .creatureBuilderForm [id$="sectionLore"] .collapsibleContent {
     padding-top: 6px;
 }
@@ -457,6 +475,22 @@ summary.collapsibleHeader {
 /* ============================================================================
    Modern Form — Drag-and-Drop Zone
    ============================================================================ */
+
+.creatureBuilderFormModern .generate-attacks-toggle {
+    display: flex;
+    margin: 2px 0 8px;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.creatureBuilderFormModern .dropped-item-attack {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    color: var(--color-text-primary);
+    background: rgba(129, 199, 132, 0.28);
+}
 
 .creatureBuilderFormModern .creature-builder-drop-zone {
     border: 2px dashed var(--color-border, currentColor);
