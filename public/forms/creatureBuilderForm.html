@@ -87,6 +87,13 @@
                         </div>
                         {{/each}}
                     </div>
+                    {{#if (eq this.name "PF2EMONSTERMAKER.strikes")}}
+                    <div id="{{@root.fieldId}}manualAttacksContainer">
+                        <button type="button" data-action="addAttack" id="{{@root.fieldId}}addAttackButton" class="creatureBuilderAddButton" title="{{localize "pf2e-creature-builder.form.strikes.add-attack"}}">
+                            {{localize "pf2e-creature-builder.form.strikes.add-attack"}}
+                        </button>
+                    </div>
+                    {{/if}}
                     {{#if (eq this.name "PF2EMONSTERMAKER.spellcasting")}}
                     <div class="stat-row" id="{{@root.fieldId}}spellListFormGroup" style="display: none;">
                         <div class="stat-cell stat-cell--wide">
@@ -126,7 +133,7 @@
                 <div class="collapsibleContent">
                     <label class="toggle-badges-label generate-attacks-toggle" for="{{fieldId}}generateAttacksFromWeapons">
                         <input type="checkbox" id="{{fieldId}}generateAttacksFromWeapons" name="PF2EMONSTERMAKER.generateAttacksFromWeapons" checked>
-                        {{localize "PF2EMONSTERMAKER.generateAttacksFromWeapons"}}
+                        {{localize "pf2e-creature-builder.form.items.generate-attacks"}}
                     </label>
                     <div class="creature-builder-drop-zone" id="{{fieldId}}creatureBuilderDropZone">
                         <p class="drop-zone-hint" id="{{fieldId}}dropZoneHint">

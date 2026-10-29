@@ -106,5 +106,8 @@
 
     "PF2EMONSTERMAKER.resetDefaults": "Przywróć domyślne",
     "PF2EMONSTERMAKER.duplicateItemType": "Ten przedmiot został już dodany",
-    "PF2EMONSTERMAKER.generateAttacksFromWeapons": "Generuj ataki z broni"
+
+    "pf2e-creature-builder.form.strikes.add-attack": "Dodaj atak",
+    "pf2e-creature-builder.form.strikes.attack-name": "Nazwa ataku",
+    "pf2e-creature-builder.form.items.generate-attacks": "Generuj ataki z broni"
 }

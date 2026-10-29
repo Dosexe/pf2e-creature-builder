@@ -45,6 +45,21 @@ const setupDom = () => {
             <div id="loreSkillsContainer">
                 <button id="addLoreButton" type="button">Add Lore</button>
             </div>
+            <div id="manualAttacksContainer">
+                <button id="addAttackButton" type="button" data-action="addAttack">Add Attack</button>
+            </div>
+            <select id="creatureBuilder${Statistics.strikeBonus}" name="${Statistics.strikeBonus}">
+                <option value="${Options.moderate}">moderate</option>
+                <option value="${Options.high}">high</option>
+                <option value="${Options.low}">low</option>
+                <option value="${Options.extreme}">extreme</option>
+            </select>
+            <select id="creatureBuilder${Statistics.strikeDamage}" name="${Statistics.strikeDamage}">
+                <option value="${Options.moderate}">moderate</option>
+                <option value="${Options.high}">high</option>
+                <option value="${Options.low}">low</option>
+                <option value="${Options.extreme}">extreme</option>
+            </select>
             <button id="creatureBuilderResetButton" type="button">Reset</button>
             <select id="creatureBuilderLevel">
                 <option value="-1">-1</option>
@@ -243,6 +258,12 @@ describe('CreatureBuilderFormUI', () => {
         expect(loreInput.type).toBe(nameInput.type)
         expect(root.querySelector('[data-action="addLore"]')).toBeTruthy()
         expect(root.querySelector('[data-action="resetDefaults"]')).toBeTruthy()
+        const addAttack = root.querySelector('[data-action="addAttack"]')
+        const strikes = root.querySelector(
+            '[data-section-name="PF2EMONSTERMAKER.strikes"]',
+        )
+        expect(addAttack).toBeTruthy()
+        expect(strikes?.contains(addAttack!)).toBe(true)
 
         const generateAttacks = root.querySelector(
             `#${CSS.escape(`${fieldId}generateAttacksFromWeapons`)}`,
@@ -255,7 +276,7 @@ describe('CreatureBuilderFormUI', () => {
             'PF2EMONSTERMAKER.generateAttacksFromWeapons',
         )
         expect(generateAttacks.closest('label')?.textContent).toContain(
-            'PF2EMONSTERMAKER.generateAttacksFromWeapons',
+            'pf2e-creature-builder.form.items.generate-attacks',
         )
         expect(
             generateAttacks.compareDocumentPosition(dropZone!) &
@@ -348,6 +369,89 @@ describe('CreatureBuilderFormUI', () => {
         expect((window as any).setRoadmap).toBeUndefined()
     })
 
+    it('adds and removes manual attacks', () => {
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+
+        const bonus = document.getElementById(
+            `creatureBuilder${Statistics.strikeBonus}`,
+        ) as HTMLSelectElement
+        const damage = document.getElementById(
+            `creatureBuilder${Statistics.strikeDamage}`,
+        ) as HTMLSelectElement
+        bonus.value = Options.high
+        damage.value = Options.low
+
+        ui.addAttack()
+        ui.addAttack('Bite', Options.extreme, Options.high)
+
+        const entries = document.querySelectorAll('.attackEntry')
+        expect(entries.length).toBe(2)
+        const firstName = entries[0].querySelector(
+            '.attackNameInput',
+        ) as HTMLInputElement
+        const selects = entries[0].querySelectorAll('select')
+        expect(firstName.name).toBe('attackName0')
+        expect(firstName.placeholder).toBe('Attack name')
+        expect(selects[0].value).toBe(Options.high)
+        expect(selects[1].value).toBe(Options.low)
+        const secondName = entries[1].querySelector(
+            '.attackNameInput',
+        ) as HTMLInputElement
+        expect(secondName.value).toBe('Bite')
+        expect(entries[1].querySelectorAll('select')[0].value).toBe(
+            Options.extreme,
+        )
+
+        const remove = entries[0].querySelector(
+            '.creatureBuilderRemoveIcon',
+        ) as HTMLElement
+        remove.click()
+        expect(document.querySelectorAll('.attackEntry').length).toBe(1)
+        expect(
+            document.querySelector('.attackNameInput') as HTMLInputElement,
+        ).toHaveProperty('value', 'Bite')
+    })
+
+    it('restores added attacks', () => {
+        const ui = new CreatureBuilderFormUI(
+            buildConfig({
+                creatureStatistics: [
+                    {
+                        name: 'PF2EMONSTERMAKER.strikes',
+                        defaultValue: Options.moderate,
+                        availableOptions: [
+                            Options.low,
+                            Options.moderate,
+                            Options.high,
+                            Options.extreme,
+                        ],
+                        statisticEntries: [
+                            { name: Statistics.strikeBonus },
+                            { name: Statistics.strikeDamage },
+                        ],
+                    },
+                ],
+                preservedControls: {
+                    attackName0: 'Bite',
+                    attackBonus0: Options.low,
+                    attackDamage0: Options.extreme,
+                },
+            }),
+        )
+        ui.initialize()
+
+        const restored = document.querySelector('.attackEntry') as HTMLElement
+        const restoredName = restored.querySelector(
+            '.attackNameInput',
+        ) as HTMLInputElement
+        expect(restoredName.value).toBe('Bite')
+        expect(restored.querySelectorAll('select')[0].value).toBe(Options.low)
+        expect(restored.querySelectorAll('select')[1].value).toBe(
+            Options.extreme,
+        )
+    })
+
     it('adds and removes lore entries from the button', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()
@@ -420,6 +524,7 @@ describe('CreatureBuilderFormUI', () => {
         ui.initialize()
 
         ui.addLoreSkill()
+        ui.addAttack('Bite')
 
         const level = document.getElementById(
             'creatureBuilderLevel',
@@ -441,6 +546,8 @@ describe('CreatureBuilderFormUI', () => {
         expect(hidden.value).toBe('')
         expect(document.querySelectorAll('.loreEntry').length).toBe(0)
         expect(addLoreButton).toBeTruthy()
+        expect(document.querySelectorAll('.attackEntry').length).toBe(0)
+        expect(document.getElementById('addAttackButton')).toBeTruthy()
         expect(level.value).toBe('-1')
         expect(roadmap.value).toBe('Default')
     })

@@ -16,6 +16,24 @@
     min-width: 0;
 }
 
+.creatureBuilderForm .attackEntry {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.creatureBuilderForm .attackEntry .attackNameInput {
+    flex: 1 1 8rem;
+    min-width: 0;
+}
+
+.creatureBuilderForm .attackEntry select {
+    flex: 1 1 6.5rem;
+    min-width: 0;
+}
+
 .creatureBuilderForm [id$="sectionLore"] .collapsibleContent {
     padding-top: 6px;
 }

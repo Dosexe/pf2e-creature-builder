@@ -214,6 +214,50 @@ describe('CreatureBuilderForm', () => {
         expect(result).toEqual({ 'system.attributes.hp.value': expected })
     })
 
+    it('creates every added attack and continues when one fails', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        form.level = '1'
+        Item.create.mockImplementation(async (data: { name?: string }) => {
+            if (data.name === 'Bite') throw new Error('no')
+            return data
+        })
+
+        try {
+            await form.applyManualAttacks({
+                attackName1: 'Claw',
+                attackBonus1: Options.high,
+                attackDamage1: Options.moderate,
+                attackName0: 'Bite',
+                attackBonus0: Options.low,
+                attackDamage0: Options.moderate,
+                attackName2: 'Bad',
+                attackBonus2: 'nope',
+                attackDamage2: Options.moderate,
+                attackName3: '   ',
+                attackBonus3: Options.extreme,
+                attackDamage3: Options.low,
+                unrelated: 'skip',
+            })
+
+            expect(Item.create.mock.calls.map((call) => call[0].name)).toEqual([
+                'Bite',
+                'Claw',
+                'loc:PF2EMONSTERMAKER.strike',
+            ])
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Failed to add attack "Bite"',
+                expect.any(Error),
+            )
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Failed to add attack "Bad"',
+            )
+        } finally {
+            Item.create.mockReset()
+        }
+    })
+
     it('creates a strike item with expected values', async () => {
         const form = new CreatureBuilderForm(buildActor())
         form.level = '1'
@@ -1334,6 +1378,61 @@ describe('CreatureBuilderForm', () => {
             })
         })
 
+        it('preserves added attacks', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            vi.spyOn(
+                CreatureBuilderFormUI.prototype,
+                'destroy',
+            ).mockImplementation(() => {})
+            vi.spyOn(
+                CreatureBuilderFormUI.prototype,
+                'initialize',
+            ).mockImplementation(() => {})
+            const attackBonus = {
+                id: 'window-creatureBuilderPF2EMONSTERMAKER.strikeBonus',
+                value: Options.high,
+                getAttribute: (name: string) =>
+                    name === 'name' ? Statistics.strikeBonus : null,
+            }
+            ;(form as any).element = {
+                querySelectorAll: (selector: string) => {
+                    if (selector === 'select') return [attackBonus]
+                    if (
+                        selector ===
+                        'input[type="text"][name], input[type="hidden"][name]'
+                    ) {
+                        return [
+                            {
+                                name: 'attackName0',
+                                value: 'Bite',
+                                getAttribute: (attr: string) =>
+                                    attr === 'name' ? 'attackName0' : null,
+                            },
+                            {
+                                name: 'PF2EMONSTERMAKER.name',
+                                value: 'Hunter',
+                                getAttribute: () => 'PF2EMONSTERMAKER.name',
+                            },
+                            {
+                                value: 'skip',
+                                getAttribute: () => null,
+                            },
+                        ]
+                    }
+                    return []
+                },
+            }
+
+            await (form as any)._preRender({}, {})
+            await (form as any)._onRender({}, {})
+
+            // biome-ignore lint/complexity/useLiteralKeys: private property
+            expect(form['formUI']?.['preservedControls']).toEqual({
+                [Statistics.strikeBonus]: Options.high,
+                attackName0: 'Bite',
+            })
+        })
+
         it('preserves the generate attacks checkbox', async () => {
             const form = new CreatureBuilderForm(buildActor())
             vi.spyOn(
@@ -1392,18 +1491,22 @@ describe('CreatureBuilderForm', () => {
     it('adds lore and resets through application actions', () => {
         const form = new CreatureBuilderForm(buildActor())
         const addLoreSkill = vi.fn()
+        const addAttack = vi.fn()
         const resetToDefaults = vi.fn()
         // biome-ignore lint/complexity/useLiteralKeys: private property
         form['formUI'] = {
             addLoreSkill,
+            addAttack,
             resetToDefaults,
         } as unknown as CreatureBuilderFormUI
 
         const actions = CreatureBuilderForm.DEFAULT_OPTIONS.actions
         actions.addLore.call(form, {} as PointerEvent, {} as HTMLElement)
+        actions.addAttack.call(form, {} as PointerEvent, {} as HTMLElement)
         actions.resetDefaults.call(form, {} as PointerEvent, {} as HTMLElement)
 
         expect(addLoreSkill).toHaveBeenCalledOnce()
+        expect(addAttack).toHaveBeenCalledOnce()
         expect(resetToDefaults).toHaveBeenCalledOnce()
     })
 
@@ -1749,7 +1852,7 @@ describe('CreatureBuilderForm', () => {
             })
         })
 
-        it('creates a scaled weapon strike and skips the generic strike', async () => {
+        it('creates a weapon strike and the default strike', async () => {
             const weaponDoc = {
                 id: 'weapon-1',
                 toNPCAttacks: () => [
@@ -1792,7 +1895,7 @@ describe('CreatureBuilderForm', () => {
                 [GENERATE_ATTACKS_FROM_WEAPONS]: true,
             })
 
-            expect(strike).not.toHaveBeenCalled()
+            expect(strike).toHaveBeenCalled()
             const attack = mockCreate.mock.calls.find(
                 (call) => call[1][0]?.type === 'melee',
             )?.[1][0]
@@ -1812,6 +1915,105 @@ describe('CreatureBuilderForm', () => {
                 },
             })
             expect(attack).not.toHaveProperty('_id')
+        })
+
+        it('adds the default strike and every added attack when weapons generate attacks', async () => {
+            const weaponDoc = {
+                id: 'weapon-1',
+                toNPCAttacks: () => [
+                    {
+                        toObject: () => ({
+                            name: 'Longsword',
+                            type: 'melee',
+                            system: {
+                                bonus: { value: 1 },
+                                damageRolls: {
+                                    base: {
+                                        damage: '1d8',
+                                        damageType: 'slashing',
+                                    },
+                                },
+                            },
+                        }),
+                    },
+                ],
+            }
+            const mockCreate = vi.fn(async (_type: string, data: any[]) => {
+                if (data[0]?.type === 'weapon') return [weaponDoc]
+                return data
+            })
+            const { form } = buildUpdate(mockCreate)
+            form.droppedItems.push(weapon)
+
+            // biome-ignore lint/complexity/useLiteralKeys: protected method
+            await form['_updateObject'](undefined as unknown as Event, {
+                ...strikeForm,
+                [GENERATE_ATTACKS_FROM_WEAPONS]: true,
+                attackName0: 'Bite',
+                attackBonus0: Options.low,
+                attackDamage0: Options.moderate,
+                attackName1: '  ',
+                attackBonus1: Options.extreme,
+                attackDamage1: Options.high,
+            })
+
+            const weaponAttack = mockCreate.mock.calls.find(
+                (call) => call[1][0]?.type === 'melee',
+            )?.[1][0]
+            expect(weaponAttack.name).toBe('Longsword')
+            expect(Item.create.mock.calls.map((call) => call[0].name)).toEqual([
+                'loc:PF2EMONSTERMAKER.strike',
+                'Bite',
+                'loc:PF2EMONSTERMAKER.strike',
+            ])
+            expect(Item.create.mock.calls[1][0].system.bonus.value).toBe(
+                parseInt(
+                    statisticValues[Statistics.strikeBonus]['1'][Options.low],
+                    10,
+                ),
+            )
+        })
+
+        it('adds the default strike with manual attacks when weapon attacks are generated', async () => {
+            const weaponDoc = {
+                id: 'weapon-1',
+                toNPCAttacks: () => [
+                    {
+                        toObject: () => ({
+                            name: 'Longsword',
+                            type: 'melee',
+                            system: { bonus: { value: 1 } },
+                        }),
+                    },
+                ],
+            }
+            const mockCreate = vi.fn(async (_type: string, data: any[]) => {
+                if (data[0]?.type === 'weapon') return [weaponDoc]
+                return data
+            })
+            const { form } = buildUpdate(mockCreate)
+            form.droppedItems.push(weapon)
+            const strike = vi.spyOn(form, 'applyStrike')
+
+            // biome-ignore lint/complexity/useLiteralKeys: protected method
+            await form['_updateObject'](undefined as unknown as Event, {
+                ...strikeForm,
+                [GENERATE_ATTACKS_FROM_WEAPONS]: true,
+                attackName0: 'Claw',
+                attackBonus0: Options.high,
+                attackDamage0: Options.moderate,
+            })
+
+            expect(strike).toHaveBeenCalled()
+            expect(Item.create.mock.calls.map((call) => call[0].name)).toEqual([
+                'loc:PF2EMONSTERMAKER.strike',
+                'Claw',
+            ])
+            expect(
+                mockCreate.mock.calls.some(
+                    (call) => call[1][0]?.type === 'melee',
+                ),
+            ).toBe(true)
         })
 
         it('keeps the generic strike when weapon attacks cannot be created', async () => {

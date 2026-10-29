@@ -126,12 +126,14 @@
     "PF2EMONSTERMAKER.items": "Items",
     "PF2EMONSTERMAKER.itemsActions": "Items / Actions",
     "PF2EMONSTERMAKER.dropHint": "Drag items or actions here from a compendium",
-    "PF2EMONSTERMAKER.generateAttacksFromWeapons": "Generate Attacks from Weapons",
     "PF2EMONSTERMAKER.removeItem": "Remove item",
     "PF2EMONSTERMAKER.invalidItemType": "This item type cannot be added",
     "PF2EMONSTERMAKER.duplicateItemType": "This item has already been added",
     "PF2EMONSTERMAKER.submit": "Submit",
 
     "pf2e-creature-builder.form.roadmap.default": "Default",
-    "pf2e-creature-builder.form.preview.spellcasting": "Spell DC"
+    "pf2e-creature-builder.form.preview.spellcasting": "Spell DC",
+    "pf2e-creature-builder.form.strikes.add-attack": "Add Attack",
+    "pf2e-creature-builder.form.strikes.attack-name": "Attack name",
+    "pf2e-creature-builder.form.items.generate-attacks": "Generate Attacks from Weapons"
 }

@@ -101,5 +101,8 @@
 
     "PF2EMONSTERMAKER.resetDefaults": "重置為預設值",
     "PF2EMONSTERMAKER.duplicateItemType": "此物品已經加入",
-    "PF2EMONSTERMAKER.generateAttacksFromWeapons": "從武器產生攻擊"
+
+    "pf2e-creature-builder.form.strikes.add-attack": "新增攻擊",
+    "pf2e-creature-builder.form.strikes.attack-name": "攻擊名稱",
+    "pf2e-creature-builder.form.items.generate-attacks": "從武器產生攻擊"
 }

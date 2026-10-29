@@ -144,6 +144,14 @@ function onAddLore(
     this.addLore()
 }
 
+function onAddAttack(
+    this: CreatureBuilderForm,
+    _event: PointerEvent,
+    _target: HTMLElement,
+) {
+    this.addAttack()
+}
+
 function onResetDefaults(
     this: CreatureBuilderForm,
     _event: PointerEvent,
@@ -185,6 +193,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         },
         actions: {
             addLore: onAddLore,
+            addAttack: onAddAttack,
             resetDefaults: onResetDefaults,
         },
     }
@@ -326,6 +335,16 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             values[name] = input.checked ? 'true' : 'false'
         }
 
+        for (const input of Array.from(
+            root.querySelectorAll<HTMLInputElement>(
+                'input[type="text"][name], input[type="hidden"][name]',
+            ),
+        )) {
+            const name = input.getAttribute?.('name') || input.name
+            if (!name?.startsWith('attackName')) continue
+            values[name] = input.value
+        }
+
         return Object.keys(values).length > 0 ? values : null
     }
 
@@ -369,6 +388,10 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
 
     addLore(): void {
         this.formUI?.addLoreSkill()
+    }
+
+    addAttack(): void {
+        this.formUI?.addAttack()
     }
 
     resetDefaults(): void {
@@ -443,20 +466,65 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
     }
 
     applyStrike(formData: object) {
-        const strikeBonusOption = formData[Statistics.strikeBonus]
-        const strikeDamageOption = formData[Statistics.strikeDamage]
-        const strikeBonus = parseInt(
-            statisticValues[Statistics.strikeBonus][this.level][
-                strikeBonusOption
-            ],
-            10,
+        const strike = this.manualStrikeItem(
+            game.i18n!.localize(`${KeyPrefix}.strike`),
+            formData[Statistics.strikeBonus],
+            formData[Statistics.strikeDamage],
         )
+        if (!strike) return
+        return Item.create(strike, { parent: this.actor })
+    }
+
+    async applyManualAttacks(formData: object) {
+        const ids = Object.keys(formData)
+            .filter((key) => key.startsWith('attackName'))
+            .map((key) => key.slice('attackName'.length))
+            .sort((a, b) => Number(a) - Number(b))
+
+        for (const id of ids) {
+            const rawName = formData[`attackName${id}`]
+            const name =
+                typeof rawName === 'string' && rawName.trim() !== ''
+                    ? rawName.trim()
+                    : game.i18n!.localize(`${KeyPrefix}.strike`)
+            const strike = this.manualStrikeItem(
+                name,
+                formData[`attackBonus${id}`],
+                formData[`attackDamage${id}`],
+            )
+            if (!strike) {
+                globalLog(true, `Failed to add attack "${name}"`)
+                continue
+            }
+            try {
+                await Item.create(strike, { parent: this.actor })
+            } catch (error) {
+                globalLog(true, `Failed to add attack "${name}"`, error)
+            }
+        }
+    }
+
+    private manualStrikeItem(
+        name: string,
+        bonusOption: unknown,
+        damageOption: unknown,
+    ): ItemData | undefined {
+        if (
+            typeof bonusOption !== 'string' ||
+            typeof damageOption !== 'string'
+        ) {
+            return undefined
+        }
+        const bonusRaw =
+            statisticValues[Statistics.strikeBonus][this.level]?.[bonusOption]
         const strikeDamage =
-            statisticValues[Statistics.strikeDamage][this.level][
-                strikeDamageOption
-            ]
-        const strike: ItemData = {
-            name: game.i18n!.localize(`${KeyPrefix}.strike`),
+            statisticValues[Statistics.strikeDamage][this.level]?.[damageOption]
+        if (bonusRaw === undefined || strikeDamage === undefined)
+            return undefined
+        const strikeBonus = parseInt(bonusRaw, 10)
+        if (Number.isNaN(strikeBonus)) return undefined
+        return {
+            name,
             type: 'melee',
             system: {
                 damageRolls: {
@@ -471,8 +539,6 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 },
             },
         }
-
-        return Item.create(strike, { parent: this.actor })
     }
 
     async applySpellcasting(formData: object) {
@@ -845,17 +911,14 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         formData: object,
         spellcastingEntryId?: string,
     ) {
-        let generated = false
         try {
             const weapons = await this.applyDroppedItems(spellcastingEntryId)
-            generated = await this.applyGeneratedWeaponAttacks(
-                formData,
-                weapons,
-            )
+            await this.applyGeneratedWeaponAttacks(formData, weapons)
         } catch (error) {
             globalLog(true, 'Failed to apply dropped items', error)
         }
-        if (!generated) await this.applyStrike(formData)
+        await this.applyStrike(formData)
+        await this.applyManualAttacks(formData)
     }
 
     protected async _updateObject(_event: Event, formData?: object) {
