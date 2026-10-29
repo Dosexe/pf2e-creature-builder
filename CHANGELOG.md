@@ -10,6 +10,8 @@ All notable changes to the PF2E Creature Builder module are documented here.
 
 - **Foundry Application V2** — The creature builder window uses Foundry's Application V2. 
 - The **Use Classic UI** setting is removed.
+- New ability to add multiple custom attacks 
+- Optionally generate attacks from weapons added to the creature
 
 ### Fixed
 
