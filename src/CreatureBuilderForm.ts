@@ -32,7 +32,14 @@ import {
     Statistics,
 } from './Keys'
 import { RoadMapRegistry } from './roadmaps/RoadMapRegistry'
-import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
+import {
+    detectHPLevel,
+    detectStatLevel,
+    detectStrikeDamage,
+    scaleStrikeBonus,
+    scaleStrikeDamage,
+    statisticValues,
+} from './Values'
 import {
     attacksFromWeapon,
     isGenerateAttacksEnabled,
@@ -65,6 +72,51 @@ const FORM_TEMPLATE =
 function firstCreatedDocument(created: unknown): unknown {
     if (Array.isArray(created)) return created[0]
     return created ?? undefined
+}
+
+function plainMeleeItem(item: {
+    toObject?: () => unknown
+    name?: unknown
+    img?: unknown
+    system?: unknown
+    flags?: unknown
+    effects?: unknown
+}): Record<string, unknown> {
+    const fromDocument =
+        typeof item.toObject === 'function' ? item.toObject() : undefined
+    const raw = (
+        fromDocument && typeof fromDocument === 'object' ? fromDocument : item
+    ) as {
+        name?: unknown
+        img?: unknown
+        system?: unknown
+        flags?: unknown
+        effects?: unknown
+    }
+    const itemSource: Record<string, unknown> = {
+        type: 'melee',
+        system: raw.system && typeof raw.system === 'object' ? raw.system : {},
+    }
+    if (typeof raw.name === 'string') itemSource.name = raw.name
+    if (typeof raw.img === 'string') itemSource.img = raw.img
+    if (raw.flags && typeof raw.flags === 'object') itemSource.flags = raw.flags
+    if (Array.isArray(raw.effects)) itemSource.effects = raw.effects
+    return JSON.parse(JSON.stringify(itemSource))
+}
+
+function primaryDamageRoll(
+    system: Record<string, unknown>,
+): { damage?: unknown } | undefined {
+    const rolls = system.damageRolls
+    if (!rolls || typeof rolls !== 'object') return undefined
+    for (const roll of Object.values(rolls as Record<string, unknown>)) {
+        if (!roll || typeof roll !== 'object') continue
+        const entry = roll as { damage?: unknown; category?: unknown }
+        if (entry.category) continue
+        if (typeof entry.damage !== 'string') continue
+        return entry
+    }
+    return undefined
 }
 
 function weaponIdentity(item: Record<string, unknown>): string {
@@ -341,7 +393,13 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             ),
         )) {
             const name = input.getAttribute?.('name') || input.name
-            if (!name?.startsWith('attackName')) continue
+            if (
+                !name?.startsWith('attackName') &&
+                !name?.startsWith('attackDamageType') &&
+                !name?.startsWith('attackSource')
+            ) {
+                continue
+            }
             values[name] = input.value
         }
 
@@ -374,6 +432,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             detectedStats: this.useDefaultLevel ? {} : this.detectActorStats(),
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
+            detectedAttacks: this.detectAttacks(),
             actorLevel,
             droppedItems: this.droppedItems,
             root: this.element,
@@ -487,11 +546,24 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 typeof rawName === 'string' && rawName.trim() !== ''
                     ? rawName.trim()
                     : game.i18n!.localize(`${KeyPrefix}.strike`)
-            const strike = this.manualStrikeItem(
-                name,
-                formData[`attackBonus${id}`],
-                formData[`attackDamage${id}`],
-            )
+            const source = formData[`attackSource${id}`]
+            const copied =
+                typeof source === 'string' && source.trim() !== ''
+                    ? this.copiedStrikeItem(
+                          source,
+                          name,
+                          formData[`attackBonus${id}`],
+                          formData[`attackDamage${id}`],
+                      )
+                    : undefined
+            const strike =
+                copied ??
+                this.manualStrikeItem(
+                    name,
+                    formData[`attackBonus${id}`],
+                    formData[`attackDamage${id}`],
+                    formData[`attackDamageType${id}`],
+                )
             if (!strike) {
                 globalLog(true, `Failed to add attack "${name}"`)
                 continue
@@ -504,10 +576,84 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         }
     }
 
+    private copiedStrikeItem(
+        sourceJson: string,
+        name: string,
+        bonusOption: unknown,
+        damageOption: unknown,
+    ): ItemData | undefined {
+        if (
+            typeof bonusOption !== 'string' ||
+            typeof damageOption !== 'string'
+        ) {
+            return undefined
+        }
+        let snapshot: {
+            sourceLevel?: unknown
+            bonusTier?: unknown
+            damageTier?: unknown
+            bonus?: unknown
+            item?: unknown
+        }
+        try {
+            snapshot = JSON.parse(sourceJson)
+        } catch {
+            return undefined
+        }
+        if (!snapshot?.item || typeof snapshot.item !== 'object') {
+            return undefined
+        }
+
+        const item = JSON.parse(JSON.stringify(snapshot.item)) as Record<
+            string,
+            unknown
+        >
+        item.name = name
+        item.type = 'melee'
+        const system =
+            item.system &&
+            typeof item.system === 'object' &&
+            !Array.isArray(item.system)
+                ? (item.system as Record<string, unknown>)
+                : {}
+        item.system = system
+
+        const originalBonus =
+            typeof snapshot.bonus === 'number' ? snapshot.bonus : null
+        const bonus = scaleStrikeBonus(
+            String(snapshot.sourceLevel ?? ''),
+            this.level,
+            String(snapshot.bonusTier ?? bonusOption),
+            bonusOption,
+            originalBonus,
+        )
+        const bonusField =
+            system.bonus &&
+            typeof system.bonus === 'object' &&
+            !Array.isArray(system.bonus)
+                ? (system.bonus as Record<string, unknown>)
+                : {}
+        bonusField.value = bonus
+        system.bonus = bonusField
+
+        const roll = primaryDamageRoll(system)
+        if (roll && typeof roll.damage === 'string') {
+            roll.damage = scaleStrikeDamage(
+                String(snapshot.sourceLevel ?? ''),
+                this.level,
+                String(snapshot.damageTier ?? damageOption),
+                damageOption,
+                roll.damage,
+            )
+        }
+        return item as ItemData
+    }
+
     private manualStrikeItem(
         name: string,
         bonusOption: unknown,
         damageOption: unknown,
+        damageType: unknown = 'bludgeoning',
     ): ItemData | undefined {
         if (
             typeof bonusOption !== 'string' ||
@@ -523,6 +669,10 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             return undefined
         const strikeBonus = parseInt(bonusRaw, 10)
         if (Number.isNaN(strikeBonus)) return undefined
+        const resolvedDamageType =
+            typeof damageType === 'string' && damageType.trim() !== ''
+                ? damageType.trim()
+                : 'bludgeoning'
         return {
             name,
             type: 'melee',
@@ -530,7 +680,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 damageRolls: {
                     strikeDamageID: {
                         damage: strikeDamage,
-                        damageType: 'bludgeoning',
+                        damageType: resolvedDamageType,
                         category: null,
                     },
                 },
@@ -909,7 +1059,8 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
 
     private async applyItemsAndStrikes(
         formData: object,
-        spellcastingEntryId?: string,
+        spellcastingEntryId: string | undefined,
+        keepExistingAttacks: boolean,
     ) {
         try {
             const weapons = await this.applyDroppedItems(spellcastingEntryId)
@@ -917,7 +1068,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         } catch (error) {
             globalLog(true, 'Failed to apply dropped items', error)
         }
-        await this.applyStrike(formData)
+        if (!keepExistingAttacks) await this.applyStrike(formData)
         await this.applyManualAttacks(formData)
     }
 
@@ -960,12 +1111,13 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 return
             }
 
+            const keepCopiedAttacks = this.hasCopiedAttacks()
             const originalActor = this.actor
             this.actor = newActor
 
-            // Remove only strike and lore; clone already has spellcasting entry + spells
+            // The form list recreates copied strikes. Lore is rebuilt from the form.
             const toDelete: string[] = []
-            for (const item of newActor.items) {
+            for (const item of newActor.items ?? []) {
                 if (
                     item.id &&
                     (item.type === 'melee' || item.type === 'lore')
@@ -988,7 +1140,11 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 undefined
 
             await Promise.allSettled([
-                this.applyItemsAndStrikes(formData, spellcastingEntryId),
+                this.applyItemsAndStrikes(
+                    formData,
+                    spellcastingEntryId,
+                    keepCopiedAttacks,
+                ),
                 this.applySkills(formData),
                 this.applyLoreSkills(formData),
             ])
@@ -1121,6 +1277,97 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         }
 
         return detected
+    }
+
+    private hasCopiedAttacks(): boolean {
+        if (this.useDefaultLevel) return false
+        for (const item of this.actor.items ?? []) {
+            if (item.type === 'melee') return true
+        }
+        return false
+    }
+
+    detectAttacks(): {
+        name: string
+        bonus: Options
+        damage: Options
+        damageType: string
+        source: string
+    }[] {
+        if (this.useDefaultLevel) return []
+        const actorLevel = String(
+            foundry.utils.getProperty(
+                this.actor,
+                'system.details.level.value',
+            ) ?? DefaultCreatureLevel,
+        )
+        const level = Levels.includes(actorLevel)
+            ? actorLevel
+            : DefaultCreatureLevel
+        const attacks: {
+            name: string
+            bonus: Options
+            damage: Options
+            damageType: string
+            source: string
+        }[] = []
+        for (const item of this.actor.items ?? []) {
+            if (item.type !== 'melee') continue
+            const rawName =
+                typeof item.name === 'string' ? item.name.trim() : ''
+            const name = rawName || game.i18n!.localize(`${KeyPrefix}.strike`)
+            const bonusValue = Number(
+                foundry.utils.getProperty(item, 'system.bonus.value'),
+            )
+            const bonus = Number.isFinite(bonusValue)
+                ? detectStatLevel(Statistics.strikeBonus, level, bonusValue)
+                : Options.moderate
+            const rolls = foundry.utils.getProperty(
+                item,
+                'system.damageRolls',
+            ) as
+                | Record<
+                      string,
+                      {
+                          damage?: unknown
+                          damageType?: unknown
+                          category?: unknown
+                      }
+                  >
+                | undefined
+            let formula = ''
+            let damageType = 'bludgeoning'
+            for (const roll of Object.values(rolls ?? {})) {
+                if (!roll || roll.category || typeof roll.damage !== 'string') {
+                    continue
+                }
+                formula = roll.damage
+                if (
+                    typeof roll.damageType === 'string' &&
+                    roll.damageType.trim() !== ''
+                ) {
+                    damageType = roll.damageType.trim()
+                }
+                break
+            }
+            const damage = formula
+                ? detectStrikeDamage(level, formula)
+                : Options.moderate
+            attacks.push({
+                name,
+                bonus,
+                damage,
+                damageType,
+                source: JSON.stringify({
+                    sourceLevel: level,
+                    bonusTier: bonus,
+                    damageTier: damage,
+                    bonus: Number.isFinite(bonusValue) ? bonusValue : null,
+                    item: plainMeleeItem(item),
+                }),
+            })
+        }
+        return attacks
     }
 
     detectTraits(): string[] {

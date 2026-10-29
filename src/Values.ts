@@ -51,6 +51,134 @@ export function detectHPLevel(
     return Options.moderate
 }
 
+/**
+ * Shift an attack bonus by the creature-building table.
+ * An offset from the source tier, such as agile, is kept.
+ * A missing original bonus becomes the target tier's value.
+ */
+export function scaleStrikeBonus(
+    sourceLevel: string,
+    targetLevel: string,
+    sourceTier: string,
+    targetTier: string,
+    bonus: number | null,
+): number {
+    const source = strikeBonusValue(sourceLevel, sourceTier)
+    const target = strikeBonusValue(targetLevel, targetTier)
+    if (source === undefined || target === undefined) return bonus ?? 0
+    return (bonus ?? source) + (target - source)
+}
+
+/** Closest creature-building damage tier for a strike formula at this level. */
+export function detectStrikeDamage(level: string, damage: string): Options {
+    const table = statisticValues[Statistics.strikeDamage][level]
+    if (!table) return Options.moderate
+
+    const compact = (value: string) => value.replace(/\s+/g, '').toLowerCase()
+    for (const [option, value] of Object.entries(table)) {
+        if (compact(String(value)) === compact(damage)) return option as Options
+    }
+
+    const actual = averageDamage(damage)
+    if (actual === undefined) return Options.moderate
+
+    let closestOption = Options.moderate
+    let closestDiff = Infinity
+    for (const [option, value] of Object.entries(table)) {
+        const average = averageDamage(String(value)) ?? Number.POSITIVE_INFINITY
+        const diff = Math.abs(actual - average)
+        if (diff < closestDiff) {
+            closestDiff = diff
+            closestOption = option as Options
+        }
+    }
+    return closestOption
+}
+
+/**
+ * Scale a copied damage formula between creature-building tiers.
+ * Only the dice count and flat bonus change. The die size stays.
+ */
+export function scaleStrikeDamage(
+    sourceLevel: string,
+    targetLevel: string,
+    sourceTier: string,
+    targetTier: string,
+    damage: string,
+): string {
+    const source = strikeDamageParts(sourceLevel, sourceTier)
+    const target = strikeDamageParts(targetLevel, targetTier)
+    if (!source || !target) return damage
+    return scaleDamageFormula(
+        damage,
+        target.dice - source.dice,
+        target.modifier - source.modifier,
+    )
+}
+
+function strikeBonusValue(level: string, tier: string): number | undefined {
+    const raw =
+        statisticValues[Statistics.strikeBonus][level]?.[tier as Options]
+    if (raw === undefined) return undefined
+    return parseInt(raw, 10)
+}
+
+function strikeDamageParts(
+    level: string,
+    tier: string,
+): { dice: number; modifier: number } | undefined {
+    const raw =
+        statisticValues[Statistics.strikeDamage][level]?.[tier as Options]
+    if (typeof raw !== 'string') return undefined
+    const parts = parseDamageFormula(raw) as {
+        dice: number
+        modifier: number
+    }
+    return { dice: parts.dice, modifier: parts.modifier }
+}
+
+function scaleDamageFormula(
+    damage: string,
+    diceDelta: number,
+    modifierDelta: number,
+): string {
+    if (diceDelta === 0 && modifierDelta === 0) return damage
+    const compact = damage.replace(/\s+/g, '')
+    const parts = parseDamageFormula(compact)
+    if (parts) {
+        const dice = Math.max(1, parts.dice + diceDelta)
+        const modifier = parts.modifier + modifierDelta
+        const modifierText =
+            modifier === 0 ? '' : modifier > 0 ? `+${modifier}` : `${modifier}`
+        return `${dice}d${parts.faces}${modifierText}`
+    }
+    if (/^[+-]?\d+$/.test(compact)) {
+        return String(Number(compact) + modifierDelta)
+    }
+    return damage
+}
+
+function parseDamageFormula(
+    formula: string,
+): { dice: number; faces: string; modifier: number } | undefined {
+    const match = formula.match(/^(\d*)d(\d+)([+-]\d+)?$/i)
+    if (!match) return undefined
+    return {
+        dice: match[1] ? Number(match[1]) : 1,
+        faces: match[2],
+        modifier: match[3] ? Number(match[3]) : 0,
+    }
+}
+
+function averageDamage(formula: string): number | undefined {
+    const match = formula.replace(/\s+/g, '').match(/^(\d*)d(\d+)([+-]\d+)?$/i)
+    if (!match) return undefined
+    const dice = match[1] ? Number(match[1]) : 1
+    const faces = Number(match[2])
+    const modifier = match[3] ? Number(match[3]) : 0
+    return (dice * (faces + 1)) / 2 + modifier
+}
+
 const aliases = {
     abilityScores: {
         '-1': {

@@ -236,6 +236,14 @@ describe('CreatureBuilderForm', () => {
                 attackName3: '   ',
                 attackBonus3: Options.extreme,
                 attackDamage3: Options.low,
+                attackName4: 'Ghost',
+                attackBonus4: 4,
+                attackDamage4: Options.low,
+                attackSource4: '{"item":{"type":"melee","system":{}}}',
+                attackName5: 'Shade',
+                attackBonus5: Options.low,
+                attackDamage5: 2,
+                attackSource5: '{"item":{"type":"melee","system":{}}}',
                 unrelated: 'skip',
             })
 
@@ -256,6 +264,82 @@ describe('CreatureBuilderForm', () => {
         } finally {
             Item.create.mockReset()
         }
+    })
+
+    it('keeps the original strike when the copied source cannot be read', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        form.level = '5'
+        await form.applyManualAttacks({
+            attackName0: 'Broken',
+            attackBonus0: Options.high,
+            attackDamage0: Options.high,
+            attackSource0: '{',
+            attackName1: 'Empty',
+            attackBonus1: Options.low,
+            attackDamage1: Options.low,
+            attackSource1: '{}',
+            attackName2: 'Tail',
+            attackBonus2: Options.moderate,
+            attackDamage2: Options.moderate,
+            attackSource2: JSON.stringify({
+                sourceLevel: '1',
+                bonusTier: Options.moderate,
+                damageTier: Options.moderate,
+                bonus: null,
+                item: {
+                    type: 'melee',
+                    system: [],
+                },
+            }),
+            attackName3: 'Claw',
+            attackBonus3: Options.high,
+            attackDamage3: Options.high,
+            attackSource3: JSON.stringify({
+                sourceLevel: '1',
+                bonusTier: Options.high,
+                damageTier: Options.high,
+                bonus: 9,
+                item: {
+                    type: 'melee',
+                    system: {
+                        bonus: 9,
+                        damageRolls: {
+                            bad: null,
+                            note: { damage: 2, category: null },
+                            splash: {
+                                damage: '1',
+                                damageType: 'fire',
+                                category: 'splash',
+                            },
+                            claw: {
+                                damage: '1d6+3',
+                                damageType: 'slashing',
+                                category: null,
+                            },
+                        },
+                    },
+                },
+            }),
+        })
+
+        expect(Item.create.mock.calls.map((call) => call[0].name)).toEqual([
+            'Broken',
+            'Empty',
+            'Tail',
+            'Claw',
+        ])
+        expect(Item.create.mock.calls[0][0].system.damageRolls).toHaveProperty(
+            'strikeDamageID',
+        )
+        expect(Item.create.mock.calls[2][0].system).toEqual({
+            bonus: { value: 13 },
+        })
+        expect(
+            Item.create.mock.calls[3][0].system.damageRolls.claw.damage,
+        ).toBe('2d6+7')
+        expect(
+            Item.create.mock.calls[3][0].system.damageRolls.splash.damage,
+        ).toBe('1')
     })
 
     it('creates a strike item with expected values', async () => {
@@ -624,6 +708,314 @@ describe('CreatureBuilderForm', () => {
     it('returns empty traits when none are present', () => {
         const form = new CreatureBuilderForm(buildActor())
         expect(form.detectTraits()).toEqual([])
+    })
+
+    it('ignores existing attacks when starting from a blank creature', () => {
+        const actor = buildActor({
+            items: [
+                {
+                    type: 'melee',
+                    name: 'Jaws',
+                    system: { bonus: { value: 9 } },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor, { useDefaultLevel: true })
+        expect(form.detectAttacks()).toEqual([])
+    })
+
+    it('detects attacks from an existing creature', () => {
+        const actor = buildActor({
+            system: { details: { level: { value: 1 } } },
+            items: [
+                {
+                    type: 'melee',
+                    name: '  Jaws ',
+                    toObject() {
+                        return {
+                            _id: 'old-jaws',
+                            name: 'Jaws',
+                            img: 'icons/jaws.webp',
+                            system: this.system,
+                            flags: { pf2e: { linkedWeapon: 'jaws' } },
+                            effects: [{ name: 'Grab' }],
+                        }
+                    },
+                    system: {
+                        bonus: { value: 9 },
+                        traits: { value: ['ranged', 'agile'] },
+                        attackEffects: { value: ['grab'] },
+                        damageRolls: {
+                            bleed: {
+                                damage: '1d4',
+                                damageType: 'bleed',
+                                category: 'persistent',
+                            },
+                            splash: {
+                                damage: '1',
+                                damageType: '  ',
+                                category: 'splash',
+                            },
+                            note: { damage: 2, category: null },
+                            jaws: {
+                                damage: '1d6+3',
+                                damageType: 'piercing',
+                                category: null,
+                            },
+                        },
+                    },
+                },
+                { type: 'melee' },
+                {
+                    type: 'melee',
+                    name: 'Tail',
+                    system: {
+                        bonus: { value: 7 },
+                        traits: { value: ['melee'] },
+                        damageRolls: {
+                            tail: {
+                                damage: '1d6+2',
+                                damageType: '   ',
+                                category: null,
+                            },
+                        },
+                    },
+                },
+                { type: 'lore', name: 'Sailing Lore' },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        const attacks = form.detectAttacks()
+        expect(attacks).toMatchObject([
+            {
+                name: 'Jaws',
+                bonus: Options.high,
+                damage: Options.high,
+                damageType: 'piercing',
+            },
+            {
+                name: 'loc:PF2EMONSTERMAKER.strike',
+                bonus: Options.moderate,
+                damage: Options.moderate,
+                damageType: 'bludgeoning',
+            },
+            {
+                name: 'Tail',
+                bonus: Options.moderate,
+                damage: Options.moderate,
+                damageType: 'bludgeoning',
+            },
+        ])
+        expect(JSON.parse(attacks[0].source)).toMatchObject({
+            sourceLevel: '1',
+            bonusTier: Options.high,
+            damageTier: Options.high,
+            bonus: 9,
+            item: {
+                name: 'Jaws',
+                type: 'melee',
+                img: 'icons/jaws.webp',
+                flags: { pf2e: { linkedWeapon: 'jaws' } },
+                effects: [{ name: 'Grab' }],
+                system: {
+                    traits: { value: ['ranged', 'agile'] },
+                    attackEffects: { value: ['grab'] },
+                },
+            },
+        })
+        expect(JSON.parse(attacks[0].source).item._id).toBeUndefined()
+        expect(JSON.parse(attacks[1].source).bonus).toBeNull()
+        expect(JSON.parse(attacks[2].source)).toMatchObject({
+            sourceLevel: '1',
+            bonusTier: Options.moderate,
+            damageTier: Options.moderate,
+            bonus: 7,
+            item: {
+                name: 'Tail',
+                type: 'melee',
+                system: {
+                    traits: { value: ['melee'] },
+                    damageRolls: {
+                        tail: { damage: '1d6+2', damageType: '   ' },
+                    },
+                },
+            },
+        })
+    })
+
+    it('uses the item itself when document data is missing', () => {
+        const actor = buildActor({
+            system: { details: { level: { value: 1 } } },
+            items: [
+                {
+                    type: 'melee',
+                    name: 'Horn',
+                    toObject: () => 'nope',
+                    img: 'icons/horn.webp',
+                    flags: { pf2e: { linkedWeapon: 'horn' } },
+                    effects: [{ name: 'Push' }],
+                    system: {
+                        bonus: { value: 5 },
+                        traits: { value: ['melee'] },
+                        damageRolls: {
+                            horn: {
+                                damage: '1d4+2',
+                                damageType: 'bludgeoning',
+                                category: null,
+                            },
+                        },
+                    },
+                },
+            ],
+        })
+        const form = new CreatureBuilderForm(actor)
+        const [attack] = form.detectAttacks()
+        expect(attack).toMatchObject({
+            name: 'Horn',
+            bonus: Options.low,
+            damage: Options.low,
+            damageType: 'bludgeoning',
+        })
+        expect(JSON.parse(attack.source).item).toMatchObject({
+            name: 'Horn',
+            img: 'icons/horn.webp',
+            flags: { pf2e: { linkedWeapon: 'horn' } },
+            effects: [{ name: 'Push' }],
+            system: {
+                traits: { value: ['melee'] },
+                damageRolls: { horn: { damage: '1d4+2' } },
+            },
+        })
+    })
+
+    function actorWithJaws() {
+        return buildActor({
+            system: { details: { level: { value: 1 } } },
+            items: [
+                {
+                    type: 'melee',
+                    name: 'Jaws',
+                    img: 'icons/jaws.webp',
+                    flags: { pf2e: { linkedWeapon: 'jaws' } },
+                    effects: [{ name: 'Grab' }],
+                    system: {
+                        bonus: { value: 8 },
+                        traits: {
+                            value: ['melee', 'reach-10'],
+                            otherTags: ['custom'],
+                        },
+                        attackEffects: { value: ['grab'] },
+                        description: { value: 'A bite.' },
+                        damageRolls: {
+                            bleed: {
+                                damage: '1d6+2',
+                                damageType: 'bleed',
+                                category: 'persistent',
+                            },
+                            jaws: {
+                                damage: '1d8+4',
+                                damageType: 'piercing',
+                                category: null,
+                            },
+                            fire: {
+                                damage: '1d4',
+                                damageType: 'fire',
+                                category: null,
+                            },
+                        },
+                    },
+                },
+            ],
+        })
+    }
+
+    it('keeps a copied strike when the level and tiers stay the same', async () => {
+        const form = new CreatureBuilderForm(actorWithJaws())
+        const [detected] = form.detectAttacks()
+        expect(detected.bonus).toBe(Options.high)
+        expect(detected.damage).toBe(Options.extreme)
+        form.level = '1'
+        await form.applyManualAttacks({
+            attackName0: '  Fangs ',
+            attackBonus0: detected.bonus,
+            attackDamage0: detected.damage,
+            attackDamageType0: 'slashing',
+            attackSource0: detected.source,
+        })
+
+        expect(Item.create).toHaveBeenCalledTimes(1)
+        expect(Item.create.mock.calls[0][0]).toMatchObject({
+            name: 'Fangs',
+            type: 'melee',
+            img: 'icons/jaws.webp',
+            flags: { pf2e: { linkedWeapon: 'jaws' } },
+            effects: [{ name: 'Grab' }],
+            system: {
+                traits: { value: ['melee', 'reach-10'], otherTags: ['custom'] },
+                attackEffects: { value: ['grab'] },
+                description: { value: 'A bite.' },
+                bonus: { value: 8 },
+                damageRolls: {
+                    bleed: {
+                        damage: '1d6+2',
+                        damageType: 'bleed',
+                        category: 'persistent',
+                    },
+                    jaws: {
+                        damage: '1d8+4',
+                        damageType: 'piercing',
+                        category: null,
+                    },
+                    fire: { damage: '1d4', damageType: 'fire', category: null },
+                },
+            },
+        })
+    })
+
+    it('scales a copied strike from the tiers selected in the list', async () => {
+        const form = new CreatureBuilderForm(actorWithJaws())
+        const [detected] = form.detectAttacks()
+        form.level = '5'
+        await form.applyManualAttacks({
+            attackName0: 'Jaws',
+            attackBonus0: detected.bonus,
+            attackDamage0: Options.low,
+            attackDamageType0: 'slashing',
+            attackSource0: detected.source,
+        })
+
+        expect(Item.create.mock.calls[0][0].system).toMatchObject({
+            traits: { value: ['melee', 'reach-10'] },
+            attackEffects: { value: ['grab'] },
+            bonus: { value: 14 },
+            damageRolls: {
+                bleed: { damage: '1d6+2', damageType: 'bleed' },
+                jaws: { damage: '2d8+6', damageType: 'piercing' },
+                fire: { damage: '1d4', damageType: 'fire' },
+            },
+        })
+    })
+
+    it('builds a table strike when the copied source is blank', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        form.level = '5'
+        await form.applyManualAttacks({
+            attackName0: 'Bite',
+            attackBonus0: Options.low,
+            attackDamage0: Options.low,
+            attackDamageType0: 'slashing',
+            attackSource0: '   ',
+        })
+
+        expect(Item.create.mock.calls[0][0].system).toMatchObject({
+            bonus: { value: 11 },
+            damageRolls: {
+                strikeDamageID: {
+                    damage: '2d4+6',
+                    damageType: 'slashing',
+                },
+            },
+        })
     })
 
     it('detects lore skills from actor items', () => {
@@ -1030,9 +1422,10 @@ describe('CreatureBuilderForm', () => {
         expect(globalLog).toHaveBeenCalledWith(true, 'Failed to clone actor')
     })
 
-    it('deletes melee and lore items from clone when updating', async () => {
+    it('keeps copied attacks and removes lore from the clone', async () => {
         const originalActor = buildActor({
             system: { details: { level: { value: 1 } } },
+            items: [{ id: 'strike1', type: 'melee', name: 'Jaws' }],
         })
         const newActor = buildActor({
             items: [
@@ -1063,6 +1456,114 @@ describe('CreatureBuilderForm', () => {
             'strike1',
             'lore1',
         ])
+        expect(form.applyStrike).not.toHaveBeenCalled()
+    })
+
+    it('rebuilds copied attacks from the form list at the selected level', async () => {
+        const originalActor = buildActor({
+            system: { details: { level: { value: 1 } } },
+            items: [{ id: 'source-jaws', type: 'melee', name: 'Jaws' }],
+        })
+        const newActor = buildActor({
+            items: [
+                { id: 'jaws', type: 'melee', name: 'Jaws' },
+                { id: 'nameless', type: 'melee' },
+            ],
+            deleteEmbeddedDocuments: vi.fn().mockResolvedValue(undefined),
+        })
+        ;(originalActor as any).clone = vi.fn().mockResolvedValue(newActor)
+        const form = new CreatureBuilderForm(originalActor)
+        vi.spyOn(form, 'applyHitPoints').mockReturnValue({
+            'system.attributes.hp.value': 1,
+        })
+        const strike = vi
+            .spyOn(form, 'applyStrike')
+            .mockResolvedValue(undefined)
+        vi.spyOn(form, 'applySpellcasting').mockResolvedValue(undefined)
+        vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
+        vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
+
+        // biome-ignore lint/complexity/useLiteralKeys: protected
+        await form['_updateObject'](undefined as unknown as Event, {
+            [Statistics.name]: 'Scaled',
+            [Statistics.level]: '5',
+            attackName0: 'Jaws',
+            attackBonus0: Options.high,
+            attackDamage0: Options.high,
+            attackDamageType0: 'slashing',
+            attackSource0: JSON.stringify({
+                sourceLevel: '1',
+                bonusTier: Options.high,
+                damageTier: Options.high,
+                bonus: 8,
+                item: {
+                    name: 'Jaws',
+                    type: 'melee',
+                    img: 'icons/jaws.webp',
+                    flags: { pf2e: { linkedWeapon: 'abc' } },
+                    effects: [{ name: 'Grab' }],
+                    system: {
+                        traits: {
+                            value: ['ranged', 'agile'],
+                            otherTags: ['custom'],
+                        },
+                        attackEffects: { value: ['grab'] },
+                        bonus: { value: 8 },
+                        damageRolls: {
+                            bleed: {
+                                damage: '1d6+2',
+                                damageType: 'bleed',
+                                category: 'persistent',
+                            },
+                            jaws: {
+                                damage: '1d6+4',
+                                damageType: 'piercing',
+                                category: null,
+                            },
+                            fire: {
+                                damage: '1d4',
+                                damageType: 'fire',
+                                category: null,
+                            },
+                        },
+                    },
+                },
+            }),
+            attackName1: 'Bite',
+            attackBonus1: Options.low,
+            attackDamage1: Options.low,
+        })
+
+        expect(strike).not.toHaveBeenCalled()
+        expect(newActor.deleteEmbeddedDocuments).toHaveBeenCalledWith('Item', [
+            'jaws',
+            'nameless',
+        ])
+        expect(Item.create.mock.calls.map((call) => call[0].name)).toEqual([
+            'Jaws',
+            'Bite',
+        ])
+        expect(Item.create.mock.calls[0][0]).toMatchObject({
+            img: 'icons/jaws.webp',
+            flags: { pf2e: { linkedWeapon: 'abc' } },
+            effects: [{ name: 'Grab' }],
+            system: {
+                traits: { value: ['ranged', 'agile'] },
+                attackEffects: { value: ['grab'] },
+                bonus: { value: 14 },
+                damageRolls: {
+                    bleed: { damage: '1d6+2', category: 'persistent' },
+                    jaws: { damage: '2d6+8', damageType: 'piercing' },
+                    fire: { damage: '1d4', damageType: 'fire' },
+                },
+            },
+        })
+        expect(Item.create.mock.calls[1][0].system).toMatchObject({
+            bonus: { value: 11 },
+            damageRolls: {
+                strikeDamageID: { damage: '2d4+6', damageType: 'bludgeoning' },
+            },
+        })
     })
 
     it('still adds the other items when spellcasting fails', async () => {
@@ -1409,6 +1910,12 @@ describe('CreatureBuilderForm', () => {
                                     attr === 'name' ? 'attackName0' : null,
                             },
                             {
+                                name: 'attackSource0',
+                                value: '{"item":{}}',
+                                getAttribute: (attr: string) =>
+                                    attr === 'name' ? 'attackSource0' : null,
+                            },
+                            {
                                 name: 'PF2EMONSTERMAKER.name',
                                 value: 'Hunter',
                                 getAttribute: () => 'PF2EMONSTERMAKER.name',
@@ -1430,6 +1937,7 @@ describe('CreatureBuilderForm', () => {
             expect(form['formUI']?.['preservedControls']).toEqual({
                 [Statistics.strikeBonus]: Options.high,
                 attackName0: 'Bite',
+                attackSource0: '{"item":{}}',
             })
         })
 
@@ -1815,6 +2323,7 @@ describe('CreatureBuilderForm', () => {
             const createEmbeddedDocuments = vi.fn().mockResolvedValue([])
             const form = new CreatureBuilderForm(
                 buildActor({
+                    abilities: { str: { mod: 5 }, dex: { mod: 1 } },
                     system: {
                         abilities: { str: { mod: 5 }, dex: { mod: 1 } },
                     },

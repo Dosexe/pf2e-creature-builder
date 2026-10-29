@@ -390,6 +390,17 @@ summary.collapsibleHeader {
     padding-right: 15px;
 }
 
+.creatureBuilderFormModern .form-footer {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 5px;
+}
+
+.creatureBuilderFormModern .form-footer button {
+    margin: 0;
+}
+
 .creatureBuilderFormModern .form-preview-divider {
     width: 1px;
     flex-shrink: 0;

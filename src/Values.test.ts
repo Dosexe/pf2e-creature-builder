@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { Options, Statistics } from './Keys'
-import { detectHPLevel, detectStatLevel, statisticValues } from './Values'
+import {
+    detectHPLevel,
+    detectStatLevel,
+    detectStrikeDamage,
+    scaleStrikeBonus,
+    scaleStrikeDamage,
+    statisticValues,
+} from './Values'
 
 describe('detectStatLevel', () => {
     describe('ability scores', () => {
@@ -137,5 +144,100 @@ describe('detectHPLevel', () => {
     it('should return moderate for invalid level', () => {
         const result = detectHPLevel('999', 100)
         expect(result).toBe(Options.moderate)
+    })
+})
+
+describe('scaleStrikeBonus', () => {
+    it('keeps an offset from the source tier when the level changes', () => {
+        expect(scaleStrikeBonus('1', '5', Options.high, Options.high, 9)).toBe(
+            15,
+        )
+        expect(scaleStrikeBonus('1', '5', Options.high, Options.high, 8)).toBe(
+            14,
+        )
+    })
+
+    it('uses the target tier when the original bonus is missing', () => {
+        expect(
+            scaleStrikeBonus('1', '5', Options.high, Options.extreme, null),
+        ).toBe(17)
+    })
+
+    it('returns the original bonus when a tier has no table', () => {
+        expect(
+            scaleStrikeBonus('1', '999', Options.high, Options.high, 9),
+        ).toBe(9)
+        expect(
+            scaleStrikeBonus('999', '5', Options.high, Options.high, null),
+        ).toBe(0)
+        expect(scaleStrikeBonus('1', '5', 'nope', Options.high, 4)).toBe(4)
+    })
+})
+
+describe('detectStrikeDamage', () => {
+    it('matches an exact formula and otherwise the closest tier', () => {
+        expect(detectStrikeDamage('1', '1d6+3')).toBe(Options.high)
+        expect(detectStrikeDamage('1', '1d8+2')).toBe(Options.high)
+        expect(detectStrikeDamage('1', '2')).toBe(Options.moderate)
+        expect(detectStrikeDamage('999', '1d6+3')).toBe(Options.moderate)
+    })
+})
+
+describe('scaleStrikeDamage', () => {
+    it('changes the dice count and bonus while keeping the die size', () => {
+        expect(
+            scaleStrikeDamage('1', '5', Options.high, Options.high, '1d6+3'),
+        ).toBe('2d6+7')
+        expect(
+            scaleStrikeDamage('1', '5', Options.high, Options.high, '1d8+4'),
+        ).toBe('2d8+8')
+        expect(
+            scaleStrikeDamage('1', '5', Options.high, Options.high, 'd8'),
+        ).toBe('2d8+4')
+        expect(
+            scaleStrikeDamage('1', '5', Options.high, Options.high, '1d8-1'),
+        ).toBe('2d8+3')
+    })
+
+    it('leaves the formula unchanged when the tier and level do not move it', () => {
+        expect(
+            scaleStrikeDamage('1', '1', Options.high, Options.high, '1d6 + 3'),
+        ).toBe('1d6 + 3')
+    })
+
+    it('follows the selected target tier', () => {
+        expect(
+            scaleStrikeDamage('1', '5', Options.high, Options.low, '1d6+3'),
+        ).toBe('2d6+6')
+    })
+
+    it('scales a flat bonus and drops a zero modifier', () => {
+        expect(
+            scaleStrikeDamage('1', '5', Options.high, Options.high, '2'),
+        ).toBe('6')
+        expect(
+            scaleStrikeDamage(
+                '1',
+                '-1',
+                Options.extreme,
+                Options.extreme,
+                '1d10+3',
+            ),
+        ).toBe('1d10')
+    })
+
+    it('keeps at least one die and leaves unusual formulas unchanged', () => {
+        expect(
+            scaleStrikeDamage('4', '1', Options.high, Options.high, '1d12+1'),
+        ).toBe('1d12-1')
+        expect(
+            scaleStrikeDamage('1', '5', Options.high, Options.high, '1d6+1d4'),
+        ).toBe('1d6+1d4')
+        expect(
+            scaleStrikeDamage('1', '999', Options.high, Options.high, '1d6+3'),
+        ).toBe('1d6+3')
+        expect(
+            scaleStrikeDamage('999', '5', Options.high, Options.high, '1d6+3'),
+        ).toBe('1d6+3')
     })
 })
