@@ -6,6 +6,7 @@
 
 import type { RoadmapCollection } from '@/Keys'
 import type { SpellListCollection } from '@/spellcasting/model/spellList'
+import { getCreatureSystem } from '@/systems/getCreatureSystem'
 import { statisticValues } from '@/Values'
 
 interface StatisticEntry {
@@ -86,190 +87,9 @@ class CreatureBuilderFormUI {
         'PF2EMONSTERMAKER.extreme',
     ]
 
-    private readonly pf2eTraits = [
-        'aberration',
-        'acid',
-        'aeon',
-        'aesir',
-        'agathion',
-        'air',
-        'aiuvarin',
-        'alchemical',
-        'amphibious',
-        'anadi',
-        'android',
-        'angel',
-        'animal',
-        'anugobu',
-        'aphorite',
-        'aquatic',
-        'archon',
-        'arcane',
-        'ardande',
-        'astral',
-        'automaton',
-        'azarketi',
-        'azata',
-        'beast',
-        'beastkin',
-        'boggard',
-        'caligni',
-        'catfolk',
-        'celestial',
-        'changeling',
-        'chaotic',
-        'clockwork',
-        'cold',
-        'construct',
-        'daemon',
-        'darvakka',
-        'demon',
-        'dero',
-        'devil',
-        'dhampir',
-        'dinosaur',
-        'divine',
-        'dragon',
-        'dream',
-        'drow',
-        'duergar',
-        'duskwalker',
-        'dwarf',
-        'earth',
-        'eidolon',
-        'electricity',
-        'elemental',
-        'elf',
-        'ethereal',
-        'evil',
-        'fetchling',
-        'fey',
-        'fiend',
-        'fire',
-        'fleshwarp',
-        'flumph',
-        'force',
-        'fungus',
-        'ganzi',
-        'genie',
-        'ghoran',
-        'ghost',
-        'ghoul',
-        'giant',
-        'gnoll',
-        'gnome',
-        'goblin',
-        'golem',
-        'good',
-        'goloma',
-        'gremlin',
-        'grioth',
-        'grippli',
-        'hag',
-        'half-elf',
-        'half-orc',
-        'halfling',
-        'hobgoblin',
-        'human',
-        'humanoid',
-        'ifrit',
-        'illusion',
-        'incorporeal',
-        'inevitable',
-        'kami',
-        'kashrishi',
-        'kitsune',
-        'kobold',
-        'lawful',
-        'leshy',
-        'light',
-        'linnorm',
-        'lizardfolk',
-        'locathah',
-        'mental',
-        'merfolk',
-        'mindless',
-        'minion',
-        'monitor',
-        'morlock',
-        'mortic',
-        'mummy',
-        'munavri',
-        'mutant',
-        'nagaji',
-        'negative',
-        'neutral',
-        'nightmare',
-        'nightshade',
-        'nymph',
-        'occult',
-        'ooze',
-        'orc',
-        'oread',
-        'petitioner',
-        'phantom',
-        'plant',
-        'poison',
-        'positive',
-        'primal',
-        'protean',
-        'psychic',
-        'psychopomp',
-        'poppet',
-        'qlippoth',
-        'rakshasa',
-        'rare',
-        'ratfolk',
-        'reflection',
-        'robot',
-        'sahkil',
-        'salamander',
-        'sea devil',
-        'serpentfolk',
-        'shadow',
-        'shisk',
-        'shoony',
-        'skelm',
-        'skeleton',
-        'skulk',
-        'sonic',
-        'soulbound',
-        'spirit',
-        'spriggan',
-        'sprite',
-        'strix',
-        'summoned',
-        'swarm',
-        'sylph',
-        'talos',
-        'tanuki',
-        'tengu',
-        'time',
-        'titan',
-        'troll',
-        'troop',
-        'uncommon',
-        'undead',
-        'undine',
-        'unique',
-        'urdefhan',
-        'vampire',
-        'vanara',
-        'velstrac',
-        'vishkanya',
-        'vitality',
-        'void',
-        'water',
-        'werecreature',
-        'wild hunt',
-        'witch',
-        'wyrwood',
-        'wyvern',
-        'xulgath',
-        'yaksha',
-        'yeti',
-        'zombie',
-    ]
+    private traitNames(): string[] {
+        return getCreatureSystem().traitSuggestions()
+    }
 
     // DOM element references
     private traitsInput!: HTMLElement
@@ -764,7 +584,7 @@ class CreatureBuilderFormUI {
      */
     private showDropdown(filter: string): void {
         const filterLower = (filter || '').toLowerCase().trim()
-        const filtered = this.pf2eTraits.filter(
+        const filtered = this.traitNames().filter(
             (t) =>
                 t.indexOf(filterLower) !== -1 && this.traits.indexOf(t) === -1,
         )
@@ -783,7 +603,7 @@ class CreatureBuilderFormUI {
         // If user typed something not in the list, offer to add it
         if (
             filterLower &&
-            this.pf2eTraits.indexOf(filterLower) === -1 &&
+            this.traitNames().indexOf(filterLower) === -1 &&
             this.traits.indexOf(filterLower) === -1
         ) {
             const customItem = this.createDropdownItem(
@@ -1642,7 +1462,12 @@ class CreatureBuilderFormUI {
                 continue
             }
 
-            const rawValue = valueTable[level][select.value]
+            const rawValue = getCreatureSystem().displayValue(
+                key,
+                level,
+                select.value,
+                String(valueTable[level][select.value]),
+            )
             const num = Number(rawValue)
             const display = num >= 0 ? `+${num}` : `${num}`
             span.textContent = `${label} ${display}`
@@ -1681,12 +1506,21 @@ class CreatureBuilderFormUI {
             }
 
             const rawValue = valueTable[level][optionValue]
-            const numValue = Number.parseInt(rawValue, 10)
+            const displayedValue = getCreatureSystem().displayValue(
+                statKey,
+                level,
+                optionValue,
+                String(rawValue),
+            )
+            const numValue = Number.parseInt(displayedValue, 10)
             const noSignPrefix = new Set([
                 'PF2EMONSTERMAKER.hp',
                 'PF2EMONSTERMAKER.ac',
             ])
-            if (!Number.isNaN(numValue) && String(numValue) === rawValue) {
+            if (
+                !Number.isNaN(numValue) &&
+                String(numValue) === displayedValue
+            ) {
                 if (statKey === 'PF2EMONSTERMAKER.spellcasting') {
                     badge.textContent = String(numValue + 8)
                 } else if (noSignPrefix.has(statKey)) {

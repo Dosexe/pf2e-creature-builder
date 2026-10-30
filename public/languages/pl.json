@@ -107,6 +107,14 @@
     "PF2EMONSTERMAKER.resetDefaults": "Przywróć domyślne",
     "PF2EMONSTERMAKER.duplicateItemType": "Ten przedmiot został już dodany",
 
+    "pf2e-creature-builder.form.roadmap.envoy": "Envoy",
+    "pf2e-creature-builder.form.roadmap.mystic": "Mystic",
+    "pf2e-creature-builder.form.roadmap.operative": "Operative",
+    "pf2e-creature-builder.form.roadmap.solarian": "Solarian",
+    "pf2e-creature-builder.form.roadmap.soldier-class": "Żołnierz (klasa)",
+    "pf2e-creature-builder.form.roadmap.witchwarper": "Witchwarper",
+    "pf2e-creature-builder.form.skills.computers": "Komputery",
+    "pf2e-creature-builder.form.skills.piloting": "Pilotaż",
     "pf2e-creature-builder.form.strikes.add-attack": "Dodaj atak",
     "pf2e-creature-builder.form.strikes.attack-name": "Nazwa ataku",
     "pf2e-creature-builder.form.items.generate-attacks": "Generuj ataki z broni"

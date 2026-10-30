@@ -1,14 +1,10 @@
-import {
-    KeyPrefix,
-    RoadMaps,
-    type Roadmap,
-    type RoadmapCollection,
-} from '@/Keys'
+import { KeyPrefix, type Roadmap, type RoadmapCollection } from '@/Keys'
 import {
     type CustomRoadmap,
     customRoadmapFileSchema,
 } from '@/roadmaps/model/roadMapSchemas'
 import { transformCustomRoadmap } from '@/roadmaps/roadMapTransformer'
+import { getCreatureSystem } from '@/systems/getCreatureSystem'
 import { globalLog } from '@/utils'
 
 /** Path to custom roadmaps folder relative to FoundryVTT Data directory */
@@ -29,7 +25,7 @@ export class RoadMapRegistry {
     private _isReady: boolean = false
 
     private constructor() {
-        this.builtInRoadmaps = { ...RoadMaps }
+        this.builtInRoadmaps = { ...getCreatureSystem().roadmaps() }
     }
 
     /**

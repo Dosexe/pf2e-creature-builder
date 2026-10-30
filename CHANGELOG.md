@@ -8,10 +8,12 @@ All notable changes to the PF2E Creature Builder module are documented here.
 
 ### Changed
 
-- **Foundry Application V2** — The creature builder window uses Foundry's Application V2. 
-- The **Use Classic UI** setting is removed.
-- New ability to add multiple custom attacks 
-- Optionally generate attacks from weapons added to the creature
+- **Foundry Application V2** — The creature builder window uses Foundry's Application V2. The **Use Classic UI** setting is removed, and the modern layout is the only form.
+- The window can be resized. Closing it removes its listeners and the traits dropdown. Two open builder windows no longer edit each other's fields or toggles.
+- The form keeps its scroll position, dropdown choices, and dropped items when it re-renders. The window title uses the translated form title.
+- Add Lore and Reset use the window's own actions. Clicking the Traits label focuses the traits field and opens its suggestions.
+- Form controls follow Foundry's field style. The name sits on the same line as its input, Level, Roadmap, and the other selects share one size, and Spell List uses that same row. Headings are smaller than the old titles and still larger than the field text.
+- Stat dropdowns stay readable on Foundry's dark theme, including Moderate ability scores and defense. The drop zone, its hint, and the preview use the theme's text and border colors.
 
 ### Fixed
 

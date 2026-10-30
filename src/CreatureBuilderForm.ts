@@ -4,8 +4,8 @@ import type {
     SpellSlot,
 } from '@/spellcasting/model/spellcasting'
 import { createSpellCopyStrategy } from '@/spellcasting/SpellCopyStrategies'
-import { builtInSpellLists } from '@/spellcasting/SpellListData'
 import { resolveAndApplySpellList } from '@/spellcasting/SpellListResolver'
+import { getCreatureSystem } from '@/systems/getCreatureSystem'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
@@ -28,8 +28,8 @@ import {
     Levels,
     type MagicalTradition,
     Options,
-    Skills,
     Statistics,
+    skillSlug,
 } from './Keys'
 import { RoadMapRegistry } from './roadmaps/RoadMapRegistry'
 import {
@@ -271,6 +271,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
 
         this.actorDocument = actor
         this.useDefaultLevel = options?.useDefaultLevel === true
+        this.data = getCreatureSystem().creatureStatistics()
     }
 
     get actor(): Actor {
@@ -428,7 +429,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         const config: CreatureBuilderFormConfig = {
             creatureStatistics: JSON.parse(JSON.stringify(this.data)),
             creatureRoadmaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
-            spellLists: builtInSpellLists,
+            spellLists: getCreatureSystem().spellLists(),
             detectedStats: this.useDefaultLevel ? {} : this.detectActorStats(),
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
@@ -845,7 +846,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         const spellListKey = formData[Statistics.spellList]
         if (!spellListKey || spellListKey === 'none') return
 
-        const spellList = builtInSpellLists[spellListKey]
+        const spellList = getCreatureSystem().spellLists()[spellListKey]
         if (!spellList) {
             globalLog(true, `Spell list "${spellListKey}" not found`)
             return
@@ -862,14 +863,14 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
     }
 
     async applySkills(formData: object) {
-        for (const skillName of Skills) {
+        for (const skillName of getCreatureSystem().skills()) {
             const option = formData[skillName]
             if (option !== Options.none) {
                 const value = parseInt(
                     statisticValues[skillName][this.level][option],
                     10,
                 )
-                const skill = `system.skills.${skillName.split('.')[1].toLowerCase()}`
+                const skill = `system.skills.${skillSlug(skillName)}`
                 await this.actor.update(
                     foundry.utils.flattenObject({ [skill]: { base: value } }),
                 )
@@ -1089,10 +1090,12 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                         statisticValues[key]?.[this.level]?.[option] !==
                         undefined
                     ) {
-                        updateData[actorField] = parseInt(
-                            statisticValues[key][this.level][option],
-                            10,
+                        const value = getCreatureSystem().numericValue(
+                            key,
+                            this.level,
+                            option,
                         )
+                        if (value !== undefined) updateData[actorField] = value
                     }
                 }
             }
@@ -1234,8 +1237,8 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             }
         }
 
-        for (const skillStat of Skills) {
-            const skillKey = skillStat.split('.')[1].toLowerCase()
+        for (const skillStat of getCreatureSystem().skills()) {
+            const skillKey = skillSlug(skillStat)
             const skillValue =
                 foundry.utils.getProperty(
                     this.actor,
@@ -1438,7 +1441,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             CreatureStatistics: JSON.parse(JSON.stringify(this.data)),
             Levels: Levels,
             RoadMaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
-            SpellLists: builtInSpellLists,
+            SpellLists: getCreatureSystem().spellLists(),
             name: this.actor.name,
             detectedStats: detectedStats,
             detectedTraits: detectedTraits,

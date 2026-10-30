@@ -1536,4 +1536,6 @@ export const statisticValues = {
     [Statistics.stealth]: aliases.skills,
     [Statistics.survival]: aliases.skills,
     [Statistics.thievery]: aliases.skills,
+    [Statistics.computers]: aliases.skills,
+    [Statistics.piloting]: aliases.skills,
 }

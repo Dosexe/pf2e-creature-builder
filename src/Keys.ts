@@ -77,6 +77,8 @@ export enum Statistics {
     stealth = 'PF2EMONSTERMAKER.stealth',
     survival = 'PF2EMONSTERMAKER.survival',
     thievery = 'PF2EMONSTERMAKER.thievery',
+    computers = 'pf2e-creature-builder.form.skills.computers',
+    piloting = 'pf2e-creature-builder.form.skills.piloting',
 }
 
 export const Skills: Statistics[] = [
@@ -97,6 +99,11 @@ export const Skills: Statistics[] = [
     Statistics.survival,
     Statistics.thievery,
 ]
+
+/** Actor skill slug. The translation key may contain more than one dot. */
+export function skillSlug(stat: string): string {
+    return stat.split('.').at(-1)?.toLowerCase() ?? stat
+}
 
 export const actorFields = {
     // Ability Scores

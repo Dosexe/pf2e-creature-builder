@@ -18,6 +18,15 @@ A Foundry VTT module for the Pathfinder 2E system that lets you create NPCs from
 - Custom roadmaps [BETA] (see [ROADMAPS.md](ROADMAPS.md))
 - Live preview, drag-and-drop of items and color-coded stats
 
+## Starfinder 2e
+
+The same module runs on the Starfinder Second Edition system (`sf2e`). Creature building uses the [Starfinder Building Creatures](https://2e.aonsrd.com/rules/989-building-creatures) tables. A Starfinder world needs Foundry 14.361 or newer, which is that system's own minimum.
+
+- Creature-role roadmaps are shared: Brute, Magical Striker, Skirmisher, Sniper, Soldier, and Spellcaster.
+- Class roadmaps are Envoy, Mystic, Operative, Solarian, Soldier (Class), and Witchwarper. Soldier (Class) is the Player Core class. The Soldier roadmap above it is the creature role. Pathfinder class roadmaps are hidden.
+- Skills add Computers and Piloting. A custom roadmap can set `computers` and `piloting` next to the other skill keys.
+- Trait suggestions come from the system that is running. Themed spell lists stay Pathfinder-only. Spells already on a creature are still copied when you build from that creature.
+
 ## Getting Started
 
 To use the **Creature Builder**, you can create a blank NPC or start with an existing one.
