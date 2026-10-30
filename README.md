@@ -131,10 +131,13 @@ The Second part contains all the skills and item dropdown zone.
 
 The last part contains `Submit` button and `Reset to Defaults` button
 
-![Page Three of The Form](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/PageThree.png?raw=true)
-
 Traits will show you suggestions from the list of existing ones, or you can add a new one.
+
 ![Traits](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/TraitsSection.png?raw=true)
+
+Attack section allow to add any number of specific attacks with modifiers.
+
+![Attacks](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/StrikesAttackItemBlock.png?raw=true)
 
 Lore section allow to specify any number of additional lore entries if needed.
 
