@@ -30,6 +30,14 @@ interface LoreSkill {
     level: string
 }
 
+interface DetectedAttack {
+    name: string
+    bonus: string
+    damage: string
+    damageType?: string
+    source?: string
+}
+
 interface CreatureBuilderFormConfig {
     creatureStatistics: CreatureStatistic[]
     creatureRoadmaps: RoadmapCollection
@@ -37,6 +45,7 @@ interface CreatureBuilderFormConfig {
     detectedStats: DetectedStats
     detectedTraits: string[]
     detectedLoreSkills: LoreSkill[]
+    detectedAttacks?: DetectedAttack[]
     actorLevel: string
     droppedItems?: Record<string, unknown>[]
     root: HTMLElement
@@ -57,6 +66,7 @@ class CreatureBuilderFormUI {
     private readonly detectedStats: DetectedStats
     private readonly detectedTraits: string[]
     private readonly detectedLoreSkills: LoreSkill[]
+    private readonly detectedAttacks: DetectedAttack[]
     private readonly actorLevel: string
     private readonly droppedItems: Record<string, unknown>[]
     private readonly root: HTMLElement
@@ -300,6 +310,7 @@ class CreatureBuilderFormUI {
         this.detectedStats = config.detectedStats
         this.detectedTraits = config.detectedTraits
         this.detectedLoreSkills = config.detectedLoreSkills
+        this.detectedAttacks = config.detectedAttacks ?? []
         this.actorLevel = String(config.actorLevel)
         this.droppedItems = config.droppedItems ?? []
         this.root = config.root
@@ -316,6 +327,7 @@ class CreatureBuilderFormUI {
         this.initializeTraits()
         this.initializeLoreSkills()
         this.restoreManualAttacks()
+        this.initializeAttacks()
         this.initCollapsibleSections()
         this.setupSpellcastingVisibility()
         this.setupDropZone()
@@ -1008,6 +1020,8 @@ class CreatureBuilderFormUI {
         bonus: string = '',
         damage: string = '',
         attackId?: number,
+        damageType: string = '',
+        source: string = '',
     ): void {
         const container = this.queryById('manualAttacksContainer')
         if (!container) return
@@ -1029,6 +1043,16 @@ class CreatureBuilderFormUI {
             ) || 'Attack name'
         nameInput.className = 'attackNameInput'
 
+        const damageTypeInput = document.createElement('input')
+        damageTypeInput.type = 'hidden'
+        damageTypeInput.name = `attackDamageType${id}`
+        damageTypeInput.value = damageType || ''
+
+        const sourceInput = document.createElement('input')
+        sourceInput.type = 'hidden'
+        sourceInput.name = `attackSource${id}`
+        sourceInput.value = source || ''
+
         const removeIcon = document.createElement('span')
         removeIcon.className =
             'creatureBuilderRemoveIcon fa-solid fa-fw fa-trash'
@@ -1037,6 +1061,8 @@ class CreatureBuilderFormUI {
         })
 
         attackDiv.appendChild(nameInput)
+        attackDiv.appendChild(damageTypeInput)
+        attackDiv.appendChild(sourceInput)
         this.appendStrikeSelect(
             attackDiv,
             `attackBonus${id}`,
@@ -1106,6 +1132,31 @@ class CreatureBuilderFormUI {
                 this.preservedControls[`attackBonus${id}`] ?? '',
                 this.preservedControls[`attackDamage${id}`] ?? '',
                 Number.isInteger(numericId) ? numericId : undefined,
+                this.preservedControls[`attackDamageType${id}`] ?? '',
+                this.preservedControls[`attackSource${id}`] ?? '',
+            )
+        }
+    }
+
+    /**
+     * Show strikes copied from the creature the form was opened on.
+     */
+    private initializeAttacks(): void {
+        if (!this.queryById('manualAttacksContainer')) return
+        const restored = this.preservedControls
+            ? Object.keys(this.preservedControls).some((key) =>
+                  key.startsWith('attackName'),
+              )
+            : false
+        if (restored) return
+        for (const attack of this.detectedAttacks) {
+            this.addAttack(
+                attack.name,
+                attack.bonus,
+                attack.damage,
+                undefined,
+                attack.damageType ?? '',
+                attack.source ?? '',
             )
         }
     }

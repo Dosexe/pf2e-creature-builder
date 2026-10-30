@@ -369,6 +369,51 @@ describe('CreatureBuilderFormUI', () => {
         expect((window as any).setRoadmap).toBeUndefined()
     })
 
+    it('shows attacks copied from an existing creature', () => {
+        const ui = new CreatureBuilderFormUI(
+            buildConfig({
+                detectedAttacks: [
+                    {
+                        name: 'Jaws',
+                        bonus: Options.high,
+                        damage: Options.moderate,
+                        damageType: 'piercing',
+                        source: '{"item":{"type":"melee"}}',
+                    },
+                    {
+                        name: 'Tail',
+                        bonus: Options.low,
+                        damage: Options.low,
+                    },
+                ],
+            }),
+        )
+        ui.initialize()
+
+        const entry = document.querySelector('.attackEntry') as HTMLElement
+        const name = entry.querySelector('.attackNameInput') as HTMLInputElement
+        const selects = entry.querySelectorAll('select')
+        const damageType = entry.querySelector(
+            '[name="attackDamageType0"]',
+        ) as HTMLInputElement
+        const source = entry.querySelector(
+            '[name="attackSource0"]',
+        ) as HTMLInputElement
+        expect(name.value).toBe('Jaws')
+        expect(selects[0].value).toBe(Options.high)
+        expect(selects[1].value).toBe(Options.moderate)
+        expect(damageType.value).toBe('piercing')
+        expect(source.value).toBe('{"item":{"type":"melee"}}')
+        const tail = document.querySelectorAll('.attackEntry')[1]
+        expect(
+            (tail.querySelector('.attackNameInput') as HTMLInputElement).value,
+        ).toBe('Tail')
+        expect(tail.querySelector('[name="attackSource1"]')).toHaveProperty(
+            'value',
+            '',
+        )
+    })
+
     it('adds and removes manual attacks', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()
@@ -395,6 +440,9 @@ describe('CreatureBuilderFormUI', () => {
         expect(firstName.placeholder).toBe('Attack name')
         expect(selects[0].value).toBe(Options.high)
         expect(selects[1].value).toBe(Options.low)
+        expect(
+            entries[0].querySelector('[name="attackSource0"]'),
+        ).toHaveProperty('value', '')
         const secondName = entries[1].querySelector(
             '.attackNameInput',
         ) as HTMLInputElement
@@ -432,10 +480,22 @@ describe('CreatureBuilderFormUI', () => {
                         ],
                     },
                 ],
+                detectedAttacks: [
+                    {
+                        name: 'Jaws',
+                        bonus: Options.high,
+                        damage: Options.high,
+                        damageType: 'piercing',
+                    },
+                ],
                 preservedControls: {
+                    attackName1: 'Claw',
+                    attackBonus1: Options.moderate,
+                    attackDamage1: Options.low,
                     attackName0: 'Bite',
                     attackBonus0: Options.low,
                     attackDamage0: Options.extreme,
+                    attackSource0: '{"kept":true}',
                 },
             }),
         )
@@ -449,6 +509,20 @@ describe('CreatureBuilderFormUI', () => {
         expect(restored.querySelectorAll('select')[0].value).toBe(Options.low)
         expect(restored.querySelectorAll('select')[1].value).toBe(
             Options.extreme,
+        )
+        expect(document.querySelectorAll('.attackEntry')).toHaveLength(2)
+        expect(document.querySelectorAll('.attackNameInput')[1]).toHaveProperty(
+            'value',
+            'Claw',
+        )
+        expect(restored.querySelector('[name="attackSource0"]')).toHaveProperty(
+            'value',
+            '{"kept":true}',
+        )
+        const claw = document.querySelectorAll('.attackEntry')[1]
+        expect(claw.querySelector('[name="attackSource1"]')).toHaveProperty(
+            'value',
+            '',
         )
     })
 

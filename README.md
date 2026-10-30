@@ -12,7 +12,7 @@ A Foundry VTT module for the Pathfinder 2E system that lets you create NPCs from
 ### Key Features
 
 - Support for all official roadmaps from the [Pathfinder 2e rules](https://2e.aonprd.com/Rules.aspx?ID=2919)
-- Build from an existing creature — inherits attributes, skills, traits, and spellcasting
+- Build from an existing creature — inherits attributes, skills, traits, spellcasting, and strikes
 - Lore skills, traits, and full spellcasting support
 - Support for themed spell lists
 - Custom roadmaps [BETA] (see [ROADMAPS.md](ROADMAPS.md))
@@ -26,9 +26,9 @@ When starting from an **existing creature**, the new creature will **inherit all
 - Skills and Lore skills
 - Traits
 - Spellcasting (if present)
+- Strikes
 
-The only elements that are **not inherited** are **all strike-related data**.  
-Strikes are replaced using the values provided in the Creature Builder form.
+Existing strikes are listed under **Strikes** with the attack name and the closest attack-bonus and damage tiers. On submit, each listed attack is copied from the original strike. Traits (including melee or ranged), attack effects, and extra damage such as persistent and splash stay as they were.
 
 If the resulting creature is a **spellcaster of a higher level than the base creature**, the module will automatically grant additional spell slots:
 - **Prepared spellcasters** receive spell slots based on the **wizard spellcasting table**, for more info see [Wizard Class](https://2e.aonprd.com/Classes.aspx?ID=39)
@@ -43,6 +43,7 @@ If the resulting creature is a **spellcaster of a higher level than the base cre
 Inside the builder, you can:
 - Select one of the official **roadmaps**, which automatically sets values appropriate for a given monster type
 - Or manually create a unique creature by adjusting any of the available drop-down menus
+- Add any number of extra attacks in the **Strikes** section
 
 By default:
 - All values are set to `moderate`
@@ -81,6 +82,14 @@ INT [Low v]     +1    WIS [Moderate v] +4 CHA [High v]     +5
 
 Use the **Show Bonuses** checkbox at the top of the form to hide or show the bonus badges.
 
+### Strikes
+
+**Strike Attack Bonus** and **Strike Damage** create one Strike from the creature-building table. That Strike is always added, including when attacks are generated from weapons. It is skipped only when the builder was opened on a creature that already has attacks.
+
+**Add Attack** works like Lore: each row is a name plus an attack-bonus tier and a damage tier. Every row is created on submit. A blank name uses the usual Strike label.
+
+Attacks copied from an existing creature use the original strike. The row's tiers decide how the attack bonus, dice count, and damage bonus scale. The die size, traits, melee or ranged, and the rest of the strike stay with the original.
+
 ### Drag-and-Drop Items & Actions
 
 The **Items / Actions** section at the bottom of the form is a drop zone where you can drag items directly from Foundry compendiums, NPCs or other places. Supported item types:
@@ -99,6 +108,8 @@ The **Items / Actions** section at the bottom of the form is a drop zone where y
 - For spells, deduplication also considers the spell level, so the same spell at different levels is allowed
 
 Dropped spells are automatically **linked to the creature's spellcasting entry** when the form is submitted.
+
+**Generate Attacks from Weapons** is on by default. Dropped weapons are still added to the creature, and one strike is generated per weapon name using the same numbers as PF2E's Generate Attack button. Two copies of the same weapon can both be added to the inventory; they still produce one strike for that name.
 
 ### Module Settings
 
