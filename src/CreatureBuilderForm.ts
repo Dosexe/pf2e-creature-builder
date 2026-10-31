@@ -493,7 +493,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         const name = formData[Statistics.name]
             ? formData[Statistics.name]
             : this.actor.name
-        return { name: name }
+        return { name: name, 'prototypeToken.name': name }
     }
 
     applyTraits(formData: object) {

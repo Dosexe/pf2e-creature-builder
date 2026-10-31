@@ -165,13 +165,19 @@ describe('CreatureBuilderForm', () => {
     it('uses form name when provided', () => {
         const form = new CreatureBuilderForm(buildActor({ name: 'Fallback' }))
         const result = form.applyName({ [Statistics.name]: 'Custom Name' })
-        expect(result).toEqual({ name: 'Custom Name' })
+        expect(result).toEqual({
+            name: 'Custom Name',
+            'prototypeToken.name': 'Custom Name',
+        })
     })
 
     it('falls back to actor name when name is missing', () => {
         const form = new CreatureBuilderForm(buildActor({ name: 'Fallback' }))
         const result = form.applyName({})
-        expect(result).toEqual({ name: 'Fallback' })
+        expect(result).toEqual({
+            name: 'Fallback',
+            'prototypeToken.name': 'Fallback',
+        })
     })
 
     it('normalizes traits input', () => {
@@ -1699,6 +1705,7 @@ describe('CreatureBuilderForm', () => {
         ).toHaveBeenCalledWith(
             expect.objectContaining({
                 name: 'New Monster',
+                'prototypeToken.name': 'New Monster',
                 'system.abilities.str.mod': expectedStr,
                 'system.details.level.value': 1,
                 'system.traits.value': ['undead', 'fiend'],
