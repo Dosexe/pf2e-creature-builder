@@ -1238,25 +1238,12 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         }
 
         for (const skillStat of getCreatureSystem().skills()) {
-            const skillKey = skillSlug(skillStat)
-            const skillValue =
-                foundry.utils.getProperty(
-                    this.actor,
-                    `system.skills.${skillKey}.base`,
-                ) ??
-                foundry.utils.getProperty(
-                    this.actor,
-                    `system.skills.${skillKey}.value`,
-                )
-            if (
-                skillValue !== undefined &&
-                skillValue !== null &&
-                Number(skillValue) > 0
-            ) {
+            const skillValue = this.authoredSkillModifier(skillSlug(skillStat))
+            if (skillValue !== undefined && skillValue > 0) {
                 detected[skillStat] = detectStatLevel(
                     skillStat,
                     clampedLevel,
-                    Number(skillValue),
+                    skillValue,
                 )
             }
         }
@@ -1280,6 +1267,43 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         }
 
         return detected
+    }
+
+    /**
+     * Modifier the creature actually has for this skill.
+     * Starfinder prepares every skill and fills a missing base with the ability
+     * modifier, then hides those skills. Only source entries are real skills.
+     * A null source base still counts: it defers to that ability modifier.
+     */
+    private authoredSkillModifier(skillKey: string): number | undefined {
+        const sourceSkills = (
+            this.actor as {
+                _source?: {
+                    system?: {
+                        skills?: Record<string, { base?: number | null }>
+                    }
+                }
+            }
+        )._source?.system?.skills
+
+        if (sourceSkills) {
+            if (!(skillKey in sourceSkills)) return undefined
+            const sourceBase = sourceSkills[skillKey]?.base
+            if (typeof sourceBase === 'number') return sourceBase
+        }
+
+        const prepared =
+            foundry.utils.getProperty(
+                this.actor,
+                `system.skills.${skillKey}.base`,
+            ) ??
+            foundry.utils.getProperty(
+                this.actor,
+                `system.skills.${skillKey}.value`,
+            )
+        if (prepared === undefined || prepared === null) return undefined
+        const value = Number(prepared)
+        return Number.isNaN(value) ? undefined : value
     }
 
     private hasCopiedAttacks(): boolean {
@@ -1437,11 +1461,13 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                   ) ?? DefaultCreatureLevel,
               )
 
+        const spellLists = getCreatureSystem().spellLists()
+
         return {
             CreatureStatistics: JSON.parse(JSON.stringify(this.data)),
             Levels: Levels,
             RoadMaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
-            SpellLists: getCreatureSystem().spellLists(),
+            SpellLists: Object.keys(spellLists).length > 0 ? spellLists : null,
             name: this.actor.name,
             detectedStats: detectedStats,
             detectedTraits: detectedTraits,

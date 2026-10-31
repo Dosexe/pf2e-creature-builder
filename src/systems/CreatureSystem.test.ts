@@ -98,7 +98,7 @@ describe('CreatureSystem', () => {
             system.displayValue(Statistics.str, '22', Options.extreme, '1.5'),
         ).toBe('1.5')
         expect(
-            system.numericValue(Statistics.hp, '1', Options.extreme),
+            system.numericValue(Statistics.hp, '1', Options.terrible),
         ).toBeUndefined()
         expect(
             system.numericValue(Statistics.strikeDamage, '1', Options.moderate),

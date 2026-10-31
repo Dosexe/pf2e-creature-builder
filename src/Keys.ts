@@ -535,7 +535,12 @@ export const DefaultCreatureStatistics: CreatureStatisticCategory[] = [
         statisticEntries: [
             {
                 name: Statistics.hp,
-                availableOptions: [Options.low, Options.moderate, Options.high],
+                availableOptions: [
+                    Options.low,
+                    Options.moderate,
+                    Options.high,
+                    Options.extreme,
+                ],
             },
             {
                 name: Statistics.ac,

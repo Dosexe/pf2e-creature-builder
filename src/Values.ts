@@ -41,12 +41,14 @@ export function detectHPLevel(
     const low = parseInt(hpTable[Options.low], 10)
     const moderate = parseInt(hpTable[Options.moderate], 10)
     const high = parseInt(hpTable[Options.high], 10)
+    const extreme = parseInt(hpTable[Options.extreme], 10)
 
-    // Determine which bracket the HP falls into
     const lowMidpoint = (low + moderate) / 2
     const highMidpoint = (moderate + high) / 2
+    const extremeMidpoint = (high + extreme) / 2
 
     if (actualHP <= lowMidpoint) return Options.low
+    if (actualHP >= extremeMidpoint) return Options.extreme
     if (actualHP >= highMidpoint) return Options.high
     return Options.moderate
 }
@@ -392,131 +394,157 @@ const aliases = {
     },
     hitPoints: {
         '-1': {
+            [Options.extreme]: '11',
             [Options.high]: '9',
             [Options.moderate]: '7',
             [Options.low]: '5',
         },
         '0': {
+            [Options.extreme]: '21',
             [Options.high]: '18',
             [Options.moderate]: '15',
             [Options.low]: '12',
         },
         '1': {
+            [Options.extreme]: '30',
             [Options.high]: '25',
             [Options.moderate]: '20',
             [Options.low]: '15',
         },
         '2': {
+            [Options.extreme]: '46',
             [Options.high]: '38',
             [Options.moderate]: '30',
             [Options.low]: '23',
         },
         '3': {
+            [Options.extreme]: '67',
             [Options.high]: '56',
             [Options.moderate]: '45',
             [Options.low]: '34',
         },
         '4': {
+            [Options.extreme]: '90',
             [Options.high]: '75',
             [Options.moderate]: '60',
             [Options.low]: '45',
         },
         '5': {
+            [Options.extreme]: '113',
             [Options.high]: '94',
             [Options.moderate]: '75',
             [Options.low]: '56',
         },
         '6': {
+            [Options.extreme]: '143',
             [Options.high]: '119',
             [Options.moderate]: '95',
             [Options.low]: '71',
         },
         '7': {
+            [Options.extreme]: '173',
             [Options.high]: '144',
             [Options.moderate]: '115',
             [Options.low]: '86',
         },
         '8': {
+            [Options.extreme]: '203',
             [Options.high]: '169',
             [Options.moderate]: '135',
             [Options.low]: '101',
         },
         '9': {
+            [Options.extreme]: '233',
             [Options.high]: '194',
             [Options.moderate]: '155',
             [Options.low]: '116',
         },
         '10': {
+            [Options.extreme]: '263',
             [Options.high]: '219',
             [Options.moderate]: '175',
             [Options.low]: '131',
         },
         '11': {
+            [Options.extreme]: '293',
             [Options.high]: '244',
             [Options.moderate]: '195',
             [Options.low]: '146',
         },
         '12': {
+            [Options.extreme]: '323',
             [Options.high]: '269',
             [Options.moderate]: '215',
             [Options.low]: '161',
         },
         '13': {
+            [Options.extreme]: '353',
             [Options.high]: '294',
             [Options.moderate]: '235',
             [Options.low]: '176',
         },
         '14': {
+            [Options.extreme]: '383',
             [Options.high]: '319',
             [Options.moderate]: '255',
             [Options.low]: '191',
         },
         '15': {
+            [Options.extreme]: '413',
             [Options.high]: '344',
             [Options.moderate]: '275',
             [Options.low]: '206',
         },
         '16': {
+            [Options.extreme]: '443',
             [Options.high]: '369',
             [Options.moderate]: '295',
             [Options.low]: '221',
         },
         '17': {
+            [Options.extreme]: '473',
             [Options.high]: '394',
             [Options.moderate]: '315',
             [Options.low]: '236',
         },
         '18': {
+            [Options.extreme]: '503',
             [Options.high]: '419',
             [Options.moderate]: '335',
             [Options.low]: '251',
         },
         '19': {
+            [Options.extreme]: '533',
             [Options.high]: '444',
             [Options.moderate]: '355',
             [Options.low]: '266',
         },
         '20': {
+            [Options.extreme]: '563',
             [Options.high]: '469',
             [Options.moderate]: '375',
             [Options.low]: '281',
         },
         '21': {
+            [Options.extreme]: '600',
             [Options.high]: '500',
             [Options.moderate]: '400',
             [Options.low]: '300',
         },
         '22': {
+            [Options.extreme]: '646',
             [Options.high]: '538',
             [Options.moderate]: '430',
             [Options.low]: '323',
         },
         '23': {
+            [Options.extreme]: '690',
             [Options.high]: '575',
             [Options.moderate]: '460',
             [Options.low]: '345',
         },
         '24': {
+            [Options.extreme]: '750',
             [Options.high]: '625',
             [Options.moderate]: '500',
             [Options.low]: '375',

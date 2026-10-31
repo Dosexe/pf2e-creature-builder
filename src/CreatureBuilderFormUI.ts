@@ -345,7 +345,9 @@ class CreatureBuilderFormUI {
             attributeRow.style.display = isNone ? 'none' : 'flex'
         }
         if (spellListRow) {
-            spellListRow.style.display = isNone ? 'none' : 'flex'
+            const hasSpellLists = Object.keys(this.spellLists).length > 0
+            spellListRow.style.display =
+                isNone || !hasSpellLists ? 'none' : 'flex'
         }
     }
 
