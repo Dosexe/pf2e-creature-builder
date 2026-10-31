@@ -14,18 +14,18 @@ A Foundry VTT module for the Pathfinder 2E system that lets you create NPCs from
 - Support for all official roadmaps from the [Pathfinder 2e rules](https://2e.aonprd.com/Rules.aspx?ID=2919)
 - Build from an existing creature — inherits attributes, skills, traits, spellcasting, and strikes
 - Lore skills, traits, and full spellcasting support
-- Support for themed spell lists
+- Support for themed spell lists on Pathfinder 2e
 - Custom roadmaps [BETA] (see [ROADMAPS.md](ROADMAPS.md))
 - Live preview, drag-and-drop of items and color-coded stats
 
 ## Starfinder 2e
 
-The same module runs on the Starfinder Second Edition system (`sf2e`). Creature building uses the [Starfinder Building Creatures](https://2e.aonsrd.com/rules/989-building-creatures) tables. A Starfinder world needs Foundry 14.361 or newer, which is that system's own minimum.
+The same module runs on the Starfinder Second Edition system (`sf2e`) 1.0.0 or newer. Creature building uses the [Starfinder Building Creatures](https://2e.aonsrd.com/rules/989-building-creatures) tables. Current Starfinder releases need Foundry 14.361 or newer, which is that system's own minimum.
 
 - Creature-role roadmaps are shared: Brute, Magical Striker, Skirmisher, Sniper, Soldier, and Spellcaster.
-- Class roadmaps are Envoy, Mystic, Operative, Solarian, Soldier (Class), and Witchwarper. Soldier (Class) is the Player Core class. The Soldier roadmap above it is the creature role. Pathfinder class roadmaps are hidden.
+- Class roadmaps are Envoy, Mystic, Operative, Solarian, Soldier (Class), and Witchwarper.
 - Skills add Computers and Piloting. A custom roadmap can set `computers` and `piloting` next to the other skill keys.
-- Trait suggestions come from the system that is running. Themed spell lists stay Pathfinder-only. Spells already on a creature are still copied when you build from that creature.
+- Trait suggestions come from the system that is running. Themed spell lists stay Pathfinder-only, so the spell list picker is hidden. Spells already on a creature are still copied when you build from that creature.
 
 ## Getting Started
 
@@ -60,7 +60,7 @@ By default:
 
 If you plan to customize values manually rather than using a roadmap, consult the [PF2e Official Creature Building Guide](https://2e.aonprd.com/Rules.aspx?ID=995) to ensure the creature remains balanced.
 
-Once all values are set, click the **Submit** button. This will generate a new creature and automatically open its sheet.
+Once all values are set, click the **Submit** button. This will generate a new creature and automatically open its sheet. The prototype token uses the name from the form.
 
 If you want to start over at any time, click **Reset to Defaults**, which will clear all changes made in the form.
 

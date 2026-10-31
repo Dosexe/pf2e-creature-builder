@@ -6,6 +6,17 @@ All notable changes to the PF2E Creature Builder module are documented here.
 
 ## Unreleased
 
+### Added
+
+- **Starfinder 2e** — The module also runs on `sf2e` 1.0.0 or newer. Creature-role roadmaps are shared. Class roadmaps are Envoy, Mystic, Operative, Solarian, Soldier (Class), and Witchwarper. Skills add Computers and Piloting.
+- **Extreme hit points** — Hit Points gain an `Extreme` option, one step above `High`. A creature above the High band is detected as Extreme.
+
+### Fixed
+
+- A creature saved from the builder sets its prototype token name to the creature name.
+
+## 2.1.0 Weapons generate attacks support
+
 ### Changed
 
 - **Foundry Application V2** — The creature builder window uses Foundry's Application V2. The **Use Classic UI** setting is removed, and the modern layout is the only form.
