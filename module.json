@@ -5,7 +5,7 @@
     "version": "REPLACED AUTOMATICALLY",
     "authors": [{"name": "dosexe"}],
     "compatibility": {
-        "minimum": 13,
+        "minimum": 14,
         "verified": "14.369",
         "maximum": 14
     },
