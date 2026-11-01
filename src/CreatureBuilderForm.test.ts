@@ -165,13 +165,19 @@ describe('CreatureBuilderForm', () => {
     it('uses form name when provided', () => {
         const form = new CreatureBuilderForm(buildActor({ name: 'Fallback' }))
         const result = form.applyName({ [Statistics.name]: 'Custom Name' })
-        expect(result).toEqual({ name: 'Custom Name' })
+        expect(result).toEqual({
+            name: 'Custom Name',
+            'prototypeToken.name': 'Custom Name',
+        })
     })
 
     it('falls back to actor name when name is missing', () => {
         const form = new CreatureBuilderForm(buildActor({ name: 'Fallback' }))
         const result = form.applyName({})
-        expect(result).toEqual({ name: 'Fallback' })
+        expect(result).toEqual({
+            name: 'Fallback',
+            'prototypeToken.name': 'Fallback',
+        })
     })
 
     it('normalizes traits input', () => {
@@ -550,6 +556,48 @@ describe('CreatureBuilderForm', () => {
         expect(detected[Statistics.fort]).toBe(Options.moderate)
         expect(detected[Statistics.athletics]).toBe(Options.high)
         expect(detected[Statistics.spellcasting]).toBe(Options.high)
+    })
+
+    it('ignores Starfinder ability-modifier placeholders that are not authored skills', () => {
+        const game = (globalThis as { game: { system?: { id: string } } }).game
+        game.system = { id: 'sf2e' }
+        try {
+            const actor = buildActor({
+                _source: {
+                    system: {
+                        skills: {
+                            athletics: { base: 7 },
+                            acrobatics: { base: 5 },
+                            thievery: { base: null },
+                        },
+                    },
+                },
+                system: {
+                    details: { level: { value: 1 } },
+                    abilities: { dex: { mod: 4 }, int: { mod: 3 } },
+                    skills: {
+                        athletics: { base: 7 },
+                        acrobatics: { base: 5 },
+                        thievery: { base: 4 },
+                        arcana: { base: 3 },
+                        crafting: { base: 3 },
+                        computers: { base: 3 },
+                        piloting: { base: 4 },
+                    },
+                },
+            })
+            const detected = new CreatureBuilderForm(actor).detectActorStats()
+
+            expect(detected[Statistics.athletics]).toBe(Options.high)
+            expect(detected[Statistics.acrobatics]).toBeDefined()
+            expect(detected[Statistics.thievery]).toBeDefined()
+            expect(detected[Statistics.arcana]).toBeUndefined()
+            expect(detected[Statistics.crafting]).toBeUndefined()
+            expect(detected[Statistics.computers]).toBeUndefined()
+            expect(detected[Statistics.piloting]).toBeUndefined()
+        } finally {
+            game.system = undefined
+        }
     })
 
     it('detects spellcasting tradition and caster type', () => {
@@ -1066,6 +1114,17 @@ describe('CreatureBuilderForm', () => {
             { name: 'Sailing', level: Options.moderate },
         ])
         expect(data.actorLevel).toBe('1')
+    })
+
+    it('omits spell lists from template data on Starfinder', () => {
+        const game = (globalThis as { game: { system?: { id: string } } }).game
+        game.system = { id: 'sf2e' }
+        try {
+            const form = new CreatureBuilderForm(buildActor())
+            expect(form.getData().SpellLists).toBeNull()
+        } finally {
+            game.system = undefined
+        }
     })
 
     it('registers Handlebars helpers only once', async () => {
@@ -1646,6 +1705,7 @@ describe('CreatureBuilderForm', () => {
         ).toHaveBeenCalledWith(
             expect.objectContaining({
                 name: 'New Monster',
+                'prototypeToken.name': 'New Monster',
                 'system.abilities.str.mod': expectedStr,
                 'system.details.level.value': 1,
                 'system.traits.value': ['undead', 'fiend'],

@@ -2,21 +2,30 @@
 
 # Foundry VTT PF2e Creature Builder
 
-The first version was forked from the [pf2e-monster-maker](https://github.com/mikolajg-tt/pf2e-monster-maker). Thanks to the creator **mikolajg-tt** for the solid foundation and great work on the original module.
+This module was inspired by [pf2e-monster-maker](https://github.com/mikolajg-tt/pf2e-monster-maker). Thanks to the creator **mikolajg-tt** for the solid foundation and great work on the original module.
 Current version is a rework of the original idea.
 
 **Install:** `https://github.com/dosexe/pf2e-creature-builder/releases/latest/download/module.json`
 
-A Foundry VTT module for the Pathfinder 2E system that lets you create NPCs from scratch or from an existing creature, using values from the [PF2E Building Creatures Guide](https://2e.aonprd.com/Rules.aspx?ID=995).
+A Foundry VTT module for the Pathfinder 2E and Starfinder 2E systems that lets you create NPCs from scratch or from an existing creature, using values from the [PF2E Building Creatures Guide](https://2e.aonprd.com/Rules.aspx?ID=995) and [SF2E Building Creatures Guide](https://2e.aonsrd.com/rules/989-building-creatures). 
 
 ### Key Features
 
-- Support for all official roadmaps from the [Pathfinder 2e rules](https://2e.aonprd.com/Rules.aspx?ID=2919)
+- Support for all official roadmaps from the [Pathfinder 2e rules](https://2e.aonprd.com/Rules.aspx?ID=2919) and [Starfinder 2e rules](https://2e.aonsrd.com/rules/1034-building-npcs)
 - Build from an existing creature — inherits attributes, skills, traits, spellcasting, and strikes
 - Lore skills, traits, and full spellcasting support
-- Support for themed spell lists
+- Support for themed spell lists on Pathfinder 2e
 - Custom roadmaps [BETA] (see [ROADMAPS.md](ROADMAPS.md))
 - Live preview, drag-and-drop of items and color-coded stats
+
+## Starfinder 2e
+
+The same module runs on the Starfinder Second Edition system (`sf2e`) 1.0.0 or newer. Current Starfinder releases need Foundry 14.361 or newer, which is that system's own minimum.
+
+- Creature-role roadmaps are shared: Brute, Magical Striker, Skirmisher, Sniper, Soldier, and Spellcaster.
+- Class roadmaps are Envoy, Mystic, Operative, Solarian, Soldier (Class), and Witchwarper.
+- Skills add Computers and Piloting. A custom roadmap can set `computers` and `piloting` next to the other skill keys.
+- Trait suggestions come from the system that is running. Themed spell lists stay Pathfinder-only, so the spell list picker is hidden. Spells already on a creature are still copied when you build from that creature.
 
 ## Getting Started
 
@@ -51,7 +60,7 @@ By default:
 
 If you plan to customize values manually rather than using a roadmap, consult the [PF2e Official Creature Building Guide](https://2e.aonprd.com/Rules.aspx?ID=995) to ensure the creature remains balanced.
 
-Once all values are set, click the **Submit** button. This will generate a new creature and automatically open its sheet.
+Once all values are set, click the **Submit** button. This will generate a new creature and automatically open its sheet. The prototype token uses the name from the form.
 
 If you want to start over at any time, click **Reset to Defaults**, which will clear all changes made in the form.
 

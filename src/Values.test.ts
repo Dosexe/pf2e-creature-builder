@@ -141,6 +141,13 @@ describe('detectHPLevel', () => {
         expect(result).toBe(Options.high)
     })
 
+    it('should detect extreme HP above the high bracket', () => {
+        // Level 5 extreme is 113. The high/extreme midpoint is 103.5.
+        expect(detectHPLevel('5', 113)).toBe(Options.extreme)
+        expect(detectHPLevel('5', 104)).toBe(Options.extreme)
+        expect(detectHPLevel('-1', 20)).toBe(Options.extreme)
+    })
+
     it('should return moderate for invalid level', () => {
         const result = detectHPLevel('999', 100)
         expect(result).toBe(Options.moderate)

@@ -1,8 +1,7 @@
 import type { SpellSlot } from '@/spellcasting/model/spellcasting'
 import type { SpellList, SpellListEntry } from '@/spellcasting/model/spellList'
+import { getCreatureSystem } from '@/systems/getCreatureSystem'
 import { globalLog } from '@/utils'
-
-const SPELLS_COMPENDIUM = 'pf2e.spells-srd'
 
 interface CompendiumIndexEntry {
     _id: string
@@ -91,9 +90,10 @@ export async function resolveAndApplySpellList(
     actor: Actor,
     creatureLevel?: string,
 ): Promise<void> {
-    const pack = game!.packs!.get(SPELLS_COMPENDIUM)
+    const spellsCompendium = getCreatureSystem().spellsCompendium
+    const pack = game!.packs!.get(spellsCompendium)
     if (!pack) {
-        globalLog(true, `Compendium pack ${SPELLS_COMPENDIUM} not found`)
+        globalLog(true, `Compendium pack ${spellsCompendium} not found`)
         return
     }
 
@@ -128,7 +128,7 @@ export async function resolveAndApplySpellList(
         if (!docId) {
             globalLog(
                 true,
-                `Spell slug "${slug}" not found in ${SPELLS_COMPENDIUM}`,
+                `Spell slug "${slug}" not found in ${spellsCompendium}`,
             )
             continue
         }

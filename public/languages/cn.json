@@ -107,6 +107,14 @@
     "PF2EMONSTERMAKER.resetDefaults": "重置为默认值",
     "PF2EMONSTERMAKER.duplicateItemType": "此物品已经添加",
 
+    "pf2e-creature-builder.form.roadmap.envoy": "Envoy",
+    "pf2e-creature-builder.form.roadmap.mystic": "Mystic",
+    "pf2e-creature-builder.form.roadmap.operative": "Operative",
+    "pf2e-creature-builder.form.roadmap.solarian": "Solarian",
+    "pf2e-creature-builder.form.roadmap.soldier-class": "士兵（职业）",
+    "pf2e-creature-builder.form.roadmap.witchwarper": "Witchwarper",
+    "pf2e-creature-builder.form.skills.computers": "计算机",
+    "pf2e-creature-builder.form.skills.piloting": "驾驶",
     "pf2e-creature-builder.form.strikes.add-attack": "添加攻击",
     "pf2e-creature-builder.form.strikes.attack-name": "攻击名称",
     "pf2e-creature-builder.form.items.generate-attacks": "从武器生成攻击"

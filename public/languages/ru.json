@@ -106,6 +106,14 @@
     "PF2EMONSTERMAKER.resetDefaults": "Сбросить к умолчаниям",
     "PF2EMONSTERMAKER.duplicateItemType": "Этот предмет уже добавлен",
 
+    "pf2e-creature-builder.form.roadmap.envoy": "Envoy",
+    "pf2e-creature-builder.form.roadmap.mystic": "Mystic",
+    "pf2e-creature-builder.form.roadmap.operative": "Operative",
+    "pf2e-creature-builder.form.roadmap.solarian": "Solarian",
+    "pf2e-creature-builder.form.roadmap.soldier-class": "Солдат (класс)",
+    "pf2e-creature-builder.form.roadmap.witchwarper": "Witchwarper",
+    "pf2e-creature-builder.form.skills.computers": "Компьютеры",
+    "pf2e-creature-builder.form.skills.piloting": "Пилотирование",
     "pf2e-creature-builder.form.strikes.add-attack": "Добавить атаку",
     "pf2e-creature-builder.form.strikes.attack-name": "Название атаки",
     "pf2e-creature-builder.form.items.generate-attacks": "Создавать атаки из оружия"

@@ -95,6 +95,7 @@
                     </div>
                     {{/if}}
                     {{#if (eq this.name "PF2EMONSTERMAKER.spellcasting")}}
+                    {{#if @root.SpellLists}}
                     <div class="stat-row" id="{{@root.fieldId}}spellListFormGroup" style="display: none;">
                         <div class="stat-cell stat-cell--wide">
                             <label for="{{@root.fieldId}}creatureBuilderPF2EMONSTERMAKER.spellList">
@@ -108,6 +109,7 @@
                             </select>
                         </div>
                     </div>
+                    {{/if}}
                     {{/if}}
                 </div>
             </details>

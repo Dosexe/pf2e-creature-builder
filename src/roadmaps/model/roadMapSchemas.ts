@@ -106,6 +106,8 @@ const skillsSchema = z.looseObject({
     stealth: optionValueSchema.optional(),
     survival: optionValueSchema.optional(),
     thievery: optionValueSchema.optional(),
+    computers: optionValueSchema.optional(),
+    piloting: optionValueSchema.optional(),
 })
 
 /**

@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs'
 import Handlebars from 'handlebars'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SpellListCollection } from '@/spellcasting/model/spellList'
 import enLang from '../public/languages/en.json'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
 import { DefaultCreatureStatistics, Levels, Options, Statistics } from './Keys'
@@ -284,6 +285,36 @@ describe('CreatureBuilderFormUI', () => {
         ).toBeTruthy()
 
         ui.destroy()
+    })
+
+    it('omits the spell list control when the template has no spell lists', () => {
+        const source = readFileSync(
+            'public/forms/creatureBuilderForm.html',
+            'utf8',
+        )
+        const handlebars = Handlebars.create()
+        handlebars.registerHelper('localize', (key: string) => key)
+        handlebars.registerHelper('concat', (...args: unknown[]) =>
+            args.filter((arg) => typeof arg !== 'object').join(''),
+        )
+        handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b)
+        handlebars.registerHelper('roadmapLabel', (key: unknown) =>
+            String(key ?? ''),
+        )
+
+        const root = document.createElement('div')
+        root.innerHTML = handlebars.compile(source)({
+            fieldId: 'window-a-',
+            name: 'Hero',
+            Levels,
+            RoadMaps: {},
+            SpellLists: null,
+            CreatureStatistics: JSON.parse(
+                JSON.stringify(DefaultCreatureStatistics),
+            ),
+        })
+
+        expect(root.querySelector('[id$="spellListFormGroup"]')).toBeNull()
     })
 
     it('restores edited dropdowns over detected actor values', () => {
@@ -985,7 +1016,13 @@ describe('CreatureBuilderFormUI', () => {
             ) as HTMLSelectElement
             spellcastingSelect.value = 'PF2EMONSTERMAKER.moderate'
 
-            const ui = new CreatureBuilderFormUI(buildConfig())
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({
+                    spellLists: {
+                        pyromancer: { name: 'Pyromancer' },
+                    } as SpellListCollection,
+                }),
+            )
             ui.initialize()
             vi.runAllTimers()
 
@@ -1012,6 +1049,32 @@ describe('CreatureBuilderFormUI', () => {
             expect(typeRow.style.display).toBe('flex')
             expect(attributeRow.style.display).toBe('flex')
             expect(spellListRow.style.display).toBe('flex')
+        })
+
+        it('hides the spell list when the system has no spell lists', () => {
+            vi.useFakeTimers()
+            const spellcastingSelect = document.getElementById(
+                'creatureBuilderPF2EMONSTERMAKER.spellcasting',
+            ) as HTMLSelectElement
+            spellcastingSelect.value = 'PF2EMONSTERMAKER.moderate'
+
+            const ui = new CreatureBuilderFormUI(
+                buildConfig({ spellLists: {} }),
+            )
+            ui.initialize()
+            vi.runAllTimers()
+
+            const spellListRow = document
+                .getElementById('creatureBuilderPF2EMONSTERMAKER.spellList')
+                ?.closest('.form-group') as HTMLElement
+            const traditionRow = document
+                .getElementById(
+                    'creatureBuilderPF2EMONSTERMAKER.spellcastingTradition',
+                )
+                ?.closest('.form-group') as HTMLElement
+
+            expect(spellListRow.style.display).toBe('none')
+            expect(traditionRow.style.display).toBe('flex')
         })
 
         it('toggles visibility when spellcasting select changes', () => {

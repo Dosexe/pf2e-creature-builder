@@ -5,6 +5,7 @@ import {
     type Roadmap,
     type RoadmapValue,
     Statistics,
+    skillSlug,
 } from '@/Keys'
 import {
     CASTER_TYPE_TRANSLATION_MAP,
@@ -12,6 +13,7 @@ import {
     OPTION_TRANSLATION_MAP,
     TRADITION_TRANSLATION_MAP,
 } from '@/roadmaps/model/roadMapSchemas'
+import { getCreatureSystem } from '@/systems/getCreatureSystem'
 
 /**
  * Transform a validated custom roadmap into internal roadmap format.
@@ -93,58 +95,19 @@ export function transformCustomRoadmap(customRoadmap: CustomRoadmap): Roadmap {
         [Statistics.spellcastingTradition]: spellcastingTradition,
         [Statistics.spellcastingType]: spellcastingType,
 
-        // Skills
-        [Statistics.acrobatics]: getOptionKey(
-            stats.skills?.acrobatics,
-            Options.none,
-        ),
-        [Statistics.arcana]: getOptionKey(stats.skills?.arcana, Options.none),
-        [Statistics.athletics]: getOptionKey(
-            stats.skills?.athletics,
-            Options.none,
-        ),
-        [Statistics.crafting]: getOptionKey(
-            stats.skills?.crafting,
-            Options.none,
-        ),
-        [Statistics.deception]: getOptionKey(
-            stats.skills?.deception,
-            Options.none,
-        ),
-        [Statistics.diplomacy]: getOptionKey(
-            stats.skills?.diplomacy,
-            Options.none,
-        ),
-        [Statistics.intimidation]: getOptionKey(
-            stats.skills?.intimidation,
-            Options.none,
-        ),
-        [Statistics.medicine]: getOptionKey(
-            stats.skills?.medicine,
-            Options.none,
-        ),
-        [Statistics.nature]: getOptionKey(stats.skills?.nature, Options.none),
-        [Statistics.occultism]: getOptionKey(
-            stats.skills?.occultism,
-            Options.none,
-        ),
-        [Statistics.performance]: getOptionKey(
-            stats.skills?.performance,
-            Options.none,
-        ),
-        [Statistics.religion]: getOptionKey(
-            stats.skills?.religion,
-            Options.none,
-        ),
-        [Statistics.society]: getOptionKey(stats.skills?.society, Options.none),
-        [Statistics.stealth]: getOptionKey(stats.skills?.stealth, Options.none),
-        [Statistics.survival]: getOptionKey(
-            stats.skills?.survival,
-            Options.none,
-        ),
-        [Statistics.thievery]: getOptionKey(
-            stats.skills?.thievery,
-            Options.none,
-        ),
+        ...skillRoadmap(stats.skills, getOptionKey),
     }
+}
+
+function skillRoadmap(
+    skills: CustomRoadmap['stats']['skills'],
+    getOptionKey: (value?: string, defaultValue?: Options) => RoadmapValue,
+): Roadmap {
+    const values = (skills ?? {}) as Record<string, string | undefined>
+    const roadmap: Roadmap = {}
+    for (const skill of getCreatureSystem().skills()) {
+        const slug = skillSlug(skill)
+        roadmap[skill] = getOptionKey(values[slug], Options.none)
+    }
+    return roadmap
 }
