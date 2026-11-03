@@ -31,6 +31,7 @@ import {
     Statistics,
     skillSlug,
 } from './Keys'
+import { manualOverrideNumber, manualOverrideText } from './manualValues'
 import {
     movementActorUpdate,
     readActorSenses,
@@ -539,10 +540,10 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
 
     applyHitPoints(formData: object) {
         const option = formData[Statistics.hp]
-        const hitPoints = parseInt(
-            statisticValues[Statistics.hp][this.level][option],
-            10,
-        )
+        const override = manualOverrideNumber(formData, Statistics.hp)
+        const hitPoints =
+            override ??
+            parseInt(statisticValues[Statistics.hp][this.level][option], 10)
         return { 'system.attributes.hp.value': hitPoints }
     }
 
@@ -551,6 +552,9 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             game.i18n!.localize(`${KeyPrefix}.strike`),
             formData[Statistics.strikeBonus],
             formData[Statistics.strikeDamage],
+            'bludgeoning',
+            manualOverrideNumber(formData, Statistics.strikeBonus),
+            manualOverrideText(formData, Statistics.strikeDamage),
         )
         if (!strike) return
         return Item.create(strike, { parent: this.actor })
@@ -569,6 +573,14 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                     ? rawName.trim()
                     : game.i18n!.localize(`${KeyPrefix}.strike`)
             const source = formData[`attackSource${id}`]
+            const bonusOverride = manualOverrideNumber(
+                formData,
+                `attackBonus${id}`,
+            )
+            const damageOverride = manualOverrideText(
+                formData,
+                `attackDamage${id}`,
+            )
             const copied =
                 typeof source === 'string' && source.trim() !== ''
                     ? this.copiedStrikeItem(
@@ -576,6 +588,8 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                           name,
                           formData[`attackBonus${id}`],
                           formData[`attackDamage${id}`],
+                          bonusOverride,
+                          damageOverride,
                       )
                     : undefined
             const strike =
@@ -585,6 +599,8 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                     formData[`attackBonus${id}`],
                     formData[`attackDamage${id}`],
                     formData[`attackDamageType${id}`],
+                    bonusOverride,
+                    damageOverride,
                 )
             if (!strike) {
                 globalLog(true, `Failed to add attack "${name}"`)
@@ -603,6 +619,8 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         name: string,
         bonusOption: unknown,
         damageOption: unknown,
+        bonusOverride?: number,
+        damageOverride?: string,
     ): ItemData | undefined {
         if (
             typeof bonusOption !== 'string' ||
@@ -668,6 +686,8 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 roll.damage,
             )
         }
+        if (bonusOverride !== undefined) bonusField.value = bonusOverride
+        if (damageOverride && roll) roll.damage = damageOverride
         return item as ItemData
     }
 
@@ -676,6 +696,8 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         bonusOption: unknown,
         damageOption: unknown,
         damageType: unknown = 'bludgeoning',
+        bonusOverride?: number,
+        damageOverride?: string,
     ): ItemData | undefined {
         if (
             typeof bonusOption !== 'string' ||
@@ -689,8 +711,10 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             statisticValues[Statistics.strikeDamage][this.level]?.[damageOption]
         if (bonusRaw === undefined || strikeDamage === undefined)
             return undefined
-        const strikeBonus = parseInt(bonusRaw, 10)
+        const strikeBonus =
+            bonusOverride !== undefined ? bonusOverride : parseInt(bonusRaw, 10)
         if (Number.isNaN(strikeBonus)) return undefined
+        const damage = damageOverride ?? strikeDamage
         const resolvedDamageType =
             typeof damageType === 'string' && damageType.trim() !== ''
                 ? damageType.trim()
@@ -701,7 +725,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             system: {
                 damageRolls: {
                     strikeDamageID: {
-                        damage: strikeDamage,
+                        damage,
                         damageType: resolvedDamageType,
                         category: null,
                     },
@@ -730,12 +754,18 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             return
         }
 
-        const spellcastingBonus = parseInt(
+        const tableBonus = parseInt(
             statisticValues[Statistics.spellcasting][this.level][
                 spellcastingOption
             ],
             10,
         )
+        const dcOverride = manualOverrideNumber(
+            formData,
+            Statistics.spellcasting,
+        )
+        const spellcastingBonus =
+            dcOverride !== undefined ? dcOverride - 8 : tableBonus
 
         // Clone already has spellcasting entry + spells; we only update or create
         let existingEntry: { type: string; id: string } | null = null
@@ -887,10 +917,10 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         for (const skillName of getCreatureSystem().skills()) {
             const option = formData[skillName]
             if (option !== Options.none) {
-                const value = parseInt(
-                    statisticValues[skillName][this.level][option],
-                    10,
-                )
+                const override = manualOverrideNumber(formData, skillName)
+                const value =
+                    override ??
+                    parseInt(statisticValues[skillName][this.level][option], 10)
                 const skill = `system.skills.${skillSlug(skillName)}`
                 await this.actor.update(
                     foundry.utils.flattenObject({ [skill]: { base: value } }),
@@ -900,7 +930,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
     }
 
     async applyLoreSkills(formData: object) {
-        const loreSkills: { name: string; option: string }[] = []
+        const loreSkills: { name: string; option: string; id: string }[] = []
         for (const key of Object.keys(formData)) {
             if (key.startsWith('loreName')) {
                 const id = key.replace('loreName', '')
@@ -911,17 +941,29 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                     name.trim() !== '' &&
                     levelOption !== Options.none
                 ) {
-                    loreSkills.push({ name: name.trim(), option: levelOption })
+                    loreSkills.push({
+                        name: name.trim(),
+                        option: levelOption,
+                        id,
+                    })
                 }
             }
         }
 
         // Create each lore skill as an item (PF2e stores lore skills as items of type "lore")
         for (const lore of loreSkills) {
-            const value = parseInt(
-                statisticValues[Statistics.acrobatics][this.level][lore.option],
-                10,
+            const override = manualOverrideNumber(
+                formData,
+                `loreLevel${lore.id}`,
             )
+            const value =
+                override ??
+                parseInt(
+                    statisticValues[Statistics.acrobatics][this.level][
+                        lore.option
+                    ],
+                    10,
+                )
             const loreItem: ItemData = {
                 name: `${lore.name} Lore`,
                 type: 'lore',
@@ -1106,17 +1148,23 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             for (const key of Object.keys(formData)) {
                 if (actorFields[key]) {
                     const actorField = actorFields[key]
-                    const option = formData[key]
-                    if (
-                        statisticValues[key]?.[this.level]?.[option] !==
-                        undefined
-                    ) {
-                        const value = getCreatureSystem().numericValue(
-                            key,
-                            this.level,
-                            option,
-                        )
-                        if (value !== undefined) updateData[actorField] = value
+                    const override = manualOverrideNumber(formData, key)
+                    if (override !== undefined) {
+                        updateData[actorField] = override
+                    } else {
+                        const option = formData[key]
+                        if (
+                            statisticValues[key]?.[this.level]?.[option] !==
+                            undefined
+                        ) {
+                            const value = getCreatureSystem().numericValue(
+                                key,
+                                this.level,
+                                option,
+                            )
+                            if (value !== undefined)
+                                updateData[actorField] = value
+                        }
                     }
                 }
             }

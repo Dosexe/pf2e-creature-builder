@@ -456,6 +456,14 @@ summary.collapsibleHeader {
     display: none;
 }
 
+.creatureBuilderFormModern .form-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 0.15rem;
+}
+
 .creatureBuilderFormModern .toggle-badges-label {
     display: inline-flex;
     align-items: center;
@@ -463,7 +471,168 @@ summary.collapsibleHeader {
     font-size: 11px;
     cursor: pointer;
     user-select: none;
-    margin: 0 0 0.15rem;
+    margin: 0;
+}
+
+.creatureBuilderFormModern .toggle-badges-label[hidden] {
+    display: none;
+}
+
+.creatureBuilderFormModern .stat-value-badge--editable {
+    cursor: pointer;
+}
+
+.creatureBuilderFormModern .stat-value-badge--editing {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    padding: 0;
+    overflow: hidden;
+}
+
+.creatureBuilderFormModern .stat-value-badge--editing:focus-within {
+    border-color: var(--color-text-primary, currentColor);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-text-primary, currentColor) 70%, transparent);
+}
+
+.creatureBuilderFormModern .stat-value-badge input.stat-badge-input[type="text"] {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 1px;
+    border: none;
+    border-radius: 2px;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    text-align: center;
+}
+
+.creatureBuilderFormModern .damage-editor {
+    position: fixed;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 9rem;
+    padding: 0.4rem;
+    color: var(--color-text-primary);
+    background-color: color-mix(in srgb, rgb(158, 158, 158) 22%, var(--color-bg, #222));
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+    border-radius: 3px;
+}
+
+.creatureBuilderFormModern .damage-editor[hidden] {
+    display: none;
+}
+
+.creatureBuilderFormModern .damage-editor label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    font-size: 11px;
+}
+
+.creatureBuilderFormModern .damage-editor input[type="text"] {
+    box-sizing: border-box;
+    width: 2.7rem;
+    height: var(--form-field-height, 1.6rem);
+    min-height: 0;
+    margin: 0;
+    color: var(--color-text-primary);
+    background-color: rgba(158, 158, 158, 0.15);
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+    border-radius: 3px;
+}
+
+.creatureBuilderFormModern .damage-editor-die-field {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: 4.5rem;
+}
+
+.creatureBuilderFormModern .damage-editor select.damage-editor-die {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.creatureBuilderFormModern .damage-editor-die-trigger {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 4.5rem;
+    height: var(--form-field-height, 1.6rem);
+    margin: 0;
+    padding: 0 4px;
+    color: var(--color-text-primary);
+    background-color: rgba(158, 158, 158, 0.15);
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.creatureBuilderFormModern .damage-editor-die-list {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    z-index: 1;
+    width: 4.5rem;
+    margin: 0;
+    padding: 0.15rem;
+    list-style: none;
+    color: var(--color-text-primary);
+    background-color: color-mix(in srgb, rgb(158, 158, 158) 22%, var(--color-bg, #222));
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+    border-radius: 3px;
+}
+
+.creatureBuilderFormModern .damage-editor-die-list[hidden] {
+    display: none;
+}
+
+.creatureBuilderFormModern .damage-editor-die-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin: 0;
+    padding: 0.2rem 4px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.creatureBuilderFormModern .damage-editor-die-option:hover,
+.creatureBuilderFormModern .damage-editor-die-option.is-selected {
+    background-color: color-mix(in srgb, rgb(158, 158, 158) 40%, var(--color-bg, #222));
+}
+
+.creatureBuilderFormModern .damage-editor-die-icon,
+.creatureBuilderFormModern .damage-editor-die-option i {
+    width: 1rem;
+    font-size: 0.95rem;
+    line-height: 1;
+    text-align: center;
+}
+
+.creatureBuilderFormModern .damage-editor-actions {
+    display: flex;
+    gap: 0.35rem;
 }
 
 .creatureBuilderFormModern .toggle-badges-label input[type="checkbox"] {

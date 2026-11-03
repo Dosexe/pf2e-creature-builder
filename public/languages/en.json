@@ -105,6 +105,12 @@
     "PF2EMONSTERMAKER.traitsPlaceholder": "Search traits...",
 
     "PF2EMONSTERMAKER.showBonuses": "Show Bonuses",
+    "PF2EMONSTERMAKER.manualInput": "Manual Input",
+    "pf2e-creature-builder.form.manual.dice": "Dice",
+    "pf2e-creature-builder.form.manual.die": "Die",
+    "pf2e-creature-builder.form.manual.bonus": "Bonus",
+    "pf2e-creature-builder.form.manual.apply": "Apply",
+    "pf2e-creature-builder.form.manual.cancel": "Cancel",
     "PF2EMONSTERMAKER.preview": "Preview",
     "PF2EMONSTERMAKER.resetDefaults": "Reset to Defaults",
 

@@ -2,10 +2,16 @@
         <div class="form-main" id="{{fieldId}}formMainContent">
             <h1>{{localize "PF2EMONSTERMAKER.title"}}</h1>
 
-            <label class="toggle-badges-label" for="{{fieldId}}toggleBadges">
-                <input type="checkbox" id="{{fieldId}}toggleBadges" checked>
-                {{localize "PF2EMONSTERMAKER.showBonuses"}}
-            </label>
+            <div class="form-toggles">
+                <label class="toggle-badges-label" for="{{fieldId}}toggleBadges">
+                    <input type="checkbox" id="{{fieldId}}toggleBadges" checked>
+                    {{localize "PF2EMONSTERMAKER.showBonuses"}}
+                </label>
+                <label class="toggle-badges-label" for="{{fieldId}}toggleManualInput">
+                    <input type="checkbox" id="{{fieldId}}toggleManualInput">
+                    {{localize "PF2EMONSTERMAKER.manualInput"}}
+                </label>
+            </div>
 
             <h2>{{localize "PF2EMONSTERMAKER.nameLevelRoadmap"}}</h2>
             <div class="form-group">
@@ -82,7 +88,7 @@
                                     {{/each}}
                                     {{/unless}}
                                 </select>
-                                <span class="stat-value-badge" data-stat-badge="{{this.name}}">--</span>
+                                <span class="stat-value-badge" data-stat-badge="{{this.name}}" data-override-field="{{this.name}}">--</span>
                             </div>
                         </div>
                         {{/each}}

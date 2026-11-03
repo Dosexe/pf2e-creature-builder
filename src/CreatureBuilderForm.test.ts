@@ -3099,4 +3099,191 @@ describe('CreatureBuilderForm', () => {
             delete (globalThis as any).fromUuid
         })
     })
+
+    describe('manual value overrides', () => {
+        it('uses a typed HP value instead of the tier table', () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '1'
+            expect(
+                form.applyHitPoints({
+                    [Statistics.hp]: Options.moderate,
+                    'manualOverride.PF2EMONSTERMAKER.hp': '+28',
+                }),
+            ).toEqual({ 'system.attributes.hp.value': 28 })
+        })
+
+        it('falls back to the HP table when the override is not a number', () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '1'
+            const expected = parseInt(
+                statisticValues[Statistics.hp]['1'][Options.moderate],
+                10,
+            )
+            expect(
+                form.applyHitPoints({
+                    [Statistics.hp]: Options.moderate,
+                    'manualOverride.PF2EMONSTERMAKER.hp': 'abc',
+                }),
+            ).toEqual({ 'system.attributes.hp.value': expected })
+        })
+
+        it('writes a typed ability and AC onto the cloned actor', async () => {
+            const originalActor = buildActor()
+            const newActor = buildActor({
+                deleteEmbeddedDocuments: vi.fn().mockResolvedValue(undefined),
+            })
+            ;(originalActor as any).clone = vi.fn().mockResolvedValue(newActor)
+            const form = new CreatureBuilderForm(originalActor)
+            vi.spyOn(form, 'applyHitPoints').mockReturnValue({
+                'system.attributes.hp.value': 1,
+            })
+            vi.spyOn(form, 'applyStrike').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applySpellcasting').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
+
+            // biome-ignore lint/complexity/useLiteralKeys: protected method
+            await form['_updateObject'](undefined as unknown as Event, {
+                [Statistics.name]: 'Goblin',
+                [Statistics.level]: '1',
+                [Statistics.str]: Options.moderate,
+                'manualOverride.PF2EMONSTERMAKER.str': '7',
+                [Statistics.ac]: Options.moderate,
+                'manualOverride.PF2EMONSTERMAKER.ac': '+19',
+            })
+
+            expect((originalActor as any).clone).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    'system.abilities.str.mod': 7,
+                    'system.attributes.ac.value': 19,
+                }),
+                { save: true },
+            )
+        })
+
+        it('uses a typed skill modifier instead of the tier table', async () => {
+            const actor = buildActor()
+            const form = new CreatureBuilderForm(actor)
+            form.level = '1'
+            await form.applySkills({
+                [Statistics.acrobatics]: Options.moderate,
+                'manualOverride.PF2EMONSTERMAKER.acrobatics': '-2',
+            })
+            expect(actor.update).toHaveBeenCalledWith({
+                'system.skills.acrobatics.base': -2,
+            })
+        })
+
+        it('uses a typed lore modifier instead of the acrobatics tier', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '1'
+            await form.applyLoreSkills({
+                loreName0: 'Sailing',
+                loreLevel0: Options.moderate,
+                'manualOverride.loreLevel0': '+9',
+            })
+            expect(Item.create.mock.calls[0][0]).toMatchObject({
+                name: 'Sailing Lore',
+                system: { mod: { value: 9 } },
+            })
+        })
+
+        it('treats a typed spell box as the DC', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '1'
+            await form.applySpellcasting({
+                [Statistics.spellcasting]: Options.moderate,
+                'manualOverride.PF2EMONSTERMAKER.spellcasting': '18',
+            })
+            expect(Item.create.mock.calls[0][0].system.spelldc).toEqual({
+                value: 10,
+                dc: 18,
+            })
+        })
+
+        it('uses typed strike numbers instead of the tier formulas', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '1'
+            await form.applyStrike({
+                [Statistics.strikeBonus]: Options.high,
+                [Statistics.strikeDamage]: Options.moderate,
+                'manualOverride.PF2EMONSTERMAKER.strikeBonus': '+11',
+                'manualOverride.PF2EMONSTERMAKER.strikeDamage': '2d8-1',
+            })
+            expect(Item.create.mock.calls[0][0].system).toMatchObject({
+                bonus: { value: 11 },
+                damageRolls: {
+                    strikeDamageID: { damage: '2d8-1' },
+                },
+            })
+        })
+
+        it('keeps the tier for the strike half that was not edited', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '1'
+            await form.applyStrike({
+                [Statistics.strikeBonus]: Options.high,
+                [Statistics.strikeDamage]: Options.moderate,
+                'manualOverride.PF2EMONSTERMAKER.strikeDamage': '3d4',
+            })
+            const expectedBonus = parseInt(
+                statisticValues[Statistics.strikeBonus]['1'][Options.high],
+                10,
+            )
+            expect(Item.create.mock.calls[0][0].system).toMatchObject({
+                bonus: { value: expectedBonus },
+                damageRolls: {
+                    strikeDamageID: { damage: '3d4' },
+                },
+            })
+        })
+
+        it('uses typed values on an extra attack and on a copied attack', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '1'
+            await form.applyManualAttacks({
+                attackName0: 'Claw',
+                attackBonus0: Options.high,
+                attackDamage0: Options.high,
+                attackSource0: JSON.stringify({
+                    sourceLevel: '1',
+                    bonusTier: Options.high,
+                    damageTier: Options.high,
+                    bonus: 9,
+                    item: {
+                        type: 'melee',
+                        name: 'Claw',
+                        system: {
+                            bonus: { value: 9 },
+                            damageRolls: {
+                                claw: {
+                                    damage: '1d6+3',
+                                    damageType: 'slashing',
+                                    category: null,
+                                },
+                            },
+                        },
+                    },
+                }),
+                'manualOverride.attackBonus0': '+1',
+                'manualOverride.attackDamage0': '1d4',
+                attackName1: 'Bite',
+                attackBonus1: Options.moderate,
+                attackDamage1: Options.moderate,
+                'manualOverride.attackBonus1': '5',
+                'manualOverride.attackDamage1': '2d6+4',
+            })
+
+            const claw = Item.create.mock.calls[0][0]
+            const bite = Item.create.mock.calls[1][0]
+            expect(claw.system.bonus.value).toBe(1)
+            expect(claw.system.damageRolls.claw.damage).toBe('1d4')
+            expect(bite.system).toMatchObject({
+                bonus: { value: 5 },
+                damageRolls: {
+                    strikeDamageID: { damage: '2d6+4' },
+                },
+            })
+        })
+    })
 })
