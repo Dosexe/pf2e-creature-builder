@@ -2347,24 +2347,27 @@ class CreatureBuilderFormUI {
         editor.hidden = true
 
         const countLabel = document.createElement('label')
-        countLabel.append(
-            document.createTextNode(
-                this.localize('pf2e-creature-builder.form.manual.dice'),
-            ),
+        const countCaption = document.createElement('span')
+        countCaption.textContent = this.localize(
+            'pf2e-creature-builder.form.manual.dice',
         )
         const count = document.createElement('input')
         count.type = 'text'
         count.className = 'damage-editor-count'
-        countLabel.append(count)
+        countLabel.append(countCaption, count)
 
         const dieLabel = document.createElement('label')
-        dieLabel.append(
-            document.createTextNode(
-                this.localize('pf2e-creature-builder.form.manual.die'),
-            ),
+        const dieCaption = document.createElement('span')
+        dieCaption.textContent = this.localize(
+            'pf2e-creature-builder.form.manual.die',
         )
         const dieField = document.createElement('span')
         dieField.className = 'damage-editor-die-field'
+        const dieIcon = document.createElement('span')
+        dieIcon.className = 'fa-light fa-dice-d6 damage-editor-die-icon'
+        dieIcon.setAttribute('aria-hidden', 'true')
+        const picker = document.createElement('span')
+        picker.className = 'damage-editor-die-picker'
         const trigger = document.createElement('button')
         trigger.type = 'button'
         trigger.className = 'damage-editor-die-trigger'
@@ -2372,10 +2375,7 @@ class CreatureBuilderFormUI {
         const dieValue = document.createElement('span')
         dieValue.className = 'damage-editor-die-value'
         dieValue.textContent = 'd6'
-        const dieIcon = document.createElement('i')
-        dieIcon.className = 'fa-light fa-dice-d6 damage-editor-die-icon'
-        dieIcon.setAttribute('aria-hidden', 'true')
-        trigger.append(dieValue, dieIcon)
+        trigger.append(dieValue)
         const list = document.createElement('ul')
         list.className = 'damage-editor-die-list'
         list.hidden = true
@@ -2415,19 +2415,19 @@ class CreatureBuilderFormUI {
         trigger.addEventListener('click', () => {
             list.hidden = !list.hidden
         })
-        dieField.append(trigger, list, die)
-        dieLabel.append(dieField)
+        picker.append(trigger, list, die)
+        dieField.append(dieIcon, picker)
+        dieLabel.append(dieCaption, dieField)
 
         const bonusLabel = document.createElement('label')
-        bonusLabel.append(
-            document.createTextNode(
-                this.localize('pf2e-creature-builder.form.manual.bonus'),
-            ),
+        const bonusCaption = document.createElement('span')
+        bonusCaption.textContent = this.localize(
+            'pf2e-creature-builder.form.manual.bonus',
         )
         const bonus = document.createElement('input')
         bonus.type = 'text'
         bonus.className = 'damage-editor-bonus'
-        bonusLabel.append(bonus)
+        bonusLabel.append(bonusCaption, bonus)
 
         const actions = document.createElement('div')
         actions.className = 'damage-editor-actions'

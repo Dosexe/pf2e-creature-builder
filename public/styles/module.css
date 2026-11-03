@@ -532,15 +532,16 @@ summary.collapsibleHeader {
 }
 
 .creatureBuilderFormModern .damage-editor label {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1rem 2.7rem;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.4rem;
+    column-gap: 0.35rem;
     font-size: 11px;
 }
 
 .creatureBuilderFormModern .damage-editor input[type="text"] {
     box-sizing: border-box;
+    grid-column: 3;
     width: 2.7rem;
     height: var(--form-field-height, 1.6rem);
     min-height: 0;
@@ -552,10 +553,21 @@ summary.collapsibleHeader {
 }
 
 .creatureBuilderFormModern .damage-editor-die-field {
+    display: contents;
+}
+
+.creatureBuilderFormModern .damage-editor-die-icon {
+    grid-column: 2;
+    width: 1rem;
+    font-size: 0.95rem;
+    line-height: 1;
+    text-align: center;
+}
+
+.creatureBuilderFormModern .damage-editor-die-picker {
     position: relative;
-    display: inline-flex;
-    flex: 0 0 auto;
-    width: 4.5rem;
+    grid-column: 3;
+    width: 2.7rem;
 }
 
 .creatureBuilderFormModern .damage-editor select.damage-editor-die {
@@ -572,8 +584,8 @@ summary.collapsibleHeader {
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    width: 4.5rem;
+    justify-content: center;
+    width: 2.7rem;
     height: var(--form-field-height, 1.6rem);
     margin: 0;
     padding: 0 4px;
@@ -622,7 +634,6 @@ summary.collapsibleHeader {
     background-color: color-mix(in srgb, rgb(158, 158, 158) 40%, var(--color-bg, #222));
 }
 
-.creatureBuilderFormModern .damage-editor-die-icon,
 .creatureBuilderFormModern .damage-editor-die-option i {
     width: 1rem;
     font-size: 0.95rem;

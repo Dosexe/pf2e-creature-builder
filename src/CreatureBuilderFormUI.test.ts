@@ -3684,7 +3684,9 @@ describe('Manual Input', () => {
             '.damage-editor-die-icon',
         ) as HTMLElement
         expect(dieValue.textContent).toBe('d6')
-        expect(dieValue.nextElementSibling).toBe(dieIcon)
+        expect(dieIcon.tagName).toBe('SPAN')
+        expect(dieIcon.closest('.damage-editor-die-trigger')).toBeNull()
+        expect(dieIcon.nextElementSibling?.contains(dieValue)).toBe(true)
         expect(dieIcon.className).toBe(
             'fa-light fa-dice-d6 damage-editor-die-icon',
         )
