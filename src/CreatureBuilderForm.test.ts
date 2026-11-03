@@ -2137,6 +2137,12 @@ describe('CreatureBuilderForm', () => {
                     }
                     return [
                         {
+                            name: 'speedType-land',
+                            value: 'land',
+                            getAttribute: (attr: string) =>
+                                attr === 'name' ? 'speedType-land' : null,
+                        },
+                        {
                             name: 'speedValue-land',
                             value: '25',
                             getAttribute: (attr: string) =>
@@ -2160,6 +2166,7 @@ describe('CreatureBuilderForm', () => {
 
             // biome-ignore lint/complexity/useLiteralKeys: private property
             expect(form['formUI']?.['preservedControls']).toEqual({
+                'speedType-land': 'land',
                 'speedValue-land': '25',
                 senseRange0: '30',
             })
