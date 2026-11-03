@@ -8,13 +8,15 @@ export interface CreatureSizeChoice {
  * Both systems store the same categories on `system.traits.size.value`.
  * A running world can add or replace categories through CONFIG.PF2E.actorSizes.
  */
+export const CREATURE_SIZE_FIELD = 'pf2e-creature-builder.form.size'
+
 export const FALLBACK_CREATURE_SIZES: readonly CreatureSizeChoice[] = [
-    { value: 'tiny', label: 'PF2EMONSTERMAKER.sizeTiny' },
-    { value: 'sm', label: 'PF2EMONSTERMAKER.sizeSmall' },
-    { value: 'med', label: 'PF2EMONSTERMAKER.sizeMedium' },
-    { value: 'lg', label: 'PF2EMONSTERMAKER.sizeLarge' },
-    { value: 'huge', label: 'PF2EMONSTERMAKER.sizeHuge' },
-    { value: 'grg', label: 'PF2EMONSTERMAKER.sizeGargantuan' },
+    { value: 'tiny', label: `${CREATURE_SIZE_FIELD}.tiny` },
+    { value: 'sm', label: `${CREATURE_SIZE_FIELD}.small` },
+    { value: 'med', label: `${CREATURE_SIZE_FIELD}.medium` },
+    { value: 'lg', label: `${CREATURE_SIZE_FIELD}.large` },
+    { value: 'huge', label: `${CREATURE_SIZE_FIELD}.huge` },
+    { value: 'grg', label: `${CREATURE_SIZE_FIELD}.gargantuan` },
 ]
 
 export const DEFAULT_CREATURE_SIZE = 'med'

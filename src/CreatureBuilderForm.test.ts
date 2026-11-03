@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as SpellCopyStrategies from '@/spellcasting/SpellCopyStrategies'
 import * as SpellListResolverModule from '@/spellcasting/SpellListResolver'
+import { CREATURE_SIZE_FIELD } from '@/systems/creatureSizes'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI from './CreatureBuilderFormUI'
 import {
@@ -182,23 +183,21 @@ describe('CreatureBuilderForm', () => {
 
     it('writes a creature size onto the actor', () => {
         const form = new CreatureBuilderForm(buildActor())
-        expect(form.applySize({ 'PF2EMONSTERMAKER.size': 'large' })).toEqual({
+        expect(form.applySize({ [CREATURE_SIZE_FIELD]: 'large' })).toEqual({
             'system.traits.size.value': 'lg',
         })
-        expect(form.applySize({ 'PF2EMONSTERMAKER.size': '  HUGE  ' })).toEqual(
-            {
-                'system.traits.size.value': 'huge',
-            },
-        )
+        expect(form.applySize({ [CREATURE_SIZE_FIELD]: '  HUGE  ' })).toEqual({
+            'system.traits.size.value': 'huge',
+        })
     })
 
     it('ignores a size the active system does not publish', () => {
         const form = new CreatureBuilderForm(buildActor())
-        expect(form.applySize({ 'PF2EMONSTERMAKER.size': 'colossal' })).toEqual(
+        expect(form.applySize({ [CREATURE_SIZE_FIELD]: 'colossal' })).toEqual(
             {},
         )
-        expect(form.applySize({ 'PF2EMONSTERMAKER.size': '   ' })).toEqual({})
-        expect(form.applySize({ 'PF2EMONSTERMAKER.size': 2 })).toEqual({})
+        expect(form.applySize({ [CREATURE_SIZE_FIELD]: '   ' })).toEqual({})
+        expect(form.applySize({ [CREATURE_SIZE_FIELD]: 2 })).toEqual({})
         expect(form.applySize({})).toEqual({})
     })
 
@@ -217,11 +216,11 @@ describe('CreatureBuilderForm', () => {
         try {
             const form = new CreatureBuilderForm(buildActor())
             expect(
-                form.applySize({ 'PF2EMONSTERMAKER.size': 'colossal' }),
+                form.applySize({ [CREATURE_SIZE_FIELD]: 'colossal' }),
             ).toEqual({ 'system.traits.size.value': 'colossal' })
-            expect(
-                form.applySize({ 'PF2EMONSTERMAKER.size': 'large' }),
-            ).toEqual({})
+            expect(form.applySize({ [CREATURE_SIZE_FIELD]: 'large' })).toEqual(
+                {},
+            )
         } finally {
             holder.CONFIG = previous
         }

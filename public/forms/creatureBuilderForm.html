@@ -9,7 +9,7 @@
                 </label>
                 <label class="toggle-badges-label" for="{{fieldId}}toggleManualInput">
                     <input type="checkbox" id="{{fieldId}}toggleManualInput">
-                    {{localize "PF2EMONSTERMAKER.manualInput"}}
+                    {{localize "pf2e-creature-builder.form.manualInput"}}
                 </label>
             </div>
 
@@ -44,10 +44,10 @@
 
             <div class="form-group">
                 <label for="{{fieldId}}creatureBuilderSize">
-                    {{localize "PF2EMONSTERMAKER.size"}}
+                    {{localize "pf2e-creature-builder.form.size"}}
                 </label>
                 <div class="form-fields">
-                    <select name="PF2EMONSTERMAKER.size" id="{{fieldId}}creatureBuilderSize" class="stat-select">
+                    <select name="pf2e-creature-builder.form.size" id="{{fieldId}}creatureBuilderSize" class="stat-select">
                         {{#each Sizes}}
                         <option value="{{this.value}}" {{#if (eq this.value @root.detectedSize)}}selected{{/if}}>{{localize this.label}}</option>
                         {{/each}}

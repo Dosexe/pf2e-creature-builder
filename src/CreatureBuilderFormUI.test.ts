@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs'
 import Handlebars from 'handlebars'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SpellListCollection } from '@/spellcasting/model/spellList'
-import { FALLBACK_CREATURE_SIZES } from '@/systems/creatureSizes'
+import {
+    CREATURE_SIZE_FIELD,
+    FALLBACK_CREATURE_SIZES,
+} from '@/systems/creatureSizes'
 import enLang from '../public/languages/en.json'
 import CreatureBuilderFormUI, {
     capturePreservedControls,
@@ -65,7 +68,7 @@ const setupDom = () => {
                 <option value="${Options.extreme}">extreme</option>
             </select>
             <button id="creatureBuilderResetButton" type="button">Reset</button>
-            <select id="creatureBuilderSize" name="PF2EMONSTERMAKER.size">
+            <select id="creatureBuilderSize" name="${CREATURE_SIZE_FIELD}">
                 <option value="tiny">Tiny</option>
                 <option value="sm">Small</option>
                 <option value="med">Medium</option>
@@ -271,8 +274,8 @@ describe('CreatureBuilderFormUI', () => {
             'grg',
         ])
         expect(size.value).toBe('lg')
-        expect(enLang['PF2EMONSTERMAKER.size']).toBe('Size')
-        expect(enLang['PF2EMONSTERMAKER.sizeGargantuan']).toBe('Gargantuan')
+        expect(enLang[CREATURE_SIZE_FIELD]).toBe('Size')
+        expect(enLang[`${CREATURE_SIZE_FIELD}.gargantuan`]).toBe('Gargantuan')
 
         const label = root.querySelector(
             `label[for="${fieldId}toggleBadges"]`,
@@ -3523,8 +3526,10 @@ describe('Manual Input', () => {
         const manual = source.indexOf('toggleManualInput')
         expect(bonuses).toBeGreaterThan(-1)
         expect(manual).toBeGreaterThan(bonuses)
-        expect(source).toContain('PF2EMONSTERMAKER.manualInput')
-        expect(enLang['PF2EMONSTERMAKER.manualInput']).toBe('Manual Input')
+        expect(source).toContain('pf2e-creature-builder.form.manualInput')
+        expect(enLang['pf2e-creature-builder.form.manualInput']).toBe(
+            'Manual Input',
+        )
     })
 
     it('shows Manual Input only while Show Bonuses is on', () => {

@@ -6,6 +6,7 @@ import type {
 import { createSpellCopyStrategy } from '@/spellcasting/SpellCopyStrategies'
 import { resolveAndApplySpellList } from '@/spellcasting/SpellListResolver'
 import {
+    CREATURE_SIZE_FIELD,
     canonicalCreatureSize,
     DEFAULT_CREATURE_SIZE,
 } from '@/systems/creatureSizes'
@@ -495,7 +496,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
     }
 
     applySize(formData: object) {
-        const size = canonicalCreatureSize(formData[`${KeyPrefix}.size`])
+        const size = canonicalCreatureSize(formData[CREATURE_SIZE_FIELD])
         if (!size) return {}
         return { 'system.traits.size.value': size }
     }
