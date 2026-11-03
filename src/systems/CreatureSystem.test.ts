@@ -58,6 +58,18 @@ describe('CreatureSystem', () => {
         expect(new Sf2eCreatureSystem().spellLists()).toEqual({})
     })
 
+    it('adds Starfinder senses on top of the shared list', () => {
+        const pathfinder = new Pf2eCreatureSystem()
+        const starfinder = new Sf2eCreatureSystem()
+        expect(pathfinder.extraSenseTypes()).toEqual([])
+        expect(pathfinder.sensesWithFlexibleAcuity()).toEqual([])
+        expect(pathfinder.maxSenseCopies('echolocation')).toBe(1)
+        expect(starfinder.extraSenseTypes()).toEqual(['emotionsense'])
+        expect(starfinder.sensesWithFlexibleAcuity()).toEqual(['echolocation'])
+        expect(starfinder.maxSenseCopies('echolocation')).toBe(2)
+        expect(starfinder.maxSenseCopies('scent')).toBe(1)
+    })
+
     it('adds Computers and Piloting on Starfinder', () => {
         const system = new Sf2eCreatureSystem()
         expect(system.skills()).toContain(Statistics.computers)

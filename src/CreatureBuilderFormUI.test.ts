@@ -288,6 +288,12 @@ describe('CreatureBuilderFormUI', () => {
             'Land',
         )
         expect(landValue.value).toBe('25')
+        expect(
+            movement.querySelector('.speed-add')?.getAttribute('aria-haspopup'),
+        ).toBeNull()
+        expect(
+            movement.querySelector('.speed-type-menu')?.getAttribute('role'),
+        ).toBeNull()
 
         const generateAttacks = root.querySelector(
             `#${CSS.escape(`${fieldId}generateAttacksFromWeapons`)}`,
@@ -2950,6 +2956,13 @@ describe('movement and senses controls', () => {
         document.getElementById('addSpeedButton')?.click()
         const menu = document.getElementById('speedTypeMenu') as HTMLElement
         expect(menu.hidden).toBe(false)
+        expect(menu.getAttribute('role')).toBeNull()
+        expect(menu.querySelector('[role="option"]')).toBeNull()
+        expect(
+            document
+                .getElementById('addSpeedButton')
+                ?.getAttribute('aria-haspopup'),
+        ).toBeNull()
         expect(
             Array.from(menu.querySelectorAll('button')).map(
                 (button) => button.dataset.speedType,
@@ -3033,6 +3046,14 @@ describe('movement and senses controls', () => {
         ) as HTMLSelectElement
         expect(scentRange.value).toBe('30')
         expect(scentAcuity.value).toBe('vague')
+        expect(scentAcuity.getAttribute('aria-label')).toBe('Sense acuity')
+        expect(
+            rows[0]?.querySelector('.sense-type')?.getAttribute('aria-label'),
+        ).toBe('Sense')
+        const removeSense = rows[1]?.querySelector('.creatureBuilderRemoveIcon')
+        expect(removeSense?.tagName).toBe('BUTTON')
+        expect((removeSense as HTMLButtonElement).type).toBe('button')
+        expect(removeSense?.getAttribute('aria-label')).toBe('Remove sense')
         expect(scentAcuity.nextElementSibling).toBe(
             rows[1]?.querySelector('.sense-range-field'),
         )
@@ -3221,6 +3242,81 @@ describe('movement and senses controls', () => {
         document.querySelector('.sense-entry')?.remove()
         add.remove()
         ui.addSense()
+        ui.destroy()
+    })
+
+    it('adds Starfinder emotionsense and a second echolocation', () => {
+        mountMovement()
+        ;(window as any).game.system = { id: 'sf2e' }
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+        ui.addSense({
+            type: 'echolocation',
+            acuity: 'precise',
+            range: 30,
+        })
+        ui.addSense({
+            type: 'echolocation',
+            acuity: 'imprecise',
+            range: 60,
+        })
+
+        const rows = Array.from(document.querySelectorAll('.sense-entry'))
+        expect(rows).toHaveLength(2)
+        expect(
+            rows.map(
+                (row) =>
+                    (row.querySelector('.sense-acuity') as HTMLSelectElement)
+                        .value,
+            ),
+        ).toEqual(['precise', 'imprecise'])
+        expect(
+            rows.map(
+                (row) =>
+                    (
+                        row.querySelector(
+                            'input[name^="senseRange"]',
+                        ) as HTMLInputElement
+                    ).value,
+            ),
+        ).toEqual(['30', '60'])
+        for (const row of rows) {
+            const type = row.querySelector('.sense-type') as HTMLSelectElement
+            expect(type.value).toBe('echolocation')
+            expect(
+                Array.from(type.options).some(
+                    (option) => option.value === 'emotionsense',
+                ),
+            ).toBe(true)
+        }
+
+        ui.addSense({ type: 'emotionsense' })
+        const emotion = Array.from(
+            document.querySelectorAll('.sense-entry'),
+        ).find(
+            (row) =>
+                (row.querySelector('.sense-type') as HTMLSelectElement)
+                    .value === 'emotionsense',
+        )
+        if (!emotion) throw new Error('missing emotionsense row')
+        expect(
+            (emotion.querySelector('.sense-acuity') as HTMLSelectElement).value,
+        ).toBe('imprecise')
+        expect(
+            (
+                emotion.querySelector(
+                    'input[name^="senseRange"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('30')
+
+        ui.addSense({ type: 'echolocation', acuity: 'vague', range: 10 })
+        expect(
+            Array.from(document.querySelectorAll('.sense-type')).filter(
+                (select) =>
+                    (select as HTMLSelectElement).value === 'echolocation',
+            ),
+        ).toHaveLength(2)
         ui.destroy()
     })
 

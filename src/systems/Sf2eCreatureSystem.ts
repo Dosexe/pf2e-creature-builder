@@ -101,6 +101,21 @@ export class Sf2eCreatureSystem extends CreatureSystem {
         return []
     }
 
+    /** Emotionsense is a Starfinder sense. It is not part of the Pathfinder list. */
+    override extraSenseTypes(): readonly string[] {
+        return ['emotionsense']
+    }
+
+    /** Starfinder echolocation can be imprecise as well as precise. */
+    override sensesWithFlexibleAcuity(): readonly string[] {
+        return ['echolocation']
+    }
+
+    /** A Starfinder creature can have two echolocation senses at different ranges. */
+    override maxSenseCopies(type: string): number {
+        return type === 'echolocation' ? 2 : 1
+    }
+
     override adjustAbilityModifier(
         level: string,
         option: string,

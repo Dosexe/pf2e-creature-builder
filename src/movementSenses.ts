@@ -1,3 +1,5 @@
+import { getCreatureSystem } from '@/systems/getCreatureSystem'
+
 export const MOVEMENT_TYPES = [
     'land',
     'fly',
@@ -24,7 +26,7 @@ export const SENSE_ACUITIES = ['precise', 'imprecise', 'vague'] as const
 
 export type SenseAcuity = (typeof SENSE_ACUITIES)[number]
 
-/** Official PF2E v14 sense types. Runtime prefers CONFIG.PF2E.senses when present. */
+/** Shared PF2E v14 sense types. Starfinder additions come from the active creature system. Runtime prefers CONFIG.PF2E.senses, then appends those additions. */
 export const FALLBACK_SENSE_TYPES = [
     'bloodsense',
     'darkvision',
@@ -157,7 +159,14 @@ export function acuityLabel(acuity: SenseAcuity): string {
     )
 }
 
+export function senseCopyLimit(type: string): number {
+    return getCreatureSystem().maxSenseCopies(type)
+}
+
 export function mandatoryAcuity(type: string): SenseAcuity | null {
+    if (getCreatureSystem().sensesWithFlexibleAcuity().includes(type)) {
+        return null
+    }
     return SENSES_WITH_MANDATORY_ACUITIES[type] ?? null
 }
 
@@ -174,26 +183,42 @@ export function senseChoices(): SenseChoice[] {
     const fromSystem = Object.entries(configured ?? {}).flatMap(
         ([slug, label]) => {
             if (!slug || typeof label !== 'string') return []
-            return [
-                {
-                    slug,
-                    label:
-                        gameLocalize(label) ??
-                        gameLocalize(
-                            `pf2e-creature-builder.form.movement.sense.${slug}`,
-                        ) ??
-                        titleFromSlug(slug),
-                },
-            ]
+            return [senseChoice(slug, label)]
         },
     )
-    if (fromSystem.length > 0) return fromSystem
-    return FALLBACK_SENSE_TYPES.map((slug) => ({
+    const base =
+        fromSystem.length > 0
+            ? fromSystem
+            : FALLBACK_SENSE_TYPES.map((slug) => senseChoice(slug))
+    return appendSystemSenses(base)
+}
+
+function senseChoice(slug: string, configuredLabel?: string): SenseChoice {
+    const fromConfig = configuredLabel ? gameLocalize(configuredLabel) : null
+    return {
         slug,
         label:
+            fromConfig ??
             gameLocalize(`pf2e-creature-builder.form.movement.sense.${slug}`) ??
             titleFromSlug(slug),
-    }))
+    }
+}
+
+function appendSystemSenses(choices: SenseChoice[]): SenseChoice[] {
+    const present = new Set(choices.map((choice) => choice.slug))
+    for (const slug of getCreatureSystem().extraSenseTypes()) {
+        if (present.has(slug)) continue
+        present.add(slug)
+        choices.push(senseChoice(slug))
+    }
+    return choices
+}
+
+function takeSenseType(type: string, counts: Map<string, number>): boolean {
+    const count = counts.get(type) ?? 0
+    if (count >= senseCopyLimit(type)) return false
+    counts.set(type, count + 1)
+    return true
 }
 
 function normalizeSpeed(value: unknown): number {
@@ -249,12 +274,11 @@ function otherSpeedsFromActor(value: unknown): SpeedChip[] {
 export function sensesFromActor(senses: unknown): SenseDraft[] {
     if (!Array.isArray(senses)) return []
     const drafts: SenseDraft[] = []
-    const seen = new Set<string>()
+    const counts = new Map<string, number>()
     for (const entry of senses) {
         const record = asRecord(entry) as SenseRecord | null
         const type = typeof record?.type === 'string' ? record.type.trim() : ''
-        if (!type || seen.has(type)) continue
-        seen.add(type)
+        if (!type || !takeSenseType(type, counts)) continue
         drafts.push(senseDraftFromParts(type, record?.acuity, record?.range))
     }
     return drafts
@@ -310,11 +334,10 @@ export function sensesFromControls(
         .map((key) => key.slice('senseType'.length))
         .sort((a, b) => Number(a) - Number(b))
     const drafts: SenseDraft[] = []
-    const seen = new Set<string>()
+    const counts = new Map<string, number>()
     for (const id of ids) {
         const type = controls[`senseType${id}`]?.trim() ?? ''
-        if (!type || seen.has(type)) continue
-        seen.add(type)
+        if (!type || !takeSenseType(type, counts)) continue
         drafts.push(
             senseDraftFromParts(
                 type,
@@ -350,12 +373,11 @@ export function sensesFromForm(formData: object): SenseDraft[] {
         .map((key) => key.slice('senseType'.length))
         .sort((a, b) => Number(a) - Number(b))
     const drafts: SenseDraft[] = []
-    const seen = new Set<string>()
+    const counts = new Map<string, number>()
     for (const id of ids) {
         const rawType = data[`senseType${id}`]
         const type = typeof rawType === 'string' ? rawType.trim() : ''
-        if (!type || seen.has(type)) continue
-        seen.add(type)
+        if (!type || !takeSenseType(type, counts)) continue
         drafts.push(
             senseDraftFromParts(
                 type,

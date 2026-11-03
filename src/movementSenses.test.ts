@@ -150,6 +150,100 @@ describe('movement and sense rules', () => {
         expect(mandatoryAcuity('infrared-vision')).toBe('precise')
         expect(mandatoryAcuity('scent')).toBeNull()
         expect(mandatoryAcuity('tremorsense')).toBeNull()
+        expect(
+            senseChoices().some((choice) => choice.slug === 'emotionsense'),
+        ).toBe(false)
+    })
+
+    it('adds Starfinder senses without changing the Pathfinder rules', () => {
+        ;(globalThis as { game?: unknown }).game = { system: { id: 'sf2e' } }
+        expect(senseChoices().map((choice) => choice.slug)).toEqual([
+            ...FALLBACK_SENSE_TYPES,
+            'emotionsense',
+        ])
+        expect(mandatoryAcuity('echolocation')).toBeNull()
+        expect(mandatoryAcuity('infrared-vision')).toBe('precise')
+        expect(
+            senseToActor({
+                type: 'echolocation',
+                acuity: 'imprecise',
+                range: 60,
+            }),
+        ).toEqual({
+            type: 'echolocation',
+            acuity: 'imprecise',
+            range: 60,
+        })
+        expect(senseToActor({ type: 'emotionsense' })).toEqual({
+            type: 'emotionsense',
+            acuity: 'imprecise',
+            range: 30,
+        })
+        expect(
+            sensesFromActor([
+                { type: 'echolocation', acuity: 'precise', range: 30 },
+                { type: 'echolocation', acuity: 'imprecise', range: 60 },
+                { type: 'echolocation', acuity: 'vague', range: 10 },
+                { type: 'darkvision' },
+                { type: 'darkvision' },
+            ]),
+        ).toEqual([
+            { type: 'echolocation', acuity: 'precise', range: 30 },
+            { type: 'echolocation', acuity: 'imprecise', range: 60 },
+            { type: 'darkvision' },
+        ])
+        expect(
+            sensesFromForm({
+                senseType0: 'echolocation',
+                senseAcuity0: 'precise',
+                senseRange0: 30,
+                senseType1: 'echolocation',
+                senseAcuity1: 'imprecise',
+                senseRange1: 60,
+                senseType2: 'echolocation',
+                senseRange2: 10,
+            }).map(senseToActor),
+        ).toEqual([
+            { type: 'echolocation', acuity: 'precise', range: 30 },
+            { type: 'echolocation', acuity: 'imprecise', range: 60 },
+        ])
+        expect(
+            sensesFromControls({
+                sensesInitialized: 'true',
+                senseType0: 'echolocation',
+                senseAcuity0: 'precise',
+                senseRange0: '30',
+                senseType1: 'echolocation',
+                senseAcuity1: 'imprecise',
+                senseRange1: '60',
+            }),
+        ).toEqual([
+            { type: 'echolocation', acuity: 'precise', range: 30 },
+            { type: 'echolocation', acuity: 'imprecise', range: 60 },
+        ])
+        ;(globalThis as { CONFIG?: unknown }).CONFIG = {
+            PF2E: {
+                senses: {
+                    darkvision: 'PF2E.Sense.Darkvision',
+                    emotionsense: 'PF2E.Sense.Emotionsense',
+                },
+            },
+        }
+        ;(
+            globalThis as {
+                game?: {
+                    system?: { id: string }
+                    i18n?: { localize: (key: string) => string }
+                }
+            }
+        ).game = {
+            system: { id: 'sf2e' },
+            i18n: { localize: (key: string) => key },
+        }
+        expect(senseChoices().map((choice) => choice.slug)).toEqual([
+            'darkvision',
+            'emotionsense',
+        ])
     })
 
     it('reads actor senses and drops duplicates and inapplicable fields', () => {

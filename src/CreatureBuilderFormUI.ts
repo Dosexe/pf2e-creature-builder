@@ -21,6 +21,7 @@ import {
     SPEED_MENU_ORDER,
     type SpeedChip,
     senseChoices,
+    senseCopyLimit,
     senseHasRange,
     sensesFromControls,
     speedLabel,
@@ -1198,7 +1199,6 @@ class CreatureBuilderFormUI {
             option.type = 'button'
             option.className = 'speed-type-option'
             option.dataset.speedType = type
-            option.setAttribute('role', 'option')
             option.textContent = speedLabel(type)
             option.addEventListener('click', () => {
                 this.addSpeedChip(type, DEFAULT_LAND_SPEED, true)
@@ -1232,12 +1232,14 @@ class CreatureBuilderFormUI {
     public addSense(initial?: SenseDraft): void {
         const container = this.queryById('sensesContainer')
         if (!container) return
-        const used = this.selectedSenseTypes()
+        const used = this.senseTypeCounts()
         const choices = senseChoices()
         const type =
-            initial?.type && !used.has(initial.type)
+            initial?.type && this.senseTypeAvailable(initial.type, used)
                 ? initial.type
-                : choices.find((choice) => !used.has(choice.slug))?.slug
+                : choices.find((choice) =>
+                      this.senseTypeAvailable(choice.slug, used),
+                  )?.slug
         if (!type) return
 
         const id = this.senseCounter++
@@ -1248,17 +1250,27 @@ class CreatureBuilderFormUI {
         const select = document.createElement('select')
         select.name = `senseType${id}`
         select.className = 'stat-select sense-type'
+        select.setAttribute(
+            'aria-label',
+            this.movementText(
+                'pf2e-creature-builder.form.movement.sense-name',
+                'Sense',
+            ),
+        )
         select.addEventListener('change', () => {
             this.syncSenseFields(row)
             this.refreshSenseOptions()
         })
 
-        const remove = document.createElement('span')
-        remove.className = 'creatureBuilderRemoveIcon fa-solid fa-fw fa-trash'
-        remove.title = this.movementText(
+        const removeLabel = this.movementText(
             'pf2e-creature-builder.form.movement.remove-sense',
             'Remove sense',
         )
+        const remove = document.createElement('button')
+        remove.type = 'button'
+        remove.className = 'creatureBuilderRemoveIcon fa-solid fa-fw fa-trash'
+        remove.title = removeLabel
+        remove.setAttribute('aria-label', removeLabel)
         remove.addEventListener('click', () => {
             row.remove()
             this.refreshSenseOptions()
@@ -1282,14 +1294,23 @@ class CreatureBuilderFormUI {
         select.value = type
     }
 
-    private selectedSenseTypes(): Set<string> {
+    private senseTypeCounts(): Map<string, number> {
+        const counts = new Map<string, number>()
         const selects =
             this.queryById('sensesContainer')?.querySelectorAll('.sense-type')
-        return new Set(
-            Array.from(selects ?? [])
-                .map((select) => (select as HTMLSelectElement).value)
-                .filter((value) => value),
-        )
+        for (const select of Array.from(selects ?? [])) {
+            const type = (select as HTMLSelectElement).value
+            if (!type) continue
+            counts.set(type, (counts.get(type) ?? 0) + 1)
+        }
+        return counts
+    }
+
+    private senseTypeAvailable(
+        type: string,
+        counts: Map<string, number>,
+    ): boolean {
+        return (counts.get(type) ?? 0) < senseCopyLimit(type)
     }
 
     private refreshSenseOptions(): void {
@@ -1312,9 +1333,12 @@ class CreatureBuilderFormUI {
             const current = selected[index] ?? ''
             select.replaceChildren()
             for (const choice of choices) {
-                if (choice.slug !== current && selected.includes(choice.slug)) {
-                    continue
-                }
+                const total = selected.filter(
+                    (value) => value === choice.slug,
+                ).length
+                const usedElsewhere =
+                    choice.slug === current ? total - 1 : total
+                if (usedElsewhere >= senseCopyLimit(choice.slug)) continue
                 const option = document.createElement('option')
                 option.value = choice.slug
                 option.textContent = choice.label
@@ -1330,8 +1354,14 @@ class CreatureBuilderFormUI {
         }
         const add = this.queryById<HTMLButtonElement>('addSenseButton')
         if (!add) return
-        const used = new Set(selected.filter((value) => value))
-        add.disabled = choices.every((choice) => used.has(choice.slug))
+        const counts = new Map<string, number>()
+        for (const type of selected) {
+            if (!type) continue
+            counts.set(type, (counts.get(type) ?? 0) + 1)
+        }
+        add.disabled = choices.every(
+            (choice) => !this.senseTypeAvailable(choice.slug, counts),
+        )
     }
 
     private syncSenseFields(row: HTMLElement, initial?: SenseDraft): void {
@@ -1396,6 +1426,13 @@ class CreatureBuilderFormUI {
         const select = document.createElement('select')
         select.name = `senseAcuity${id}`
         select.className = 'stat-select sense-acuity'
+        select.setAttribute(
+            'aria-label',
+            this.movementText(
+                'pf2e-creature-builder.form.movement.sense-acuity',
+                'Sense acuity',
+            ),
+        )
         for (const choice of SENSE_ACUITIES) {
             const option = document.createElement('option')
             option.value = choice
