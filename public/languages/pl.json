@@ -108,6 +108,12 @@
     "pf2e-creature-builder.form.size.large": "Duży",
     "pf2e-creature-builder.form.size.huge": "Wielki",
     "pf2e-creature-builder.form.size.gargantuan": "Gigantyczny",
+    "pf2e-creature-builder.form.manualInput": "Ręczne wprowadzanie",
+    "pf2e-creature-builder.form.manual.dice": "Kości",
+    "pf2e-creature-builder.form.manual.die": "Kość",
+    "pf2e-creature-builder.form.manual.bonus": "Premia",
+    "pf2e-creature-builder.form.manual.apply": "Zastosuj",
+    "pf2e-creature-builder.form.manual.cancel": "Anuluj",
 
     "PF2EMONSTERMAKER.traits": "Cechy",
     "PF2EMONSTERMAKER.traitsPlaceholder": "Wpisz cechę i naciśnij Enter",

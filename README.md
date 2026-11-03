@@ -92,6 +92,10 @@ INT [Low v]     +1    WIS [Moderate v] +4 CHA [High v]     +5
 
 Use the **Show Bonuses** checkbox at the top of the form to hide or show the bonus badges.
 
+### Size
+
+**Size** sits with the name and level. The built-in choices are Tiny, Small, Medium, Large, Huge, and Gargantuan. When the running system publishes `CONFIG.PF2E.actorSizes`, that list is used instead. Submit writes the chosen size onto the creature.
+
 ### Manual Input
 
 **Manual Input** appears next to **Show Bonuses** while bonuses are shown. Turn it on to edit a badge: click it, type a value, then leave the field or press Enter. Escape puts the previous value back. Text that is not a number is ignored, and the previous value stays.

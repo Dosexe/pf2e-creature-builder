@@ -2,6 +2,7 @@
     "id": "pf2e-creature-builder",
     "title": "PF2E & SF2E Creature Builder",
     "description": "A module that allows you to make an NPC/Monster from scratch using Creature Building Rules. To use create a new NPC sheet and use the Creature Builder button located in top-right corner of the sheet.",
+    "summary": "Build Pathfinder 2e and Starfinder 2e NPCs from official creature-building roadmaps or an existing creature, with live stat preview, spellcasting, strikes, traits, and editable bonuses.",
     "version": "REPLACED AUTOMATICALLY",
     "authors": [{"name": "dosexe"}],
     "compatibility": {

@@ -9,10 +9,12 @@ All notable changes to the PF2E Creature Builder module are documented here.
 ### Added
 
 - **Manual Input** — With **Show Bonuses** on, a Manual Input checkbox edits the bonus badges. `5` and `+5` both save as `+5`. Only a leading minus is negative. Hit Points, Armor Class, and spell DC stay unsigned.
-- Strike damage opens an editor for dice count, die (`d4` through `d12`), and bonus.
+- Strike damage opens an editor for dice count, die (`d4` through `d12`), and bonus. Each die in the list has a dice icon, and the chosen icon sits to the left of the field. The panel stays inside the window and closes if the form scrolls.
 - Lore skills and extra attacks have the same badges. A saved value snaps the nearby tier to the closest creature-building option, and Submit uses the typed value until the level changes or a roadmap replaces that stat. Turning Manual Input or Show Bonuses off, or Reset, clears those edits.
 - Changing the level replaces a typed value with the detected tier's table value at the new level. A roadmap still clears edits on the stats it sets. Lore skills and extra attacks keep their detected tiers and scale to that tier's value for the current level.
 - Typed values and the Manual Input checkbox stay when the form re-renders.
+- **Size** — A Size menu sets the creature size. The built-in choices are Tiny, Small, Medium, Large, Huge, and Gargantuan. When `CONFIG.PF2E.actorSizes` is present, that list is used instead.
+
 
 ## 3.0.0 SF2e support
 
@@ -20,7 +22,7 @@ All notable changes to the PF2E Creature Builder module are documented here.
 
 - **Starfinder 2e** — The module also runs on `sf2e` 1.0.0 or newer. Creature-role roadmaps are shared. Class roadmaps are Envoy, Mystic, Operative, Solarian, Soldier (Class), and Witchwarper. Skills add Computers and Piloting.
 - **Extreme hit points** — Hit Points gain an `Extreme` option, one step above `High`. A creature above the High band is detected as Extreme.
-- 
+
 ### Fixed
 
 - A creature saved from the builder sets its prototype token name to the creature name.

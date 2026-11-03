@@ -108,6 +108,12 @@
     "pf2e-creature-builder.form.size.large": "大型",
     "pf2e-creature-builder.form.size.huge": "超大型",
     "pf2e-creature-builder.form.size.gargantuan": "巨型",
+    "pf2e-creature-builder.form.manualInput": "手动输入",
+    "pf2e-creature-builder.form.manual.dice": "骰子",
+    "pf2e-creature-builder.form.manual.die": "骰型",
+    "pf2e-creature-builder.form.manual.bonus": "加值",
+    "pf2e-creature-builder.form.manual.apply": "应用",
+    "pf2e-creature-builder.form.manual.cancel": "取消",
 
     "PF2EMONSTERMAKER.traits": "特性",
     "PF2EMONSTERMAKER.traitsPlaceholder": "输入特性后按回车",

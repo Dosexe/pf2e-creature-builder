@@ -3731,52 +3731,41 @@ describe('Manual Input', () => {
         ui.destroy()
     })
 
-    it('keeps the damage editor inside the viewport', () => {
+    it('keeps the damage editor inside the form window', () => {
         const { ui, manual, damageBadge } = start()
         enableManual(manual)
-        const previousWidth = window.innerWidth
-        const previousHeight = window.innerHeight
         const previousRect = HTMLElement.prototype.getBoundingClientRect
-        Object.defineProperty(window, 'innerWidth', {
-            configurable: true,
-            value: 1000,
-        })
-        Object.defineProperty(window, 'innerHeight', {
-            configurable: true,
-            value: 800,
-        })
-        let anchor = { left: 12, bottom: 30 }
+        const frame = { left: 100, top: 50, width: 500, height: 400 }
+        let anchor = { left: 120, bottom: 80 }
         let panel = { width: 100, height: 80 }
+        const box = (
+            left: number,
+            top: number,
+            width: number,
+            height: number,
+        ) =>
+            ({
+                x: left,
+                y: top,
+                left,
+                top,
+                right: left + width,
+                bottom: top + height,
+                width,
+                height,
+                toJSON() {
+                    return {}
+                },
+            }) as DOMRect
         HTMLElement.prototype.getBoundingClientRect = function () {
             if (this.classList.contains('damage-editor')) {
-                return {
-                    x: 0,
-                    y: 0,
-                    left: 0,
-                    top: 0,
-                    right: panel.width,
-                    bottom: panel.height,
-                    width: panel.width,
-                    height: panel.height,
-                    toJSON() {
-                        return {}
-                    },
-                } as DOMRect
+                return box(0, 0, panel.width, panel.height)
+            }
+            if (this === document.body) {
+                return box(frame.left, frame.top, frame.width, frame.height)
             }
             if (this === damageBadge) {
-                return {
-                    x: anchor.left,
-                    y: 0,
-                    left: anchor.left,
-                    top: 0,
-                    right: anchor.left + 40,
-                    bottom: anchor.bottom,
-                    width: 40,
-                    height: 20,
-                    toJSON() {
-                        return {}
-                    },
-                } as DOMRect
+                return box(anchor.left, 0, 40, anchor.bottom)
             }
             return previousRect.call(this)
         }
@@ -3787,29 +3776,21 @@ describe('Manual Input', () => {
                 '.damage-editor',
             ) as HTMLElement
             expect(editor.hidden).toBe(false)
-            expect(editor.style.left).toBe('12px')
-            expect(editor.style.top).toBe('34px')
+            expect(editor.style.left).toBe('120px')
+            expect(editor.style.top).toBe('84px')
 
-            anchor = { left: 900, bottom: 720 }
+            anchor = { left: 550, bottom: 420 }
             panel = { width: 200, height: 160 }
             damageBadge.click()
-            expect(editor.style.left).toBe('800px')
-            expect(editor.style.top).toBe('640px')
+            expect(editor.style.left).toBe('400px')
+            expect(editor.style.top).toBe('290px')
 
             panel = { width: 2000, height: 2000 }
             damageBadge.click()
-            expect(editor.style.left).toBe('0px')
-            expect(editor.style.top).toBe('0px')
+            expect(editor.style.left).toBe('100px')
+            expect(editor.style.top).toBe('50px')
         } finally {
             HTMLElement.prototype.getBoundingClientRect = previousRect
-            Object.defineProperty(window, 'innerWidth', {
-                configurable: true,
-                value: previousWidth,
-            })
-            Object.defineProperty(window, 'innerHeight', {
-                configurable: true,
-                value: previousHeight,
-            })
             ui.destroy()
         }
     })

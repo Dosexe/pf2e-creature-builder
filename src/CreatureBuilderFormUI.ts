@@ -2586,12 +2586,13 @@ class CreatureBuilderFormUI {
 
     private placeDamageEditor(editor: HTMLElement, badge: HTMLElement): void {
         editor.hidden = false
+        const frame = this.root.getBoundingClientRect()
         const anchor = badge.getBoundingClientRect()
         const panel = editor.getBoundingClientRect()
-        const maxLeft = Math.max(0, window.innerWidth - panel.width)
-        const maxTop = Math.max(0, window.innerHeight - panel.height)
-        const left = Math.min(Math.max(0, anchor.left), maxLeft)
-        const top = Math.min(Math.max(0, anchor.bottom + 4), maxTop)
+        const maxLeft = Math.max(frame.left, frame.right - panel.width)
+        const maxTop = Math.max(frame.top, frame.bottom - panel.height)
+        const left = Math.min(Math.max(frame.left, anchor.left), maxLeft)
+        const top = Math.min(Math.max(frame.top, anchor.bottom + 4), maxTop)
         editor.style.left = `${left}px`
         editor.style.top = `${top}px`
     }
