@@ -142,4 +142,25 @@ export abstract class CreatureSystem {
     protected fallbackTraitSuggestions(): string[] {
         return FALLBACK_CREATURE_TRAITS
     }
+
+    /**
+     * Sense slugs added after the shared Pathfinder list.
+     * The base list is not replaced.
+     */
+    extraSenseTypes(): readonly string[] {
+        return []
+    }
+
+    /**
+     * Senses whose acuity stays editable on this system.
+     * The shared rules still fix acuity for every other sense.
+     */
+    sensesWithFlexibleAcuity(): readonly string[] {
+        return []
+    }
+
+    /** How many rows of one sense type this system keeps. */
+    maxSenseCopies(_type: string): number {
+        return 1
+    }
 }

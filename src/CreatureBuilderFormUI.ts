@@ -8,6 +8,25 @@ import type { RoadmapCollection } from '@/Keys'
 import type { SpellListCollection } from '@/spellcasting/model/spellList'
 import { getCreatureSystem } from '@/systems/getCreatureSystem'
 import { statisticValues } from '@/Values'
+import {
+    acuityLabel,
+    DEFAULT_LAND_SPEED,
+    DEFAULT_SENSE_RANGE,
+    isMovementType,
+    type MovementType,
+    mandatoryAcuity,
+    SENSE_ACUITIES,
+    type SenseAcuity,
+    type SenseDraft,
+    SPEED_MENU_ORDER,
+    type SpeedChip,
+    senseChoices,
+    senseCopyLimit,
+    senseHasRange,
+    sensesFromControls,
+    speedLabel,
+    speedsFromControls,
+} from './movementSenses'
 
 interface StatisticEntry {
     name: string
@@ -47,6 +66,8 @@ interface CreatureBuilderFormConfig {
     detectedTraits: string[]
     detectedLoreSkills: LoreSkill[]
     detectedAttacks?: DetectedAttack[]
+    detectedSpeeds?: SpeedChip[]
+    detectedSenses?: SenseDraft[]
     actorLevel: string
     droppedItems?: Record<string, unknown>[]
     root: HTMLElement
@@ -68,6 +89,8 @@ class CreatureBuilderFormUI {
     private readonly detectedTraits: string[]
     private readonly detectedLoreSkills: LoreSkill[]
     private readonly detectedAttacks: DetectedAttack[]
+    private readonly detectedSpeeds: SpeedChip[]
+    private readonly detectedSenses: SenseDraft[]
     private readonly actorLevel: string
     private readonly droppedItems: Record<string, unknown>[]
     private readonly root: HTMLElement
@@ -75,6 +98,7 @@ class CreatureBuilderFormUI {
     private readonly preservedControls: Record<string, string> | null
     private loreCounter: number = 0
     private attackCounter: number = 0
+    private senseCounter: number = 0
     private traits: string[] = []
     private selectedDropdownIndex: number = -1
 
@@ -109,6 +133,10 @@ class CreatureBuilderFormUI {
         ) {
             this.hideDropdown()
         }
+        const speedsTray = this.queryById('speedsTray')
+        if (speedsTray && !speedsTray.contains(target)) {
+            this.hideSpeedMenu()
+        }
     }
 
     private readonly onWindowScroll = () => {
@@ -131,6 +159,8 @@ class CreatureBuilderFormUI {
         this.detectedTraits = config.detectedTraits
         this.detectedLoreSkills = config.detectedLoreSkills
         this.detectedAttacks = config.detectedAttacks ?? []
+        this.detectedSpeeds = config.detectedSpeeds ?? []
+        this.detectedSenses = config.detectedSenses ?? []
         this.actorLevel = String(config.actorLevel)
         this.droppedItems = config.droppedItems ?? []
         this.root = config.root
@@ -146,6 +176,7 @@ class CreatureBuilderFormUI {
         this.setupEventListeners()
         this.initializeTraits()
         this.initializeLoreSkills()
+        this.initializeMovement()
         this.restoreManualAttacks()
         this.initializeAttacks()
         this.initCollapsibleSections()
@@ -995,6 +1026,423 @@ class CreatureBuilderFormUI {
     }
 
     /**
+     * Speeds and senses are filled from the actor, then from preserved edits.
+     */
+    private initializeMovement(): void {
+        if (
+            !this.queryById('speedChips') &&
+            !this.queryById('sensesContainer')
+        ) {
+            return
+        }
+        const preservedSpeeds = speedsFromControls(this.preservedControls)
+        const speeds =
+            preservedSpeeds ??
+            (this.detectedSpeeds.length > 0
+                ? this.detectedSpeeds
+                : [{ type: 'land' as const, value: DEFAULT_LAND_SPEED }])
+        this.queryById('addSpeedButton')?.addEventListener('click', () => {
+            this.toggleSpeedMenu()
+        })
+        this.queryById('addSenseButton')?.addEventListener('click', () => {
+            this.addSense()
+        })
+        this.renderSpeeds(speeds)
+        const preservedSenses = sensesFromControls(this.preservedControls)
+        this.renderSenses(preservedSenses ?? this.detectedSenses)
+    }
+
+    private renderSpeeds(chips: SpeedChip[]): void {
+        const container = this.queryById('speedChips')
+        if (!container) return
+        container.replaceChildren()
+        const unique = chips.filter(
+            (chip, index) =>
+                chips.findIndex((other) => other.type === chip.type) === index,
+        )
+        const list =
+            unique.length > 0
+                ? unique
+                : [{ type: 'land' as const, value: DEFAULT_LAND_SPEED }]
+        for (const chip of list) {
+            this.addSpeedChip(chip.type, chip.value)
+        }
+        this.updateAddSpeedButton()
+    }
+
+    private renderSenses(senses: SenseDraft[]): void {
+        const container = this.queryById('sensesContainer')
+        if (!container) return
+        container.replaceChildren()
+        this.senseCounter = 0
+        for (const sense of senses) {
+            this.addSense(sense)
+        }
+    }
+
+    private addSpeedChip(
+        type: MovementType,
+        value: number,
+        focus = false,
+    ): void {
+        const container = this.queryById('speedChips')
+        if (
+            !container ||
+            container.querySelector(`[data-speed-type="${type}"]`)
+        ) {
+            return
+        }
+
+        const chip = document.createElement('div')
+        chip.className = 'speed-chip'
+        chip.dataset.speedType = type
+
+        const label = document.createElement('span')
+        label.className = 'speed-chip-label'
+        label.textContent = speedLabel(type)
+
+        const number = document.createElement('input')
+        number.type = 'number'
+        number.name = `speedValue-${type}`
+        number.className = 'speed-chip-value'
+        number.min = '0'
+        number.step = '1'
+        number.value = String(value)
+        number.setAttribute('aria-label', speedLabel(type))
+
+        const hidden = document.createElement('input')
+        hidden.type = 'hidden'
+        hidden.name = `speedType-${type}`
+        hidden.value = type
+
+        const remove = document.createElement('button')
+        remove.type = 'button'
+        remove.className = 'speed-chip-remove'
+        remove.textContent = '×'
+        remove.setAttribute(
+            'aria-label',
+            this.movementText(
+                'pf2e-creature-builder.form.movement.remove-speed',
+                'Remove speed',
+            ),
+        )
+        remove.addEventListener('click', () => this.removeSpeedChip(chip))
+
+        chip.append(label, number, hidden, remove)
+        container.append(chip)
+        this.updateAddSpeedButton()
+        if (focus) number.focus()
+    }
+
+    private removeSpeedChip(chip: HTMLElement): void {
+        const container = this.queryById('speedChips')
+        if (!container) return
+        if (container.querySelectorAll('.speed-chip').length <= 1) {
+            this.warnSpeedRequired()
+            return
+        }
+        chip.remove()
+        this.updateAddSpeedButton()
+    }
+
+    private warnSpeedRequired(): void {
+        const message = this.movementText(
+            'pf2e-creature-builder.form.movement.speed-required',
+            'A creature needs at least one speed.',
+        )
+        const notifications = (
+            globalThis as {
+                ui?: { notifications?: { warn?: (message: string) => void } }
+            }
+        ).ui?.notifications
+        notifications?.warn?.(message)
+    }
+
+    private movementText(key: string, fallback: string): string {
+        const i18n = (
+            window as {
+                game?: { i18n?: { localize?: (key: string) => string } }
+            }
+        ).game?.i18n
+        if (!i18n?.localize) return fallback
+        let localized: string
+        try {
+            localized = i18n.localize(key)
+        } catch {
+            return fallback
+        }
+        if (!localized || localized === key) return fallback
+        return localized
+    }
+
+    private toggleSpeedMenu(): void {
+        const menu = this.queryById('speedTypeMenu')
+        if (!menu) return
+        if (!menu.hidden) {
+            this.hideSpeedMenu()
+            return
+        }
+        this.populateSpeedMenu(menu)
+        if (menu.childElementCount === 0) return
+        menu.hidden = false
+    }
+
+    private hideSpeedMenu(): void {
+        const menu = this.queryById('speedTypeMenu')
+        if (menu) menu.hidden = true
+    }
+
+    private populateSpeedMenu(menu: HTMLElement): void {
+        menu.replaceChildren()
+        for (const type of this.availableSpeedTypes()) {
+            const option = document.createElement('button')
+            option.type = 'button'
+            option.className = 'speed-type-option'
+            option.dataset.speedType = type
+            option.textContent = speedLabel(type)
+            option.addEventListener('click', () => {
+                this.addSpeedChip(type, DEFAULT_LAND_SPEED, true)
+                this.hideSpeedMenu()
+            })
+            menu.append(option)
+        }
+    }
+
+    private availableSpeedTypes(): MovementType[] {
+        const chips =
+            this.queryById('speedChips')?.querySelectorAll('.speed-chip')
+        const used = new Set(
+            Array.from(chips ?? []).flatMap((chip) => {
+                const type = (chip as HTMLElement).dataset.speedType ?? ''
+                return isMovementType(type) ? [type] : []
+            }),
+        )
+        return SPEED_MENU_ORDER.filter((type) => !used.has(type))
+    }
+
+    private updateAddSpeedButton(): void {
+        const button = this.queryById<HTMLButtonElement>('addSpeedButton')
+        if (!button) return
+        button.disabled = this.availableSpeedTypes().length === 0
+    }
+
+    /**
+     * Add a sense row. Range and acuity appear only for senses that use them.
+     */
+    public addSense(initial?: SenseDraft): void {
+        const container = this.queryById('sensesContainer')
+        if (!container) return
+        const used = this.senseTypeCounts()
+        const choices = senseChoices()
+        const type =
+            initial?.type && this.senseTypeAvailable(initial.type, used)
+                ? initial.type
+                : choices.find((choice) =>
+                      this.senseTypeAvailable(choice.slug, used),
+                  )?.slug
+        if (!type) return
+
+        const id = this.senseCounter++
+        const row = document.createElement('div')
+        row.className = 'sense-entry'
+        row.dataset.senseId = String(id)
+
+        const select = document.createElement('select')
+        select.name = `senseType${id}`
+        select.className = 'stat-select sense-type'
+        select.setAttribute(
+            'aria-label',
+            this.movementText(
+                'pf2e-creature-builder.form.movement.sense-name',
+                'Sense',
+            ),
+        )
+        select.addEventListener('change', () => {
+            this.syncSenseFields(row)
+            this.refreshSenseOptions()
+        })
+
+        const removeLabel = this.movementText(
+            'pf2e-creature-builder.form.movement.remove-sense',
+            'Remove sense',
+        )
+        const remove = document.createElement('span')
+        remove.className = 'creatureBuilderRemoveIcon fa-solid fa-fw fa-trash'
+        remove.title = removeLabel
+        remove.addEventListener('click', () => {
+            row.remove()
+            this.refreshSenseOptions()
+        })
+
+        row.append(select, remove)
+        container.append(row)
+        this.refreshSenseOptions()
+        this.selectSenseType(select, type)
+        this.syncSenseFields(row, initial)
+        this.refreshSenseOptions()
+    }
+
+    private selectSenseType(select: HTMLSelectElement, type: string): void {
+        select.value = type
+        if (select.value === type) return
+        const option = document.createElement('option')
+        option.value = type
+        option.textContent = type
+        select.append(option)
+        select.value = type
+    }
+
+    private senseTypeCounts(): Map<string, number> {
+        const counts = new Map<string, number>()
+        const selects =
+            this.queryById('sensesContainer')?.querySelectorAll('.sense-type')
+        for (const select of Array.from(selects ?? [])) {
+            const type = (select as HTMLSelectElement).value
+            if (!type) continue
+            counts.set(type, (counts.get(type) ?? 0) + 1)
+        }
+        return counts
+    }
+
+    private senseTypeAvailable(
+        type: string,
+        counts: Map<string, number>,
+    ): boolean {
+        return (counts.get(type) ?? 0) < senseCopyLimit(type)
+    }
+
+    private refreshSenseOptions(): void {
+        const rows = Array.from(
+            this.queryById('sensesContainer')?.querySelectorAll(
+                '.sense-entry',
+            ) ?? [],
+        ) as HTMLElement[]
+        const selected = rows.map(
+            (row) =>
+                (row.querySelector('.sense-type') as HTMLSelectElement | null)
+                    ?.value ?? '',
+        )
+        const choices = senseChoices()
+        for (const [index, row] of rows.entries()) {
+            const select = row.querySelector(
+                '.sense-type',
+            ) as HTMLSelectElement | null
+            if (!select) continue
+            const current = selected[index] ?? ''
+            select.replaceChildren()
+            for (const choice of choices) {
+                const total = selected.filter(
+                    (value) => value === choice.slug,
+                ).length
+                const usedElsewhere =
+                    choice.slug === current ? total - 1 : total
+                if (usedElsewhere >= senseCopyLimit(choice.slug)) continue
+                const option = document.createElement('option')
+                option.value = choice.slug
+                option.textContent = choice.label
+                select.append(option)
+            }
+            if (current && !choices.some((choice) => choice.slug === current)) {
+                const option = document.createElement('option')
+                option.value = current
+                option.textContent = current
+                select.append(option)
+            }
+            if (current) select.value = current
+        }
+        const add = this.queryById<HTMLButtonElement>('addSenseButton')
+        if (!add) return
+        const counts = new Map<string, number>()
+        for (const type of selected) {
+            if (!type) continue
+            counts.set(type, (counts.get(type) ?? 0) + 1)
+        }
+        add.disabled = choices.every(
+            (choice) => !this.senseTypeAvailable(choice.slug, counts),
+        )
+    }
+
+    private syncSenseFields(row: HTMLElement, initial?: SenseDraft): void {
+        const type =
+            row.querySelector<HTMLSelectElement>('.sense-type')?.value ?? ''
+        const id = row.dataset.senseId ?? '0'
+        const remove = row.querySelector('.creatureBuilderRemoveIcon')
+        const acuity = row.querySelector('.sense-acuity')
+        if (mandatoryAcuity(type)) {
+            acuity?.remove()
+        } else if (!acuity) {
+            this.insertSenseAcuity(row, id, remove, initial?.acuity)
+        }
+
+        const rangeField = row.querySelector('.sense-range-field')
+        if (senseHasRange(type)) {
+            if (!rangeField) this.insertSenseRange(row, id, remove, initial)
+        } else {
+            rangeField?.remove()
+        }
+
+        const range = row.querySelector('.sense-range-field')
+        const removeIcon = row.querySelector('.creatureBuilderRemoveIcon')
+        if (range && removeIcon) row.insertBefore(range, removeIcon)
+        else if (range) row.append(range)
+    }
+
+    private insertSenseRange(
+        row: HTMLElement,
+        id: string,
+        remove: Element | null,
+        initial?: SenseDraft,
+    ): void {
+        const field = document.createElement('label')
+        field.className = 'sense-range-field'
+        const input = document.createElement('input')
+        input.type = 'number'
+        input.name = `senseRange${id}`
+        input.min = '1'
+        input.step = '1'
+        input.value = String(initial?.range ?? DEFAULT_SENSE_RANGE)
+        input.setAttribute(
+            'aria-label',
+            this.movementText(
+                'pf2e-creature-builder.form.movement.sense-range',
+                'Sense range',
+            ),
+        )
+        const unit = document.createElement('span')
+        unit.textContent = 'ft'
+        field.append(input, unit)
+        if (remove) row.insertBefore(field, remove)
+        else row.append(field)
+    }
+
+    private insertSenseAcuity(
+        row: HTMLElement,
+        id: string,
+        remove: Element | null,
+        acuity?: SenseAcuity,
+    ): void {
+        const select = document.createElement('select')
+        select.name = `senseAcuity${id}`
+        select.className = 'stat-select sense-acuity'
+        select.setAttribute(
+            'aria-label',
+            this.movementText(
+                'pf2e-creature-builder.form.movement.sense-acuity',
+                'Sense acuity',
+            ),
+        )
+        for (const choice of SENSE_ACUITIES) {
+            const option = document.createElement('option')
+            option.value = choice
+            option.textContent = acuityLabel(choice)
+            select.append(option)
+        }
+        select.value = acuity ?? 'imprecise'
+        if (remove) row.insertBefore(select, remove)
+        else row.append(select)
+    }
+
+    /**
      * Reset form to defaults
      */
     public resetToDefaults(): void {
@@ -1031,6 +1479,10 @@ class CreatureBuilderFormUI {
                 entry.remove()
             })
         this.attackCounter = 0
+
+        this.renderSpeeds([{ type: 'land', value: DEFAULT_LAND_SPEED }])
+        this.renderSenses([])
+        this.hideSpeedMenu()
 
         this.updateSpellcastingOptionsVisibility()
         this.clearDroppedItems()
@@ -1168,12 +1620,17 @@ class CreatureBuilderFormUI {
     }
 
     private strikeBadgeLabel(): string {
-        const localize = (
+        const i18n = (
             globalThis as {
                 game?: { i18n?: { localize?: (key: string) => string } }
             }
-        ).game?.i18n?.localize
-        return localize?.('PF2EMONSTERMAKER.strike') || 'Strike'
+        ).game?.i18n
+        if (!i18n?.localize) return 'Strike'
+        try {
+            return i18n.localize('PF2EMONSTERMAKER.strike') || 'Strike'
+        } catch {
+            return 'Strike'
+        }
     }
 
     private updateWeaponAttackBadges(): void {
@@ -1359,7 +1816,13 @@ class CreatureBuilderFormUI {
     }
 
     private localize(key: string): string {
-        return (window as any).game?.i18n?.localize?.(key) ?? key
+        const i18n = (window as any).game?.i18n
+        if (!i18n?.localize) return key
+        try {
+            return i18n.localize(key) ?? key
+        } catch {
+            return key
+        }
     }
 
     public updateStatPreview(): void {

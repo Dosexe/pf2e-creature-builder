@@ -266,6 +266,35 @@ describe('CreatureBuilderFormUI', () => {
         expect(addAttack).toBeTruthy()
         expect(strikes?.contains(addAttack!)).toBe(true)
 
+        const defence = root.querySelector(
+            '[data-section-name="Defence + Perception"]',
+        )
+        const movement = root.querySelector(
+            `#${CSS.escape(`${fieldId}sectionMovement`)}`,
+        ) as HTMLDetailsElement
+        expect(movement.open).toBe(false)
+        expect(
+            defence?.compareDocumentPosition(movement) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+        expect(
+            movement.compareDocumentPosition(strikes!) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+        const landValue = movement.querySelector(
+            'input[name="speedValue-land"]',
+        ) as HTMLInputElement
+        expect(movement.querySelector('.speed-chip-label')?.textContent).toBe(
+            'Land',
+        )
+        expect(landValue.value).toBe('25')
+        expect(
+            movement.querySelector('.speed-add')?.getAttribute('aria-haspopup'),
+        ).toBeNull()
+        expect(
+            movement.querySelector('.speed-type-menu')?.getAttribute('role'),
+        ).toBeNull()
+
         const generateAttacks = root.querySelector(
             `#${CSS.escape(`${fieldId}generateAttacksFromWeapons`)}`,
         ) as HTMLInputElement
@@ -2890,5 +2919,421 @@ describe('CreatureBuilderFormUI', () => {
 
             expect(badge.textContent).toBe('--')
         })
+    })
+})
+
+describe('movement and senses controls', () => {
+    const mountMovement = () => {
+        const section = document.createElement('details')
+        section.id = 'sectionMovement'
+        section.className = 'collapsibleSection'
+        section.open = true
+        section.innerHTML = `
+            <div id="speedChips"></div>
+            <div id="speedsTray">
+                <button type="button" id="addSpeedButton">+</button>
+                <div id="speedTypeMenu" hidden></div>
+            </div>
+            <div id="sensesContainer"></div>
+            <button type="button" id="addSenseButton">Add Sense</button>
+        `
+        const tray = section.querySelector('#speedsTray')
+        tray?.prepend(section.querySelector('#speedChips')!)
+        document.body.append(section)
+    }
+
+    it('adds speeds from the menu and refuses to remove the last chip', () => {
+        mountMovement()
+        const warn = vi.fn()
+        ;(globalThis as { ui?: unknown }).ui = { notifications: { warn } }
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+
+        const land = document.querySelector(
+            'input[name="speedValue-land"]',
+        ) as HTMLInputElement
+        expect(land.value).toBe('25')
+        document.getElementById('addSpeedButton')?.click()
+        const menu = document.getElementById('speedTypeMenu') as HTMLElement
+        expect(menu.hidden).toBe(false)
+        expect(menu.getAttribute('role')).toBeNull()
+        expect(menu.querySelector('[role="option"]')).toBeNull()
+        expect(
+            document
+                .getElementById('addSpeedButton')
+                ?.getAttribute('aria-haspopup'),
+        ).toBeNull()
+        expect(
+            Array.from(menu.querySelectorAll('button')).map(
+                (button) => button.dataset.speedType,
+            ),
+        ).toEqual(['fly', 'swim', 'climb', 'burrow'])
+
+        menu.querySelector<HTMLButtonElement>(
+            '[data-speed-type="fly"]',
+        )?.click()
+        const fly = document.querySelector(
+            'input[name="speedValue-fly"]',
+        ) as HTMLInputElement
+        expect(fly.value).toBe('25')
+        expect(menu.hidden).toBe(true)
+
+        document
+            .querySelector('[data-speed-type="land"] .speed-chip-remove')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(document.querySelector('[data-speed-type="land"]')).toBeNull()
+        expect(warn).not.toHaveBeenCalled()
+
+        document.getElementById('addSpeedButton')?.click()
+        expect(
+            document.querySelector('#speedTypeMenu [data-speed-type="land"]'),
+        ).toBeTruthy()
+        document.body.click()
+        expect(
+            (document.getElementById('speedTypeMenu') as HTMLElement).hidden,
+        ).toBe(true)
+
+        document
+            .querySelector('[data-speed-type="fly"] .speed-chip-remove')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(document.querySelector('[data-speed-type="fly"]')).toBeTruthy()
+        expect(warn).toHaveBeenCalledWith(
+            'A creature needs at least one speed.',
+        )
+
+        document.getElementById('addSenseButton')?.click()
+        ui.resetToDefaults()
+        expect(document.querySelectorAll('.speed-chip')).toHaveLength(1)
+        expect(
+            (
+                document.querySelector(
+                    'input[name="speedValue-land"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('25')
+        expect(document.querySelectorAll('.sense-entry')).toHaveLength(0)
+        delete (globalThis as { ui?: unknown }).ui
+    })
+
+    it('shows range and acuity only for senses that use them', () => {
+        mountMovement()
+        const ui = new CreatureBuilderFormUI(
+            buildConfig({
+                detectedSpeeds: [
+                    { type: 'fly', value: 40 },
+                    { type: 'land', value: 25 },
+                ],
+                detectedSenses: [
+                    { type: 'darkvision' },
+                    { type: 'scent', acuity: 'vague', range: 30 },
+                ],
+            }),
+        )
+        ui.initialize()
+
+        expect(
+            document.querySelector('input[name="speedValue-fly"]'),
+        ).toBeTruthy()
+        const rows = Array.from(document.querySelectorAll('.sense-entry'))
+        expect(rows).toHaveLength(2)
+        expect(rows[0]?.querySelector('.sense-range-field')).toBeNull()
+        expect(rows[0]?.querySelector('.sense-acuity')).toBeNull()
+        const scentRange = rows[1]?.querySelector(
+            'input[name^="senseRange"]',
+        ) as HTMLInputElement
+        const scentAcuity = rows[1]?.querySelector(
+            '.sense-acuity',
+        ) as HTMLSelectElement
+        expect(scentRange.value).toBe('30')
+        expect(scentAcuity.value).toBe('vague')
+        expect(scentAcuity.getAttribute('aria-label')).toBe('Sense acuity')
+        expect(
+            rows[0]?.querySelector('.sense-type')?.getAttribute('aria-label'),
+        ).toBe('Sense')
+        const removeSense = rows[1]?.querySelector('.creatureBuilderRemoveIcon')
+        expect(removeSense?.tagName).toBe('SPAN')
+        expect(removeSense?.classList.contains('fa-trash')).toBe(true)
+        expect(removeSense?.getAttribute('title')).toBe('Remove sense')
+        expect(scentAcuity.nextElementSibling).toBe(
+            rows[1]?.querySelector('.sense-range-field'),
+        )
+
+        const scentType = rows[1]?.querySelector(
+            '.sense-type',
+        ) as HTMLSelectElement
+        expect(
+            Array.from(scentType.options).some(
+                (option) => option.value === 'darkvision',
+            ),
+        ).toBe(false)
+        const scentRow = rows[1]
+        if (!scentRow) throw new Error('missing scent row')
+        scentType.value = 'echolocation'
+        scentType.dispatchEvent(new Event('change'))
+        expect(scentRow.querySelector('.sense-acuity')).toBeNull()
+        expect(
+            (
+                scentRow.querySelector(
+                    'input[name^="senseRange"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('30')
+
+        scentType.value = 'truesight'
+        scentType.dispatchEvent(new Event('change'))
+        expect(scentRow.querySelector('.sense-range-field')).toBeNull()
+        expect(scentRow.querySelector('.sense-acuity')).toBeNull()
+
+        scentType.value = 'tremorsense'
+        scentType.dispatchEvent(new Event('change'))
+        expect(
+            (scentRow.querySelector('.sense-acuity') as HTMLSelectElement)
+                .value,
+        ).toBe('imprecise')
+        expect(scentRow.querySelector('.sense-range-field')).toBeTruthy()
+
+        rows[1]
+            ?.querySelector('.creatureBuilderRemoveIcon')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(document.querySelectorAll('.sense-entry')).toHaveLength(1)
+        ui.destroy()
+    })
+
+    it('restores preserved speeds and senses instead of detected values', () => {
+        mountMovement()
+        const ui = new CreatureBuilderFormUI(
+            buildConfig({
+                detectedSpeeds: [{ type: 'land', value: 25 }],
+                detectedSenses: [{ type: 'darkvision' }],
+                preservedControls: {
+                    sensesInitialized: 'true',
+                    'speedType-swim': 'swim',
+                    'speedValue-swim': '15',
+                    senseType0: 'wavesense',
+                    senseAcuity0: 'precise',
+                    senseRange0: '20',
+                },
+            }),
+        )
+        ui.initialize()
+
+        expect(document.querySelector('[data-speed-type="land"]')).toBeNull()
+        expect(
+            (
+                document.querySelector(
+                    'input[name="speedValue-swim"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('15')
+        const type = document.querySelector('.sense-type') as HTMLSelectElement
+        const acuity = document.querySelector(
+            '.sense-acuity',
+        ) as HTMLSelectElement
+        const range = document.querySelector(
+            'input[name="senseRange0"]',
+        ) as HTMLInputElement
+        expect(type.value).toBe('wavesense')
+        expect(acuity.value).toBe('precise')
+        expect(range.value).toBe('20')
+        expect(document.querySelectorAll('.sense-entry')).toHaveLength(1)
+    })
+
+    it('keeps a custom sense and ignores a duplicate add', () => {
+        mountMovement()
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+        ui.addSense({ type: 'blood-scent', range: 10, acuity: 'imprecise' })
+        const select = document.querySelector(
+            '.sense-type',
+        ) as HTMLSelectElement
+        expect(select.value).toBe('blood-scent')
+        expect(
+            (
+                document.querySelector(
+                    'input[name^="senseRange"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('10')
+        select.value = 'darkvision'
+        select.dispatchEvent(new Event('change'))
+        expect(document.querySelector('.sense-range-field')).toBeNull()
+        ui.destroy()
+    })
+
+    it('closes an open speed menu and stops when every speed exists', () => {
+        mountMovement()
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+        const add = document.getElementById(
+            'addSpeedButton',
+        ) as HTMLButtonElement
+        add.click()
+        add.click()
+        const menu = document.getElementById('speedTypeMenu') as HTMLElement
+        expect(menu.hidden).toBe(true)
+
+        for (const type of ['fly', 'swim', 'climb', 'burrow']) {
+            add.click()
+            document
+                .querySelector<HTMLButtonElement>(`[data-speed-type="${type}"]`)
+                ?.click()
+        }
+        expect(add.disabled).toBe(true)
+        add.disabled = false
+        add.click()
+        expect(menu.hidden).toBe(true)
+
+        const fake = document.createElement('div')
+        fake.className = 'speed-chip'
+        fake.dataset.speedType = 'teleport'
+        document.getElementById('speedChips')?.append(fake)
+        add.click()
+        expect(
+            document.querySelector(
+                '#speedTypeMenu [data-speed-type="teleport"]',
+            ),
+        ).toBeNull()
+
+        add.remove()
+        document
+            .querySelector('.speed-chip-remove')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+        menu.remove()
+        const chip = document.querySelector('.speed-chip')
+        if (!chip) throw new Error('missing speed chip')
+        document.body.append(chip)
+        document.getElementById('speedChips')?.remove()
+        chip.querySelector('button')?.dispatchEvent(
+            new MouseEvent('click', { bubbles: true }),
+        )
+        ui.destroy()
+    })
+
+    it('stops adding senses when none remain and still renders loose rows', () => {
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+        expect(() => ui.addSense()).not.toThrow()
+
+        mountMovement()
+        ui.addSense({ type: 'darkvision' })
+        const row = document.querySelector('.sense-entry')
+        row?.querySelector('.creatureBuilderRemoveIcon')?.remove()
+        const select = row?.querySelector('.sense-type') as HTMLSelectElement
+        select.value = 'scent'
+        select.dispatchEvent(new Event('change'))
+        expect(row?.querySelector('.sense-range-field')).toBeTruthy()
+        expect(row?.querySelector('.sense-acuity')).toBeTruthy()
+
+        ui.addSense({ type: 'darkvision' })
+        const types = Array.from(
+            document.querySelectorAll<HTMLSelectElement>('.sense-type'),
+        ).map((entry) => entry.value)
+        expect(types.filter((type) => type === 'darkvision')).toHaveLength(1)
+
+        document.querySelector('.sense-type')?.remove()
+        ui.addSense()
+        const add = document.getElementById(
+            'addSenseButton',
+        ) as HTMLButtonElement
+        while (!add.disabled) ui.addSense()
+        expect(add.disabled).toBe(true)
+        ui.addSense()
+        document.querySelector('.sense-entry')?.remove()
+        add.remove()
+        ui.addSense()
+        ui.destroy()
+    })
+
+    it('adds Starfinder emotionsense and a second echolocation', () => {
+        mountMovement()
+        ;(window as any).game.system = { id: 'sf2e' }
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+        ui.addSense({
+            type: 'echolocation',
+            acuity: 'precise',
+            range: 30,
+        })
+        ui.addSense({
+            type: 'echolocation',
+            acuity: 'imprecise',
+            range: 60,
+        })
+
+        const rows = Array.from(document.querySelectorAll('.sense-entry'))
+        expect(rows).toHaveLength(2)
+        expect(
+            rows.map(
+                (row) =>
+                    (row.querySelector('.sense-acuity') as HTMLSelectElement)
+                        .value,
+            ),
+        ).toEqual(['precise', 'imprecise'])
+        expect(
+            rows.map(
+                (row) =>
+                    (
+                        row.querySelector(
+                            'input[name^="senseRange"]',
+                        ) as HTMLInputElement
+                    ).value,
+            ),
+        ).toEqual(['30', '60'])
+        for (const row of rows) {
+            const type = row.querySelector('.sense-type') as HTMLSelectElement
+            expect(type.value).toBe('echolocation')
+            expect(
+                Array.from(type.options).some(
+                    (option) => option.value === 'emotionsense',
+                ),
+            ).toBe(true)
+        }
+
+        ui.addSense({ type: 'emotionsense' })
+        const emotion = Array.from(
+            document.querySelectorAll('.sense-entry'),
+        ).find(
+            (row) =>
+                (row.querySelector('.sense-type') as HTMLSelectElement)
+                    .value === 'emotionsense',
+        )
+        if (!emotion) throw new Error('missing emotionsense row')
+        expect(
+            (emotion.querySelector('.sense-acuity') as HTMLSelectElement).value,
+        ).toBe('imprecise')
+        expect(
+            (
+                emotion.querySelector(
+                    'input[name^="senseRange"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('30')
+
+        ui.addSense({ type: 'echolocation', acuity: 'vague', range: 10 })
+        expect(
+            Array.from(document.querySelectorAll('.sense-type')).filter(
+                (select) =>
+                    (select as HTMLSelectElement).value === 'echolocation',
+            ),
+        ).toHaveLength(2)
+        ui.destroy()
+    })
+
+    it('uses the fallback warning when the message is not translated', () => {
+        mountMovement()
+        ;(window as any).game.i18n.localize = (key: string) => key
+        const warn = vi.fn()
+        ;(globalThis as { ui?: unknown }).ui = { notifications: { warn } }
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+        document
+            .querySelector('.speed-chip-remove')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(warn).toHaveBeenCalledWith(
+            'A creature needs at least one speed.',
+        )
+        delete (globalThis as { ui?: unknown }).ui
+        ui.destroy()
     })
 })

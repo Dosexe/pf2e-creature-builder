@@ -113,6 +113,30 @@
                     {{/if}}
                 </div>
             </details>
+            {{#if (eq this.name "Defence + Perception")}}
+            <details class="collapsibleSection" id="{{@root.fieldId}}sectionMovement">
+                <summary class="collapsibleHeader">
+                    <h3>{{localize "pf2e-creature-builder.form.movement.title"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
+                </summary>
+                <div class="collapsibleContent">
+                    <input type="hidden" name="movementSensesPresent" value="true">
+                    <input type="hidden" name="sensesInitialized" value="true">
+                    <div class="movement-speeds">
+                        <label id="{{@root.fieldId}}speedsLabel">{{localize "pf2e-creature-builder.form.movement.speeds"}}</label>
+                        <div class="speeds-field" id="{{@root.fieldId}}speedsTray">
+                            <div class="speed-chips" id="{{@root.fieldId}}speedChips"></div>
+                            <button type="button" class="speed-add" id="{{@root.fieldId}}addSpeedButton" aria-label="{{localize "pf2e-creature-builder.form.movement.add-speed"}}">+</button>
+                            <div class="speed-type-menu" id="{{@root.fieldId}}speedTypeMenu" hidden></div>
+                        </div>
+                    </div>
+                    <div class="senses-block">
+                        <label id="{{@root.fieldId}}sensesLabel">{{localize "pf2e-creature-builder.form.movement.senses"}}</label>
+                        <div id="{{@root.fieldId}}sensesContainer"></div>
+                        <button type="button" id="{{@root.fieldId}}addSenseButton" class="creatureBuilderAddButton">{{localize "pf2e-creature-builder.form.movement.add-sense"}}</button>
+                    </div>
+                </div>
+            </details>
+            {{/if}}
             {{/each}}
 
             <details class="collapsibleSection" id="{{fieldId}}sectionLore" open>
