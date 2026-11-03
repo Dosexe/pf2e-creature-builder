@@ -5,6 +5,7 @@ import {
     customRoadmapSchema,
 } from '@/roadmaps/model/roadMapSchemas'
 import { transformCustomRoadmap } from '@/roadmaps/roadMapTransformer'
+import { FALLBACK_CREATURE_SIZES } from '@/systems/creatureSizes'
 import { getCreatureSystem } from '@/systems/getCreatureSystem'
 import { Pf2eCreatureSystem } from '@/systems/Pf2eCreatureSystem'
 import { Sf2eCreatureSystem } from '@/systems/Sf2eCreatureSystem'
@@ -115,6 +116,58 @@ describe('CreatureSystem', () => {
         expect(
             system.numericValue(Statistics.strikeDamage, '1', Options.moderate),
         ).toBeUndefined()
+    })
+
+    it('uses the shared size list when the system has not published one', () => {
+        expect(new Pf2eCreatureSystem().sizes()).toEqual([
+            ...FALLBACK_CREATURE_SIZES,
+        ])
+        expect(
+            new Sf2eCreatureSystem().sizes().map((size) => size.value),
+        ).toEqual(['tiny', 'sm', 'med', 'lg', 'huge', 'grg'])
+    })
+
+    it('uses the size list published by the active system', () => {
+        vi.stubGlobal('CONFIG', {
+            PF2E: {
+                actorSizes: {
+                    tiny: 'PF2E.ActorSizeTiny',
+                    sm: 'PF2E.ActorSizeSmall',
+                    med: 'PF2E.ActorSizeMedium',
+                    lg: 'PF2E.ActorSizeLarge',
+                    huge: 'PF2E.ActorSizeHuge',
+                    grg: 'PF2E.ActorSizeGargantuan',
+                    colossal: 'SF2E.ActorSizeColossal',
+                },
+            },
+        })
+        expect(new Sf2eCreatureSystem().sizes()).toEqual([
+            { value: 'tiny', label: 'PF2E.ActorSizeTiny' },
+            { value: 'sm', label: 'PF2E.ActorSizeSmall' },
+            { value: 'med', label: 'PF2E.ActorSizeMedium' },
+            { value: 'lg', label: 'PF2E.ActorSizeLarge' },
+            { value: 'huge', label: 'PF2E.ActorSizeHuge' },
+            { value: 'grg', label: 'PF2E.ActorSizeGargantuan' },
+            { value: 'colossal', label: 'SF2E.ActorSizeColossal' },
+        ])
+        const pathfinderSizes = new Pf2eCreatureSystem().sizes()
+        expect(pathfinderSizes[pathfinderSizes.length - 1]?.value).toBe(
+            'colossal',
+        )
+    })
+
+    it('ignores an empty or unusable published size list', () => {
+        vi.stubGlobal('CONFIG', {
+            PF2E: { actorSizes: { '': 'blank', gap: '  ', weird: 1 } },
+        })
+        expect(new Pf2eCreatureSystem().sizes()).toEqual([
+            ...FALLBACK_CREATURE_SIZES,
+        ])
+
+        vi.stubGlobal('CONFIG', { PF2E: { actorSizes: 'tiny' } })
+        expect(
+            new Sf2eCreatureSystem().sizes().map((size) => size.value),
+        ).toEqual(['tiny', 'sm', 'med', 'lg', 'huge', 'grg'])
     })
 
     it('reads trait suggestions from CONFIG.PF2E.creatureTraits', () => {

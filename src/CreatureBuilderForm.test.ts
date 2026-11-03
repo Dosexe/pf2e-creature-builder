@@ -180,6 +180,53 @@ describe('CreatureBuilderForm', () => {
         })
     })
 
+    it('writes a creature size onto the actor', () => {
+        const form = new CreatureBuilderForm(buildActor())
+        expect(form.applySize({ 'PF2EMONSTERMAKER.size': 'large' })).toEqual({
+            'system.traits.size.value': 'lg',
+        })
+        expect(form.applySize({ 'PF2EMONSTERMAKER.size': '  HUGE  ' })).toEqual(
+            {
+                'system.traits.size.value': 'huge',
+            },
+        )
+    })
+
+    it('ignores a size the active system does not publish', () => {
+        const form = new CreatureBuilderForm(buildActor())
+        expect(form.applySize({ 'PF2EMONSTERMAKER.size': 'colossal' })).toEqual(
+            {},
+        )
+        expect(form.applySize({ 'PF2EMONSTERMAKER.size': '   ' })).toEqual({})
+        expect(form.applySize({ 'PF2EMONSTERMAKER.size': 2 })).toEqual({})
+        expect(form.applySize({})).toEqual({})
+    })
+
+    it('accepts a size only the active system publishes', () => {
+        const holder = globalThis as { CONFIG?: unknown }
+        const previous = holder.CONFIG
+        holder.CONFIG = {
+            PF2E: {
+                actorSizes: {
+                    tiny: 'Tiny',
+                    med: 'Medium',
+                    colossal: 'Colossal',
+                },
+            },
+        }
+        try {
+            const form = new CreatureBuilderForm(buildActor())
+            expect(
+                form.applySize({ 'PF2EMONSTERMAKER.size': 'colossal' }),
+            ).toEqual({ 'system.traits.size.value': 'colossal' })
+            expect(
+                form.applySize({ 'PF2EMONSTERMAKER.size': 'large' }),
+            ).toEqual({})
+        } finally {
+            holder.CONFIG = previous
+        }
+    })
+
     it('normalizes traits input', () => {
         const form = new CreatureBuilderForm(buildActor())
         const result = form.applyTraits({
@@ -743,6 +790,33 @@ describe('CreatureBuilderForm', () => {
         expect(payload.system.slots.slot1.max).toBe(4)
         expect(payload.system.slots.slot2.max).toBe(4)
         expect(payload.system.slots.slot3.max).toBe(3)
+    })
+
+    it('detects the actor size and defaults to medium', () => {
+        const huge = new CreatureBuilderForm(
+            buildActor({
+                system: { traits: { size: { value: 'huge' } } },
+            }),
+        )
+        expect(huge.detectSize()).toBe('huge')
+
+        const slug = new CreatureBuilderForm(
+            buildActor({
+                system: { traits: { size: { value: 'gargantuan' } } },
+            }),
+        )
+        expect(slug.detectSize()).toBe('grg')
+
+        const blank = new CreatureBuilderForm(buildActor())
+        expect(blank.detectSize()).toBe('med')
+
+        const fresh = new CreatureBuilderForm(
+            buildActor({
+                system: { traits: { size: { value: 'lg' } } },
+            }),
+            { useDefaultLevel: true },
+        )
+        expect(fresh.detectSize()).toBe('med')
     })
 
     it('detects traits from the actor', () => {
@@ -3283,6 +3357,47 @@ describe('CreatureBuilderForm', () => {
                 damageRolls: {
                     strikeDamageID: { damage: '2d6+4' },
                 },
+            })
+        })
+
+        it('adds a primary roll when a copied strike override has none', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '1'
+            await form.applyManualAttacks({
+                attackName0: 'Claw',
+                attackBonus0: Options.high,
+                attackDamage0: Options.high,
+                attackSource0: JSON.stringify({
+                    sourceLevel: '1',
+                    bonusTier: Options.high,
+                    damageTier: Options.high,
+                    bonus: 9,
+                    item: {
+                        type: 'melee',
+                        name: 'Claw',
+                        system: {
+                            traits: { value: ['agile'] },
+                            bonus: { value: 9 },
+                            damageRolls: {
+                                persistent: {
+                                    damage: '1d6',
+                                    damageType: 'fire',
+                                    category: 'persistent',
+                                },
+                            },
+                        },
+                    },
+                }),
+                'manualOverride.attackDamage0': '2d6+4',
+            })
+
+            const claw = Item.create.mock.calls[0][0]
+            expect(claw.system.traits.value).toEqual(['agile'])
+            expect(claw.system.damageRolls.persistent.damage).toBe('1d6')
+            expect(claw.system.damageRolls.strikeDamageID).toMatchObject({
+                damage: '2d6+4',
+                damageType: 'fire',
+                category: null,
             })
         })
     })

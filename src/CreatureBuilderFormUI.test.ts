@@ -3,8 +3,11 @@ import { readFileSync } from 'node:fs'
 import Handlebars from 'handlebars'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SpellListCollection } from '@/spellcasting/model/spellList'
+import { FALLBACK_CREATURE_SIZES } from '@/systems/creatureSizes'
 import enLang from '../public/languages/en.json'
-import CreatureBuilderFormUI from './CreatureBuilderFormUI'
+import CreatureBuilderFormUI, {
+    capturePreservedControls,
+} from './CreatureBuilderFormUI'
 import { DefaultCreatureStatistics, Levels, Options, Statistics } from './Keys'
 import { statisticValues } from './Values'
 
@@ -62,10 +65,19 @@ const setupDom = () => {
                 <option value="${Options.extreme}">extreme</option>
             </select>
             <button id="creatureBuilderResetButton" type="button">Reset</button>
+            <select id="creatureBuilderSize" name="PF2EMONSTERMAKER.size">
+                <option value="tiny">Tiny</option>
+                <option value="sm">Small</option>
+                <option value="med">Medium</option>
+                <option value="lg">Large</option>
+                <option value="huge">Huge</option>
+                <option value="grg">Gargantuan</option>
+            </select>
             <select id="creatureBuilderLevel">
                 <option value="-1">-1</option>
                 <option value="1">1</option>
                 <option value="3">3</option>
+                <option value="5">5</option>
             </select>
             <select id="creatureBuilderRoadmap">
                 <option value="Default">Default</option>
@@ -179,6 +191,8 @@ describe('CreatureBuilderFormUI', () => {
             Levels,
             RoadMaps: { TestRoadmap: {} },
             SpellLists: { pyromancer: { name: 'Pyromancer' } },
+            Sizes: FALLBACK_CREATURE_SIZES,
+            detectedSize: 'med',
             CreatureStatistics: JSON.parse(
                 JSON.stringify(DefaultCreatureStatistics),
             ),
@@ -189,6 +203,7 @@ describe('CreatureBuilderFormUI', () => {
             buildConfig({
                 root,
                 idPrefix: fieldId,
+                detectedSize: 'lg',
                 creatureStatistics: JSON.parse(
                     JSON.stringify(DefaultCreatureStatistics),
                 ),
@@ -237,6 +252,27 @@ describe('CreatureBuilderFormUI', () => {
         traitsLabel.click()
         expect(document.activeElement).toBe(traitsInput)
         expect(dropdown?.classList.contains('show')).toBe(true)
+
+        const size = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilderSize`)}`,
+        ) as HTMLSelectElement
+        const traitsGroup = traitsLabel.closest('.form-group')
+        expect(size).toBeTruthy()
+        expect(
+            size.compareDocumentPosition(traitsGroup!) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+        expect(Array.from(size.options).map((option) => option.value)).toEqual([
+            'tiny',
+            'sm',
+            'med',
+            'lg',
+            'huge',
+            'grg',
+        ])
+        expect(size.value).toBe('lg')
+        expect(enLang['PF2EMONSTERMAKER.size']).toBe('Size')
+        expect(enLang['PF2EMONSTERMAKER.sizeGargantuan']).toBe('Gargantuan')
 
         const label = root.querySelector(
             `label[for="${fieldId}toggleBadges"]`,
@@ -668,6 +704,10 @@ describe('CreatureBuilderFormUI', () => {
         ) as HTMLSelectElement
         level.value = '3'
         roadmap.value = 'TestRoadmap'
+        const size = document.getElementById(
+            'creatureBuilderSize',
+        ) as HTMLSelectElement
+        size.value = 'huge'
 
         ui.resetToDefaults()
 
@@ -684,6 +724,7 @@ describe('CreatureBuilderFormUI', () => {
         expect(document.getElementById('addAttackButton')).toBeTruthy()
         expect(level.value).toBe('-1')
         expect(roadmap.value).toBe('Default')
+        expect(size.value).toBe('med')
     })
 
     it('applies roadmap values to selects', () => {
@@ -3537,6 +3578,41 @@ describe('Manual Input', () => {
         ui.destroy()
     })
 
+    it('restores a saved override and the manual toggle after another render', () => {
+        const { ui, manual, strBadge } = start()
+        enableManual(manual)
+        commitBadge(strBadge, '+7')
+
+        const preserved = capturePreservedControls(document.body)
+        expect(preserved?.toggleManualInput).toBe('true')
+        expect(preserved?.[`manualOverride.${Statistics.str}`]).toBe('+7')
+
+        ui.destroy()
+        for (const input of Array.from(
+            document.querySelectorAll('input[name^="manualOverride."]'),
+        )) {
+            input.remove()
+        }
+        const dropdown = document.createElement('div')
+        dropdown.id = 'creatureBuilderTraitsDropdown'
+        dropdown.className = 'tagify__dropdown'
+        dropdown.innerHTML = '<div class="tagify__dropdown__wrapper"></div>'
+        document.body.append(dropdown)
+        manual.checked = false
+        strBadge.textContent = '+3'
+
+        const restored = new CreatureBuilderFormUI(
+            buildConfig({ preservedControls: preserved ?? undefined }),
+        )
+        restored.initialize()
+        vi.runAllTimers()
+
+        expect(manual.checked).toBe(true)
+        expect(overrideInput(Statistics.str)?.value).toBe('+7')
+        expect(strBadge.textContent).toBe('+7')
+        restored.destroy()
+    })
+
     it('commits a modifier with Enter and restores the previous value on Escape', () => {
         const { ui, manual, str, strBadge } = start()
         enableManual(manual)
@@ -3647,6 +3723,113 @@ describe('Manual Input', () => {
         expect(spellBadge.textContent).toBe('20')
         expect(spell.value).toBe(Options.high)
         expect(overrideInput(Statistics.spellcasting)?.value).toBe('20')
+        ui.destroy()
+    })
+
+    it('keeps the damage editor inside the viewport', () => {
+        const { ui, manual, damageBadge } = start()
+        enableManual(manual)
+        const previousWidth = window.innerWidth
+        const previousHeight = window.innerHeight
+        const previousRect = HTMLElement.prototype.getBoundingClientRect
+        Object.defineProperty(window, 'innerWidth', {
+            configurable: true,
+            value: 1000,
+        })
+        Object.defineProperty(window, 'innerHeight', {
+            configurable: true,
+            value: 800,
+        })
+        let anchor = { left: 12, bottom: 30 }
+        let panel = { width: 100, height: 80 }
+        HTMLElement.prototype.getBoundingClientRect = function () {
+            if (this.classList.contains('damage-editor')) {
+                return {
+                    x: 0,
+                    y: 0,
+                    left: 0,
+                    top: 0,
+                    right: panel.width,
+                    bottom: panel.height,
+                    width: panel.width,
+                    height: panel.height,
+                    toJSON() {
+                        return {}
+                    },
+                } as DOMRect
+            }
+            if (this === damageBadge) {
+                return {
+                    x: anchor.left,
+                    y: 0,
+                    left: anchor.left,
+                    top: 0,
+                    right: anchor.left + 40,
+                    bottom: anchor.bottom,
+                    width: 40,
+                    height: 20,
+                    toJSON() {
+                        return {}
+                    },
+                } as DOMRect
+            }
+            return previousRect.call(this)
+        }
+
+        try {
+            damageBadge.click()
+            const editor = document.querySelector(
+                '.damage-editor',
+            ) as HTMLElement
+            expect(editor.hidden).toBe(false)
+            expect(editor.style.left).toBe('12px')
+            expect(editor.style.top).toBe('34px')
+
+            anchor = { left: 900, bottom: 720 }
+            panel = { width: 200, height: 160 }
+            damageBadge.click()
+            expect(editor.style.left).toBe('800px')
+            expect(editor.style.top).toBe('640px')
+
+            panel = { width: 2000, height: 2000 }
+            damageBadge.click()
+            expect(editor.style.left).toBe('0px')
+            expect(editor.style.top).toBe('0px')
+        } finally {
+            HTMLElement.prototype.getBoundingClientRect = previousRect
+            Object.defineProperty(window, 'innerWidth', {
+                configurable: true,
+                value: previousWidth,
+            })
+            Object.defineProperty(window, 'innerHeight', {
+                configurable: true,
+                value: previousHeight,
+            })
+            ui.destroy()
+        }
+    })
+
+    it('closes the damage editor on scroll without hiding the traits list', () => {
+        const { ui, manual, damageBadge } = start()
+        enableManual(manual)
+        damageBadge.click()
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        expect(editor.hidden).toBe(false)
+
+        const input = document.getElementById(
+            'creatureBuilderTraitsInput',
+        ) as HTMLElement
+        const dropdown = document.getElementById(
+            'creatureBuilderTraitsDropdown',
+        ) as HTMLElement
+        input.textContent = 'und'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        expect(dropdown.classList.contains('show')).toBe(true)
+
+        window.dispatchEvent(new Event('scroll', { bubbles: true }))
+        expect(editor.hidden).toBe(true)
+        expect(dropdown.classList.contains('show')).toBe(true)
+        expect(dropdown.parentElement).toBe(document.body)
         ui.destroy()
     })
 
@@ -3892,29 +4075,108 @@ describe('Manual Input', () => {
         ui.destroy()
     })
 
-    it('keeps a typed value when the level changes', () => {
-        const { ui, manual, strBadge } = start()
+    it('scales a typed value to its detected tier when the level changes', () => {
+        const { ui, manual, str, strBadge } = start()
         enableManual(manual)
-        commitBadge(strBadge, '+7')
+        commitBadge(strBadge, '+4')
+        expect(str.value).toBe(Options.high)
+
+        ui.addLoreSkill('Forest')
+        const lore = document.querySelector('.loreEntry')!
+        const loreBadge = lore.querySelector('.stat-value-badge') as HTMLElement
+        const loreSelect = lore.querySelector('select') as HTMLSelectElement
+        commitBadge(loreBadge, '+10')
+        expect(loreSelect.value).toBe(Options.extreme)
+
+        ui.addAttack('Claw')
+        const attack = document.querySelector('.attackEntry')!
+        const [bonusBadge, attackDamage] = Array.from(
+            attack.querySelectorAll<HTMLElement>('.stat-value-badge'),
+        )
+        const bonusSelect = attack.querySelector(
+            'select[name="attackBonus0"]',
+        ) as HTMLSelectElement
+        const damageSelect = attack.querySelector(
+            'select[name="attackDamage0"]',
+        ) as HTMLSelectElement
+        commitBadge(bonusBadge, '11')
+        attackDamage.click()
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        ;(
+            editor.querySelector('.damage-editor-count') as HTMLInputElement
+        ).value = '2'
+        ;(
+            editor.querySelector('.damage-editor-die') as HTMLSelectElement
+        ).value = 'd6'
+        ;(
+            editor.querySelector('.damage-editor-bonus') as HTMLInputElement
+        ).value = '-1'
+        editor
+            .querySelector('.damage-editor-apply')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(bonusSelect.value).toBe(Options.extreme)
+        expect(damageSelect.value).toBe(Options.high)
+
         const level = document.getElementById(
             'creatureBuilderLevel',
         ) as HTMLSelectElement
         level.value = '5'
         level.dispatchEvent(new Event('change'))
-        expect(strBadge.textContent).toBe('+7')
-        expect(overrideInput(Statistics.str)?.value).toBe('+7')
+
+        expect(str.value).toBe(Options.high)
+        expect(strBadge.textContent).toBe('+5')
+        expect(overrideInput(Statistics.str)).toBeNull()
+        expect(loreSelect.value).toBe(Options.extreme)
+        expect(loreBadge.textContent).toBe('+16')
+        expect(overrideInput('loreLevel0')).toBeNull()
+        expect(bonusSelect.value).toBe(Options.extreme)
+        expect(bonusBadge.textContent).toBe('+17')
+        expect(overrideInput('attackBonus0')).toBeNull()
+        expect(damageSelect.value).toBe(Options.high)
+        expect(attackDamage.textContent).toBe('2d8+7')
+        expect(overrideInput('attackDamage0')).toBeNull()
         ui.destroy()
     })
 
-    it('clears main-stat edits when a roadmap is applied and keeps lore edits', () => {
-        const { ui, manual, strBadge } = start()
+    it('clears roadmap stats and scales lore and extra attacks to their tiers', () => {
+        const { ui, manual, str, strBadge } = start()
         enableManual(manual)
         commitBadge(strBadge, '+7')
+        expect(str.value).toBe(Options.extreme)
+
         ui.addLoreSkill('Forest')
-        const loreBadge = document.querySelector(
-            '.loreEntry .stat-value-badge',
-        ) as HTMLElement
-        commitBadge(loreBadge, '+10')
+        const lore = document.querySelector('.loreEntry')!
+        const loreBadge = lore.querySelector('.stat-value-badge') as HTMLElement
+        const loreSelect = lore.querySelector('select') as HTMLSelectElement
+        commitBadge(loreBadge, '+9')
+        expect(loreSelect.value).toBe(Options.extreme)
+
+        ui.addAttack('Claw')
+        const attack = document.querySelector('.attackEntry')!
+        const [bonusBadge, attackDamage] = Array.from(
+            attack.querySelectorAll<HTMLElement>('.stat-value-badge'),
+        )
+        const bonusSelect = attack.querySelector(
+            'select[name="attackBonus0"]',
+        ) as HTMLSelectElement
+        const damageSelect = attack.querySelector(
+            'select[name="attackDamage0"]',
+        ) as HTMLSelectElement
+        commitBadge(bonusBadge, '+10')
+        attackDamage.click()
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        ;(
+            editor.querySelector('.damage-editor-count') as HTMLInputElement
+        ).value = '2'
+        ;(
+            editor.querySelector('.damage-editor-die') as HTMLSelectElement
+        ).value = 'd6'
+        ;(
+            editor.querySelector('.damage-editor-bonus') as HTMLInputElement
+        ).value = '-1'
+        editor
+            .querySelector('.damage-editor-apply')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
         const roadmap = document.getElementById(
             'creatureBuilderRoadmap',
@@ -3922,10 +4184,18 @@ describe('Manual Input', () => {
         roadmap.value = 'TestRoadmap'
         roadmap.dispatchEvent(new Event('change'))
 
+        expect(str.value).toBe(Options.moderate)
         expect(strBadge.textContent).toBe('+3')
         expect(overrideInput(Statistics.str)).toBeNull()
+        expect(loreSelect.value).toBe(Options.extreme)
         expect(loreBadge.textContent).toBe('+10')
-        expect(overrideInput('loreLevel0')?.value).toBe('+10')
+        expect(overrideInput('loreLevel0')).toBeNull()
+        expect(bonusSelect.value).toBe(Options.extreme)
+        expect(bonusBadge.textContent).toBe('+11')
+        expect(overrideInput('attackBonus0')).toBeNull()
+        expect(damageSelect.value).toBe(Options.high)
+        expect(attackDamage.textContent).toBe('1d6+3')
+        expect(overrideInput('attackDamage0')).toBeNull()
         ui.destroy()
     })
 

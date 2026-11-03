@@ -101,6 +101,14 @@
     "PF2EMONSTERMAKER.addLore": "Add Lore",
     "PF2EMONSTERMAKER.loreName": "Lore name (e.g. Warfare)",
 
+    "PF2EMONSTERMAKER.size": "Size",
+    "PF2EMONSTERMAKER.sizeTiny": "Tiny",
+    "PF2EMONSTERMAKER.sizeSmall": "Small",
+    "PF2EMONSTERMAKER.sizeMedium": "Medium",
+    "PF2EMONSTERMAKER.sizeLarge": "Large",
+    "PF2EMONSTERMAKER.sizeHuge": "Huge",
+    "PF2EMONSTERMAKER.sizeGargantuan": "Gargantuan",
+
     "PF2EMONSTERMAKER.traits": "Traits",
     "PF2EMONSTERMAKER.traitsPlaceholder": "Search traits...",
 

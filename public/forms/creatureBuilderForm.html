@@ -43,6 +43,19 @@
             </div>
 
             <div class="form-group">
+                <label for="{{fieldId}}creatureBuilderSize">
+                    {{localize "PF2EMONSTERMAKER.size"}}
+                </label>
+                <div class="form-fields">
+                    <select name="PF2EMONSTERMAKER.size" id="{{fieldId}}creatureBuilderSize" class="stat-select">
+                        {{#each Sizes}}
+                        <option value="{{this.value}}" {{#if (eq this.value @root.detectedSize)}}selected{{/if}}>{{localize this.label}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label id="{{fieldId}}creatureBuilderTraitsLabel">
                     {{localize "PF2EMONSTERMAKER.traits"}}
                 </label>

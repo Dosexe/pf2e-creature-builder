@@ -5,10 +5,15 @@ import type {
 } from '@/spellcasting/model/spellcasting'
 import { createSpellCopyStrategy } from '@/spellcasting/SpellCopyStrategies'
 import { resolveAndApplySpellList } from '@/spellcasting/SpellListResolver'
+import {
+    canonicalCreatureSize,
+    DEFAULT_CREATURE_SIZE,
+} from '@/systems/creatureSizes'
 import { getCreatureSystem } from '@/systems/getCreatureSystem'
 import { globalLog } from '@/utils'
 import CreatureBuilderFormUI, {
     type CreatureBuilderFormConfig,
+    capturePreservedControls,
 } from './CreatureBuilderFormUI'
 import {
     buildSpellcastingEntry,
@@ -117,9 +122,9 @@ function plainMeleeItem(item: {
 function primaryDamageRoll(
     system: Record<string, unknown>,
 ): { damage?: unknown } | undefined {
-    const rolls = system.damageRolls
-    if (!rolls || typeof rolls !== 'object') return undefined
-    for (const roll of Object.values(rolls as Record<string, unknown>)) {
+    const rolls = damageRollRecord(system)
+    if (!rolls) return undefined
+    for (const roll of Object.values(rolls)) {
         if (!roll || typeof roll !== 'object') continue
         const entry = roll as { damage?: unknown; category?: unknown }
         if (entry.category) continue
@@ -127,6 +132,25 @@ function primaryDamageRoll(
         return entry
     }
     return undefined
+}
+
+function damageRollRecord(
+    system: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+    const rolls = system.damageRolls
+    if (!rolls || typeof rolls !== 'object' || Array.isArray(rolls)) {
+        return undefined
+    }
+    return rolls as Record<string, unknown>
+}
+
+function damageTypeFrom(rolls: Record<string, unknown>): string {
+    for (const value of Object.values(rolls)) {
+        if (!value || typeof value !== 'object') continue
+        const type = (value as { damageType?: unknown }).damageType
+        if (typeof type === 'string' && type.trim() !== '') return type.trim()
+    }
+    return 'bludgeoning'
 }
 
 function weaponIdentity(item: Record<string, unknown>): string {
@@ -375,56 +399,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
     private captureDropdownValues(): Record<string, string> | null {
         const root = this.element
         if (!root?.querySelectorAll) return null
-
-        const values: Record<string, string> = {}
-        for (const select of Array.from(root.querySelectorAll('select'))) {
-            const name = select.getAttribute('name')
-            if (name) {
-                values[name] = select.value
-                continue
-            }
-            if (select.id.endsWith('creatureBuilderRoadmap')) {
-                values.creatureBuilderRoadmap = select.value
-            }
-        }
-
-        for (const input of Array.from(
-            root.querySelectorAll<HTMLInputElement>(
-                'input[type="checkbox"][name]',
-            ),
-        )) {
-            const name = input.getAttribute?.('name') || input.name
-            if (!name) continue
-            values[name] = input.checked ? 'true' : 'false'
-        }
-
-        for (const input of Array.from(
-            root.querySelectorAll<HTMLInputElement>(
-                'input[type="text"][name], input[type="hidden"][name]',
-            ),
-        )) {
-            const name = input.getAttribute?.('name') || input.name
-            if (
-                !name?.startsWith('attackName') &&
-                !name?.startsWith('attackDamageType') &&
-                !name?.startsWith('attackSource')
-            ) {
-                continue
-            }
-            values[name] = input.value
-        }
-
-        for (const input of Array.from(
-            root.querySelectorAll<HTMLInputElement>(
-                'input[name^="speedType-"], input[name^="speedValue-"], input[name^="senseRange"], input[name="sensesInitialized"], input[name="movementSensesPresent"]',
-            ),
-        )) {
-            const name = input.getAttribute?.('name') || input.name
-            if (!name) continue
-            values[name] = input.value
-        }
-
-        return Object.keys(values).length > 0 ? values : null
+        return capturePreservedControls(root)
     }
 
     /**
@@ -452,6 +427,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             spellLists: getCreatureSystem().spellLists(),
             detectedStats: this.useDefaultLevel ? {} : this.detectActorStats(),
             detectedTraits: this.detectTraits(),
+            detectedSize: this.detectSize(),
             detectedLoreSkills: this.detectLoreSkills(),
             detectedAttacks: this.detectAttacks(),
             detectedSpeeds: this.detectSpeeds(),
@@ -516,6 +492,12 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             ? formData[Statistics.name]
             : this.actor.name
         return { name: name, 'prototypeToken.name': name }
+    }
+
+    applySize(formData: object) {
+        const size = canonicalCreatureSize(formData[`${KeyPrefix}.size`])
+        if (!size) return {}
+        return { 'system.traits.size.value': size }
     }
 
     applyTraits(formData: object) {
@@ -687,7 +669,23 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             )
         }
         if (bonusOverride !== undefined) bonusField.value = bonusOverride
-        if (damageOverride && roll) roll.damage = damageOverride
+        if (damageOverride) {
+            if (roll) {
+                roll.damage = damageOverride
+            } else {
+                const rolls = damageRollRecord(system) ?? {}
+                system.damageRolls = rolls
+                const key =
+                    'strikeDamageID' in rolls
+                        ? 'manualStrikeDamage'
+                        : 'strikeDamageID'
+                rolls[key] = {
+                    damage: damageOverride,
+                    damageType: damageTypeFrom(rolls),
+                    category: null,
+                }
+            }
+        }
         return item as ItemData
     }
 
@@ -1170,6 +1168,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             }
             Object.assign(updateData, this.applyName(formData))
             Object.assign(updateData, this.applyLevel())
+            Object.assign(updateData, this.applySize(formData))
             Object.assign(updateData, this.applyTraits(formData))
             Object.assign(updateData, this.applyHitPoints(formData))
             Object.assign(updateData, this.applyMovementAndSenses(formData))
@@ -1481,6 +1480,15 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         return movementActorUpdate(formData) ?? {}
     }
 
+    detectSize(): string {
+        if (this.useDefaultLevel) return DEFAULT_CREATURE_SIZE
+        const size = foundry.utils.getProperty(
+            this.actor,
+            'system.traits.size.value',
+        )
+        return canonicalCreatureSize(size) ?? DEFAULT_CREATURE_SIZE
+    }
+
     detectTraits(): string[] {
         const traits = foundry.utils.getProperty(
             this.actor,
@@ -1555,6 +1563,8 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             name: this.actor.name,
             detectedStats: detectedStats,
             detectedTraits: detectedTraits,
+            detectedSize: this.detectSize(),
+            Sizes: getCreatureSystem().sizes(),
             detectedLoreSkills: detectedLoreSkills,
             actorLevel: actorLevel,
             fieldId: this.fieldIdPrefix(),

@@ -1,11 +1,12 @@
 /**
  * Creature Builder Form UI Controller
- * Handles client-side form interactions: traits management, lore skills, and roadmap selection
+ * Handles client-side form interactions: size, traits, lore skills, and roadmap selection
  * This class is instantiated by the CreatureBuilderForm Application V2 after rendering
  */
 
 import { type RoadmapCollection, Statistics } from '@/Keys'
 import type { SpellListCollection } from '@/spellcasting/model/spellList'
+import { DEFAULT_CREATURE_SIZE } from '@/systems/creatureSizes'
 import { getCreatureSystem } from '@/systems/getCreatureSystem'
 import { statisticValues } from '@/Values'
 import {
@@ -73,6 +74,7 @@ interface CreatureBuilderFormConfig {
     spellLists: SpellListCollection
     detectedStats: DetectedStats
     detectedTraits: string[]
+    detectedSize?: string
     detectedLoreSkills: LoreSkill[]
     detectedAttacks?: DetectedAttack[]
     detectedSpeeds?: SpeedChip[]
@@ -82,6 +84,72 @@ interface CreatureBuilderFormConfig {
     root: HTMLElement
     idPrefix: string
     preservedControls?: Record<string, string>
+}
+
+/**
+ * Read the controls Foundry would discard when it replaces the form markup.
+ */
+export function capturePreservedControls(root: {
+    querySelectorAll: (selector: string) => ArrayLike<Element>
+}): Record<string, string> | null {
+    const values: Record<string, string> = {}
+    for (const select of Array.from(root.querySelectorAll('select'))) {
+        const name = select.getAttribute('name')
+        if (name) {
+            values[name] = (select as HTMLSelectElement).value
+            continue
+        }
+        if (select.id.endsWith('creatureBuilderRoadmap')) {
+            values.creatureBuilderRoadmap = (select as HTMLSelectElement).value
+        }
+    }
+
+    for (const input of Array.from(
+        root.querySelectorAll('input[type="checkbox"][name]'),
+    )) {
+        const box = input as HTMLInputElement
+        const name = box.getAttribute?.('name') || box.name
+        if (!name) continue
+        values[name] = box.checked ? 'true' : 'false'
+    }
+
+    const manual = Array.from(
+        root.querySelectorAll('input[type="checkbox"]'),
+    ).find((input) => input.id.endsWith('toggleManualInput')) as
+        | HTMLInputElement
+        | undefined
+    if (manual) values.toggleManualInput = manual.checked ? 'true' : 'false'
+
+    for (const input of Array.from(
+        root.querySelectorAll(
+            'input[type="text"][name], input[type="hidden"][name]',
+        ),
+    )) {
+        const field = input as HTMLInputElement
+        const name = field.getAttribute?.('name') || field.name
+        if (
+            !name?.startsWith('attackName') &&
+            !name?.startsWith('attackDamageType') &&
+            !name?.startsWith('attackSource') &&
+            !name?.startsWith('manualOverride.')
+        ) {
+            continue
+        }
+        values[name] = field.value
+    }
+
+    for (const input of Array.from(
+        root.querySelectorAll(
+            'input[name^="speedType-"], input[name^="speedValue-"], input[name^="senseRange"], input[name="sensesInitialized"], input[name="movementSensesPresent"]',
+        ),
+    )) {
+        const field = input as HTMLInputElement
+        const name = field.getAttribute?.('name') || field.name
+        if (!name) continue
+        values[name] = field.value
+    }
+
+    return Object.keys(values).length > 0 ? values : null
 }
 
 /**
@@ -96,6 +164,7 @@ class CreatureBuilderFormUI {
     private readonly spellLists: { [key: string]: { name: string } }
     private readonly detectedStats: DetectedStats
     private readonly detectedTraits: string[]
+    private readonly detectedSize: string
     private readonly detectedLoreSkills: LoreSkill[]
     private readonly detectedAttacks: DetectedAttack[]
     private readonly detectedSpeeds: SpeedChip[]
@@ -160,6 +229,9 @@ class CreatureBuilderFormUI {
         if (this.creatureBuilderTraitsDropdown.classList.contains('show')) {
             this.positionDropdown()
         }
+        if (this.damageEditor && !this.damageEditor.hidden) {
+            this.closeDamageEditor()
+        }
     }
 
     private readonly onWindowResize = () => {
@@ -187,6 +259,7 @@ class CreatureBuilderFormUI {
         this.spellLists = config.spellLists
         this.detectedStats = config.detectedStats
         this.detectedTraits = config.detectedTraits
+        this.detectedSize = config.detectedSize ?? DEFAULT_CREATURE_SIZE
         this.detectedLoreSkills = config.detectedLoreSkills
         this.detectedAttacks = config.detectedAttacks ?? []
         this.detectedSpeeds = config.detectedSpeeds ?? []
@@ -452,6 +525,8 @@ class CreatureBuilderFormUI {
             levelSelect.value = String(this.actorLevel)
         }
 
+        this.applyDetectedSize()
+
         if (
             this.detectedStats &&
             typeof this.detectedStats === 'object' &&
@@ -471,6 +546,15 @@ class CreatureBuilderFormUI {
         this.updateStatPreview()
     }
 
+    private applyDetectedSize(): void {
+        const select = this.queryById<HTMLSelectElement>('creatureBuilderSize')
+        if (!select) return
+        const known = Array.from(select.options).some(
+            (option) => option.value === this.detectedSize,
+        )
+        if (known) select.value = this.detectedSize
+    }
+
     /**
      * Put the dropdown values from the previous render back after detected stats.
      */
@@ -483,6 +567,16 @@ class CreatureBuilderFormUI {
                     'creatureBuilderRoadmap',
                 )
                 if (roadmap) roadmap.value = value
+                continue
+            }
+            if (key === 'toggleManualInput') {
+                const manual =
+                    this.queryById<HTMLInputElement>('toggleManualInput')
+                if (manual) manual.checked = value === 'true'
+                continue
+            }
+            if (key.startsWith('manualOverride.')) {
+                this.restoreManualOverride(key, value)
                 continue
             }
 
@@ -507,7 +601,7 @@ class CreatureBuilderFormUI {
         const roadmapValue = selectedRoadmap.value
 
         if (this.monsterCreatureRoadmaps[roadmapValue]) {
-            this.clearMainStatOverrides()
+            this.clearAllOverrides()
             this.setDefaults()
             const roadmap = this.monsterCreatureRoadmaps[roadmapValue]
 
@@ -1509,6 +1603,11 @@ class CreatureBuilderFormUI {
         ) as HTMLSelectElement
         if (levelSelect) levelSelect.value = '-1'
 
+        const sizeSelect = this.queryById(
+            'creatureBuilderSize',
+        ) as HTMLSelectElement | null
+        if (sizeSelect) sizeSelect.value = DEFAULT_CREATURE_SIZE
+
         const roadmapSelect = this.queryById(
             'creatureBuilderRoadmap',
         ) as HTMLSelectElement
@@ -2185,6 +2284,19 @@ class CreatureBuilderFormUI {
         }
     }
 
+    private restoreManualOverride(name: string, value: string): void {
+        let hidden = this.root.querySelector<HTMLInputElement>(
+            `input[name="${CSS.escape(name)}"]`,
+        )
+        if (!hidden) {
+            hidden = document.createElement('input')
+            hidden.type = 'hidden'
+            hidden.name = name
+            this.root.append(hidden)
+        }
+        hidden.value = value
+    }
+
     private overrideDisplay(field: string | undefined): string | undefined {
         if (!field) return undefined
         const input = this.root.querySelector<HTMLInputElement>(
@@ -2209,14 +2321,6 @@ class CreatureBuilderFormUI {
             ),
         )) {
             input.remove()
-        }
-    }
-
-    private clearMainStatOverrides(): void {
-        for (const category of this.monsterCreatureStatistics) {
-            for (const stat of category.statisticEntries) {
-                this.clearOverride(stat.name)
-            }
         }
     }
 
@@ -2476,11 +2580,20 @@ class CreatureBuilderFormUI {
         die.value = parsed?.die ?? 'd6'
         this.syncDamageDieIcon(die)
         bonus.value = parsed ? String(parsed.bonus) : '0'
-        const rect = badge.getBoundingClientRect()
-        editor.style.top = `${rect.bottom + 4}px`
-        editor.style.left = `${rect.left}px`
-        editor.hidden = false
+        this.placeDamageEditor(editor, badge)
         count.focus()
+    }
+
+    private placeDamageEditor(editor: HTMLElement, badge: HTMLElement): void {
+        editor.hidden = false
+        const anchor = badge.getBoundingClientRect()
+        const panel = editor.getBoundingClientRect()
+        const maxLeft = Math.max(0, window.innerWidth - panel.width)
+        const maxTop = Math.max(0, window.innerHeight - panel.height)
+        const left = Math.min(Math.max(0, anchor.left), maxLeft)
+        const top = Math.min(Math.max(0, anchor.bottom + 4), maxTop)
+        editor.style.left = `${left}px`
+        editor.style.top = `${top}px`
     }
 
     private applyDamageEditor(): void {
@@ -2539,6 +2652,7 @@ class CreatureBuilderFormUI {
         ) as HTMLSelectElement
         if (levelSelect) {
             levelSelect.addEventListener('change', () => {
+                this.clearAllOverrides()
                 this.updateStatPreview()
             })
         }

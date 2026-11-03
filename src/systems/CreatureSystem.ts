@@ -9,6 +9,10 @@ import {
     Statistics,
 } from '@/Keys'
 import type { SpellListCollection } from '@/spellcasting/model/spellList'
+import {
+    type CreatureSizeChoice,
+    creatureSizeChoices,
+} from '@/systems/creatureSizes'
 import { FALLBACK_CREATURE_TRAITS } from '@/systems/fallbackCreatureTraits'
 import { statisticValues } from '@/Values'
 
@@ -117,6 +121,15 @@ export abstract class CreatureSystem {
             }))
         }
         return stats
+    }
+
+    /**
+     * Size categories for the active system.
+     * Pathfinder and Starfinder share the same six sizes. CONFIG.PF2E.actorSizes
+     * supplies the list when the running system publishes a different one.
+     */
+    sizes(): CreatureSizeChoice[] {
+        return creatureSizeChoices()
     }
 
     /**

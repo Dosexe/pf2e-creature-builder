@@ -101,6 +101,14 @@
     "PF2EMONSTERMAKER.addLore": "添加学识",
     "PF2EMONSTERMAKER.loreName": "学识名称（例如：战争）",
 
+    "PF2EMONSTERMAKER.size": "体型",
+    "PF2EMONSTERMAKER.sizeTiny": "超小型",
+    "PF2EMONSTERMAKER.sizeSmall": "小型",
+    "PF2EMONSTERMAKER.sizeMedium": "中型",
+    "PF2EMONSTERMAKER.sizeLarge": "大型",
+    "PF2EMONSTERMAKER.sizeHuge": "超大型",
+    "PF2EMONSTERMAKER.sizeGargantuan": "巨型",
+
     "PF2EMONSTERMAKER.traits": "特性",
     "PF2EMONSTERMAKER.traitsPlaceholder": "输入特性后按回车",
 

@@ -101,6 +101,14 @@
     "PF2EMONSTERMAKER.addLore": "Dodaj Wiedzę",
     "PF2EMONSTERMAKER.loreName": "Nazwa wiedzy (np. Wojna)",
 
+    "PF2EMONSTERMAKER.size": "Rozmiar",
+    "PF2EMONSTERMAKER.sizeTiny": "Drobny",
+    "PF2EMONSTERMAKER.sizeSmall": "Mały",
+    "PF2EMONSTERMAKER.sizeMedium": "Średni",
+    "PF2EMONSTERMAKER.sizeLarge": "Duży",
+    "PF2EMONSTERMAKER.sizeHuge": "Wielki",
+    "PF2EMONSTERMAKER.sizeGargantuan": "Gigantyczny",
+
     "PF2EMONSTERMAKER.traits": "Cechy",
     "PF2EMONSTERMAKER.traitsPlaceholder": "Wpisz cechę i naciśnij Enter",
 

@@ -101,6 +101,14 @@
     "PF2EMONSTERMAKER.addLore": "Добавить Знание",
     "PF2EMONSTERMAKER.loreName": "Название знания (напр. Война)",
 
+    "PF2EMONSTERMAKER.size": "Размер",
+    "PF2EMONSTERMAKER.sizeTiny": "Крошечный",
+    "PF2EMONSTERMAKER.sizeSmall": "Маленький",
+    "PF2EMONSTERMAKER.sizeMedium": "Средний",
+    "PF2EMONSTERMAKER.sizeLarge": "Большой",
+    "PF2EMONSTERMAKER.sizeHuge": "Огромный",
+    "PF2EMONSTERMAKER.sizeGargantuan": "Исполинский",
+
     "PF2EMONSTERMAKER.traits": "Черты",
     "PF2EMONSTERMAKER.traitsPlaceholder": "Поиск черт...",
     "PF2EMONSTERMAKER.resetDefaults": "Сбросить к умолчаниям",
