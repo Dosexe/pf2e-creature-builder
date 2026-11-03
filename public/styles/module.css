@@ -38,6 +38,177 @@
     padding-top: 6px;
 }
 
+.creatureBuilderForm .movement-speeds,
+.creatureBuilderForm .senses-block {
+    margin: 0.35rem 0 0.5rem;
+}
+
+.creatureBuilderForm .movement-speeds > label,
+.creatureBuilderForm .senses-block > label {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.creatureBuilderForm .speeds-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    position: relative;
+    min-height: var(--form-field-height, 2rem);
+    padding: 0.2rem;
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+    border-radius: 3px;
+    background: rgba(158, 158, 158, 0.15);
+}
+
+.creatureBuilderForm .speed-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 1 1 auto;
+}
+
+.creatureBuilderForm .speed-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    box-sizing: border-box;
+    height: 25px;
+    padding: 0 2px 0 6px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--color-text-primary, currentColor) 14%, transparent);
+}
+
+.creatureBuilderForm .speed-chip-value,
+.creatureBuilderForm .sense-range-field input {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 2px;
+    min-height: 0;
+    color: var(--color-text-primary);
+    background: transparent;
+    border-radius: 3px;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.creatureBuilderForm .speed-chip-value::-webkit-outer-spin-button,
+.creatureBuilderForm .speed-chip-value::-webkit-inner-spin-button,
+.creatureBuilderForm .sense-range-field input::-webkit-outer-spin-button,
+.creatureBuilderForm .sense-range-field input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.creatureBuilderForm .speed-chip-value {
+    flex: 0 0 30px;
+    width: 30px;
+    min-width: 30px;
+    max-width: 30px;
+    height: 21px;
+    border: 1px solid transparent;
+    text-align: right;
+}
+
+.creatureBuilderForm .speed-chip-value:focus {
+    border-color: var(--color-border, color-mix(in srgb, currentColor 45%, transparent));
+    outline: none;
+}
+
+.creatureBuilderForm .sense-range-field input {
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+    max-width: 32px;
+    height: 25px;
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+}
+
+.creatureBuilderForm .speed-chip-remove,
+.creatureBuilderForm .speed-add {
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.creatureBuilderForm .speed-add {
+    flex: 0 0 auto;
+    width: 1.6rem;
+    height: 1.6rem;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.creatureBuilderForm .speed-add:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.creatureBuilderForm .speed-type-menu {
+    position: absolute;
+    top: calc(100% + 2px);
+    right: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    min-width: 8rem;
+    padding: 0.15rem;
+    color: var(--color-text-primary);
+    background-color: color-mix(in srgb, rgb(158, 158, 158) 22%, var(--color-bg, #222));
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+    border-radius: 3px;
+}
+
+.creatureBuilderForm .speed-type-menu[hidden] {
+    display: none;
+}
+
+.creatureBuilderForm .speed-type-menu button {
+    border: none;
+    background: transparent;
+    color: var(--color-text-primary);
+    text-align: left;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+}
+
+.creatureBuilderForm .speed-type-menu button:hover {
+    background-color: color-mix(in srgb, rgb(158, 158, 158) 40%, var(--color-bg, #222));
+}
+
+.creatureBuilderForm .sense-entry {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-bottom: 0.25rem;
+}
+
+.creatureBuilderForm.creatureBuilderFormModern .sense-entry select.stat-select.sense-type {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 6rem;
+    field-sizing: fixed;
+}
+
+.creatureBuilderForm.creatureBuilderFormModern .sense-entry select.stat-select.sense-acuity {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    field-sizing: content;
+}
+
+.creatureBuilderForm .sense-range-field {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.25rem;
+}
+
 .creatureBuilderForm .creatureBuilderAddButton {
     display: inline-block;
     width: auto;

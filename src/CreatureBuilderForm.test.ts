@@ -1066,6 +1066,71 @@ describe('CreatureBuilderForm', () => {
         })
     })
 
+    it('detects speeds and senses from actor source data', () => {
+        const actor = buildActor({
+            _source: {
+                system: {
+                    attributes: {
+                        speed: {
+                            value: 0,
+                            otherSpeeds: [{ type: 'fly', value: 40 }],
+                        },
+                    },
+                    perception: {
+                        senses: [
+                            { type: 'scent', acuity: 'imprecise', range: 30 },
+                        ],
+                    },
+                },
+            },
+            system: {
+                attributes: { speed: { value: 25 } },
+                perception: { senses: [{ type: 'darkvision' }] },
+            },
+        })
+        const form = new CreatureBuilderForm(actor)
+        expect(form.detectSpeeds()).toEqual([{ type: 'fly', value: 40 }])
+        expect(form.detectSenses()).toEqual([
+            { type: 'scent', acuity: 'imprecise', range: 30 },
+        ])
+
+        const fresh = new CreatureBuilderForm(buildActor())
+        expect(fresh.detectSpeeds()).toEqual([{ type: 'land', value: 25 }])
+        expect(fresh.detectSenses()).toEqual([])
+
+        const defaults = new CreatureBuilderForm(actor, {
+            useDefaultLevel: true,
+        })
+        expect(defaults.detectSpeeds()).toEqual([{ type: 'land', value: 25 }])
+        expect(defaults.detectSenses()).toEqual([])
+    })
+
+    it('writes speeds and senses when the section is submitted', () => {
+        const form = new CreatureBuilderForm(buildActor())
+        expect(form.applyMovementAndSenses({})).toEqual({})
+        expect(
+            form.applyMovementAndSenses({
+                movementSensesPresent: 'true',
+                'speedType-land': 'land',
+                'speedValue-land': '25',
+                'speedType-climb': 'climb',
+                'speedValue-climb': '20',
+                senseType0: 'darkvision',
+                senseType1: 'echolocation',
+                senseRange1: '40',
+            }),
+        ).toEqual({
+            'system.attributes.speed.value': 25,
+            'system.attributes.speed.otherSpeeds': [
+                { type: 'climb', value: 20 },
+            ],
+            'system.perception.senses': [
+                { type: 'darkvision', acuity: 'precise' },
+                { type: 'echolocation', acuity: 'precise', range: 40 },
+            ],
+        })
+    })
+
     it('detects lore skills from actor items', () => {
         const actor = buildActor({
             system: { details: { level: { value: 1 } } },
@@ -2052,6 +2117,51 @@ describe('CreatureBuilderForm', () => {
                 plain: 'true',
                 [GENERATE_ATTACKS_FROM_WEAPONS]: 'false',
                 'other-toggle': 'true',
+            })
+        })
+
+        it('preserves speed and sense inputs', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            vi.spyOn(
+                CreatureBuilderFormUI.prototype,
+                'destroy',
+            ).mockImplementation(() => {})
+            vi.spyOn(
+                CreatureBuilderFormUI.prototype,
+                'initialize',
+            ).mockImplementation(() => {})
+            ;(form as any).element = {
+                querySelectorAll: (selector: string) => {
+                    if (!selector.startsWith('input[name^="speedType-"]')) {
+                        return []
+                    }
+                    return [
+                        {
+                            name: 'speedValue-land',
+                            value: '25',
+                            getAttribute: (attr: string) =>
+                                attr === 'name' ? 'speedValue-land' : null,
+                        },
+                        {
+                            name: 'senseRange0',
+                            value: '30',
+                            getAttribute: () => null,
+                        },
+                        {
+                            value: 'skip',
+                            getAttribute: () => '',
+                        },
+                    ]
+                },
+            }
+
+            await (form as any)._preRender({}, {})
+            await (form as any)._onRender({}, {})
+
+            // biome-ignore lint/complexity/useLiteralKeys: private property
+            expect(form['formUI']?.['preservedControls']).toEqual({
+                'speedValue-land': '25',
+                senseRange0: '30',
             })
         })
     })

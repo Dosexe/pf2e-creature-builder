@@ -31,6 +31,15 @@ import {
     Statistics,
     skillSlug,
 } from './Keys'
+import {
+    movementActorUpdate,
+    readActorSenses,
+    readActorSpeed,
+    type SenseDraft,
+    type SpeedChip,
+    sensesFromActor,
+    speedsFromActor,
+} from './movementSenses'
 import { RoadMapRegistry } from './roadmaps/RoadMapRegistry'
 import {
     detectHPLevel,
@@ -404,6 +413,16 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             values[name] = input.value
         }
 
+        for (const input of Array.from(
+            root.querySelectorAll<HTMLInputElement>(
+                'input[name^="speedType-"], input[name^="speedValue-"], input[name^="senseRange"], input[name="sensesInitialized"], input[name="movementSensesPresent"]',
+            ),
+        )) {
+            const name = input.getAttribute?.('name') || input.name
+            if (!name) continue
+            values[name] = input.value
+        }
+
         return Object.keys(values).length > 0 ? values : null
     }
 
@@ -434,6 +453,8 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             detectedTraits: this.detectTraits(),
             detectedLoreSkills: this.detectLoreSkills(),
             detectedAttacks: this.detectAttacks(),
+            detectedSpeeds: this.detectSpeeds(),
+            detectedSenses: this.detectSenses(),
             actorLevel,
             droppedItems: this.droppedItems,
             root: this.element,
@@ -1103,6 +1124,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             Object.assign(updateData, this.applyLevel())
             Object.assign(updateData, this.applyTraits(formData))
             Object.assign(updateData, this.applyHitPoints(formData))
+            Object.assign(updateData, this.applyMovementAndSenses(formData))
 
             // Clone original actor with overrides (copies all data + items; save to world)
             const newActor: Actor | undefined = await this.actor.clone(
@@ -1395,6 +1417,20 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             })
         }
         return attacks
+    }
+
+    detectSpeeds(): SpeedChip[] {
+        if (this.useDefaultLevel) return speedsFromActor(undefined)
+        return speedsFromActor(readActorSpeed(this.actor))
+    }
+
+    detectSenses(): SenseDraft[] {
+        if (this.useDefaultLevel) return []
+        return sensesFromActor(readActorSenses(this.actor))
+    }
+
+    applyMovementAndSenses(formData: object): Record<string, unknown> {
+        return movementActorUpdate(formData) ?? {}
     }
 
     detectTraits(): string[] {
