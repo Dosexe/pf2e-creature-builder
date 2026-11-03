@@ -1266,11 +1266,9 @@ class CreatureBuilderFormUI {
             'pf2e-creature-builder.form.movement.remove-sense',
             'Remove sense',
         )
-        const remove = document.createElement('button')
-        remove.type = 'button'
+        const remove = document.createElement('span')
         remove.className = 'creatureBuilderRemoveIcon fa-solid fa-fw fa-trash'
         remove.title = removeLabel
-        remove.setAttribute('aria-label', removeLabel)
         remove.addEventListener('click', () => {
             row.remove()
             this.refreshSenseOptions()

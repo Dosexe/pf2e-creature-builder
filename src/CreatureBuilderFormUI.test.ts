@@ -3051,9 +3051,9 @@ describe('movement and senses controls', () => {
             rows[0]?.querySelector('.sense-type')?.getAttribute('aria-label'),
         ).toBe('Sense')
         const removeSense = rows[1]?.querySelector('.creatureBuilderRemoveIcon')
-        expect(removeSense?.tagName).toBe('BUTTON')
-        expect((removeSense as HTMLButtonElement).type).toBe('button')
-        expect(removeSense?.getAttribute('aria-label')).toBe('Remove sense')
+        expect(removeSense?.tagName).toBe('SPAN')
+        expect(removeSense?.classList.contains('fa-trash')).toBe(true)
+        expect(removeSense?.getAttribute('title')).toBe('Remove sense')
         expect(scentAcuity.nextElementSibling).toBe(
             rows[1]?.querySelector('.sense-range-field'),
         )
