@@ -46,7 +46,7 @@ function configuredCreatureSizes(): CreatureSizeChoice[] | null {
     for (const [value, label] of Object.entries(sizes)) {
         if (value.trim() === '') continue
         if (typeof label !== 'string' || label.trim() === '') continue
-        choices.push({ value, label })
+        choices.push({ value: value.trim(), label })
     }
     return choices.length > 0 ? choices : null
 }

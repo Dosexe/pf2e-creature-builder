@@ -625,6 +625,32 @@ describe('CreatureBuilderFormUI', () => {
         )
     })
 
+    it('does not restore detected attacks after the list was cleared', () => {
+        const preserved = capturePreservedControls({
+            querySelectorAll: (selector: string) =>
+                selector === '[id$="manualAttacksContainer"]'
+                    ? [{ id: 'manualAttacksContainer' }]
+                    : [],
+        })
+        expect(preserved).toEqual({ manualAttacksPresent: 'true' })
+
+        const ui = new CreatureBuilderFormUI(
+            buildConfig({
+                detectedAttacks: [
+                    {
+                        name: 'Jaws',
+                        bonus: Options.high,
+                        damage: Options.high,
+                    },
+                ],
+                preservedControls: preserved ?? undefined,
+            }),
+        )
+        ui.initialize()
+        expect(document.querySelectorAll('.attackEntry')).toHaveLength(0)
+        ui.destroy()
+    })
+
     it('adds and removes lore entries from the button', () => {
         const ui = new CreatureBuilderFormUI(buildConfig())
         ui.initialize()

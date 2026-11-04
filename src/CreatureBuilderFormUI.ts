@@ -86,6 +86,8 @@ interface CreatureBuilderFormConfig {
     preservedControls?: Record<string, string>
 }
 
+const MANUAL_ATTACKS_PRESENT = 'manualAttacksPresent'
+
 /**
  * Read the controls Foundry would discard when it replaces the form markup.
  */
@@ -147,6 +149,10 @@ export function capturePreservedControls(root: {
         const name = field.getAttribute?.('name') || field.name
         if (!name) continue
         values[name] = field.value
+    }
+
+    if (root.querySelectorAll('[id$="manualAttacksContainer"]').length > 0) {
+        values[MANUAL_ATTACKS_PRESENT] = 'true'
     }
 
     return Object.keys(values).length > 0 ? values : null
@@ -1145,7 +1151,8 @@ class CreatureBuilderFormUI {
     private initializeAttacks(): void {
         if (!this.queryById('manualAttacksContainer')) return
         const restored = this.preservedControls
-            ? Object.keys(this.preservedControls).some((key) =>
+            ? this.preservedControls[MANUAL_ATTACKS_PRESENT] === 'true' ||
+              Object.keys(this.preservedControls).some((key) =>
                   key.startsWith('attackName'),
               )
             : false
