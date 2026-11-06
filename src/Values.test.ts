@@ -187,6 +187,7 @@ describe('detectStrikeDamage', () => {
         expect(detectStrikeDamage('1', '1d8+2')).toBe(Options.high)
         expect(detectStrikeDamage('1', '2')).toBe(Options.moderate)
         expect(detectStrikeDamage('999', '1d6+3')).toBe(Options.moderate)
+        expect(detectStrikeDamage('1', 'd8')).toBe(Options.low)
     })
 })
 

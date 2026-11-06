@@ -3012,6 +3012,40 @@ describe('movement and senses controls', () => {
         document.body.append(section)
     }
 
+    it('uses the fallback sense label when localization is missing or fails', () => {
+        mountMovement()
+        ;(window as any).game = { i18n: {} }
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+        ui.addSense()
+        expect(
+            document.querySelector('.sense-type')?.getAttribute('aria-label'),
+        ).toBe('Sense')
+
+        ;(window as any).game = {
+            i18n: {
+                localize: () => {
+                    throw new Error('missing translation')
+                },
+            },
+        }
+        ui.addSense({ type: 'scent' })
+        const labels = Array.from(document.querySelectorAll('.sense-type')).map(
+            (element) => element.getAttribute('aria-label'),
+        )
+        expect(labels).toEqual(['Sense', 'Sense'])
+
+        const select = document.querySelector(
+            '.sense-type',
+        ) as HTMLSelectElement
+        const blank = document.createElement('option')
+        blank.value = ''
+        select.append(blank)
+        select.value = ''
+        select.dispatchEvent(new Event('change'))
+        ui.destroy()
+    })
+
     it('adds speeds from the menu and refuses to remove the last chip', () => {
         mountMovement()
         const warn = vi.fn()
@@ -3572,6 +3606,30 @@ describe('Manual Input', () => {
         show.dispatchEvent(new Event('change'))
         expect(manualLabel.hidden).toBe(false)
         expect(manual.checked).toBe(false)
+        ui.destroy()
+    })
+
+    it('does not enable Manual Input while bonuses are hidden', () => {
+        const { ui, show, manual } = start()
+        show.checked = false
+        show.dispatchEvent(new Event('change'))
+
+        manual.checked = true
+        manual.dispatchEvent(new Event('change'))
+        expect(manual.checked).toBe(false)
+        ui.destroy()
+    })
+
+    it('keeps the translation key when localization throws', () => {
+        ;(window as any).game.i18n.localize = () => {
+            throw new Error('missing translation')
+        }
+        const { ui, damagePreview, damage } = start()
+        damage.value = Options.high
+        damage.dispatchEvent(new Event('change'))
+        expect(damagePreview.textContent).toContain(
+            'PF2EMONSTERMAKER.strikeDamageShort',
+        )
         ui.destroy()
     })
 

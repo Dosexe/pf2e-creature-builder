@@ -427,6 +427,52 @@ describe('CreatureBuilderForm', () => {
         expect(options).toEqual({ parent: form.actor })
     })
 
+    it('skips a strike when the chosen tiers have no table value', async () => {
+        const form = new CreatureBuilderForm(buildActor())
+        form.level = '1'
+        expect(
+            form.applyStrike({
+                [Statistics.strikeBonus]: 'missing',
+                [Statistics.strikeDamage]: Options.moderate,
+            }),
+        ).toBeUndefined()
+        expect(Item.create).not.toHaveBeenCalled()
+
+        // biome-ignore lint/complexity/useLiteralKeys: private method
+        const blankType = form['manualStrikeItem'](
+            'Strike',
+            Options.high,
+            Options.moderate,
+            '  ',
+        )
+        expect(blankType?.system.damageRolls.strikeDamageID.damageType).toBe(
+            'bludgeoning',
+        )
+
+        expect(
+            // biome-ignore lint/complexity/useLiteralKeys: private method
+            form['manualStrikeItem'](
+                'Strike',
+                Options.high,
+                Options.moderate,
+                'slashing',
+                Number.NaN,
+            ),
+        ).toBeUndefined()
+    })
+
+    it('does not treat a fresh creature as having copied attacks', () => {
+        const fresh = new CreatureBuilderForm(
+            buildActor({ items: undefined }),
+            { useDefaultLevel: true },
+        )
+        const copied = new CreatureBuilderForm(buildActor({ items: undefined }))
+        // biome-ignore lint/complexity/useLiteralKeys: private method
+        expect(fresh['hasCopiedAttacks']()).toBe(false)
+        // biome-ignore lint/complexity/useLiteralKeys: private method
+        expect(copied['hasCopiedAttacks']()).toBe(false)
+    })
+
     it('skips spellcasting when option is none', async () => {
         const form = new CreatureBuilderForm(buildActor())
         form.level = '1'
@@ -2069,6 +2115,11 @@ describe('CreatureBuilderForm', () => {
             await (form as any)._preRender({}, {})
             await (form as any)._onRender({}, {})
 
+            ;(form as any).element = {}
+            await (form as any)._preRender({}, {})
+            // biome-ignore lint/complexity/useLiteralKeys: private property
+            expect(form['preservedControls']).toBeNull()
+
             // biome-ignore lint/complexity/useLiteralKeys: private property
             const preserved = form['formUI']?.['preservedControls']
             expect(preserved).toEqual({
@@ -2880,6 +2931,73 @@ describe('CreatureBuilderForm', () => {
                 expect.any(Error),
             )
         })
+
+        it('keeps one strike per weapon identity and still keeps other items', async () => {
+            const attack = (name: string) => ({
+                toNPCAttacks: () => [
+                    {
+                        toObject: () => ({
+                            name,
+                            type: 'melee',
+                            system: {},
+                        }),
+                    },
+                ],
+            })
+            const createEmbeddedDocuments = vi.fn(async () => [{}])
+            const form = new CreatureBuilderForm(
+                buildActor({
+                    system: {
+                        abilities: {
+                            str: { mod: 'nope' },
+                            dex: { mod: Number.NaN },
+                        },
+                    },
+                    createEmbeddedDocuments,
+                }),
+            )
+            form.level = 'nope'
+
+            await expect(
+                form.applyGeneratedWeaponAttacks(
+                    { [GENERATE_ATTACKS_FROM_WEAPONS]: true },
+                    [
+                        {
+                            source: {
+                                type: 'weapon',
+                                name: '  ',
+                                _sourceUuid: 'Compendium.x',
+                            },
+                            document: attack('First'),
+                        },
+                        {
+                            source: {
+                                type: 'weapon',
+                                _sourceUuid: 'Compendium.x',
+                            },
+                            document: attack('Duplicate'),
+                        },
+                        {
+                            source: {
+                                type: 'armor',
+                                name: 'Shield',
+                                _sourceUuid: 'Compendium.x',
+                            },
+                            document: attack('Shield'),
+                        },
+                        {
+                            source: { type: 'weapon' },
+                            document: attack('Nameless'),
+                        },
+                    ],
+                ),
+            ).resolves.toBe(true)
+            expect(
+                createEmbeddedDocuments.mock.calls.map(
+                    (call) => call[1][0].name,
+                ),
+            ).toEqual(['First', 'Shield', 'Nameless'])
+        })
     })
 
     describe('_onDrop', () => {
@@ -3400,6 +3518,46 @@ describe('CreatureBuilderForm', () => {
             expect(claw.system.damageRolls.strikeDamageID).toMatchObject({
                 damage: '2d6+4',
                 damageType: 'fire',
+                category: null,
+            })
+        })
+
+        it('uses bludgeoning when a copied strike has no damage type', async () => {
+            const form = new CreatureBuilderForm(buildActor())
+            form.level = '1'
+            await form.applyManualAttacks({
+                attackName0: 'Slam',
+                attackBonus0: Options.high,
+                attackDamage0: Options.high,
+                attackSource0: JSON.stringify({
+                    sourceLevel: '1',
+                    bonusTier: Options.high,
+                    damageTier: Options.high,
+                    bonus: 9,
+                    item: {
+                        type: 'melee',
+                        name: 'Slam',
+                        system: {
+                            bonus: { value: 9 },
+                            damageRolls: {
+                                empty: null,
+                                note: 'text',
+                                persistent: {
+                                    damage: '1d6',
+                                    damageType: '  ',
+                                    category: 'persistent',
+                                },
+                            },
+                        },
+                    },
+                }),
+                'manualOverride.attackDamage0': '2d6+4',
+            })
+
+            const slam = Item.create.mock.calls[0][0]
+            expect(slam.system.damageRolls.strikeDamageID).toMatchObject({
+                damage: '2d6+4',
+                damageType: 'bludgeoning',
                 category: null,
             })
         })

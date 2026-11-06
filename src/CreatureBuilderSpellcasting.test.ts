@@ -1109,5 +1109,38 @@ describe('CreatureBuilderSpellcasting', () => {
 
             expect(result.spells).toBeUndefined()
         })
+
+        it('copies a spontaneous spell into a slot named for its rank', () => {
+            const items = [
+                {
+                    id: 'entry123',
+                    type: 'spellcastingEntry',
+                    system: {
+                        spelldc: { dc: 17 },
+                        tradition: { value: 'arcane' },
+                        prepared: { value: 'spontaneous' },
+                    },
+                },
+                {
+                    id: 'spell1',
+                    type: 'spell',
+                    name: 'Fireball',
+                    system: {
+                        location: { value: 'entry123' },
+                        level: { value: 'not-a-rank' },
+                    },
+                },
+            ]
+
+            const result = detectSpellcasting(items as Iterable<Item>, '1')
+
+            expect(result.spells).toEqual([
+                expect.objectContaining({
+                    originalId: 'spell1',
+                    slotKey: 'slot0',
+                    slotIndex: 0,
+                }),
+            ])
+        })
     })
 })

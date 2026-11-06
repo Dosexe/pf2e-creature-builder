@@ -425,6 +425,113 @@ describe('SpellListResolver', () => {
             expect(updatedSlots.slot1.prepared[1].id).toBe('new-bh')
         })
 
+        it('leaves a prepared slot empty when that spell was not created', async () => {
+            const list: SpellList = {
+                name: 'Partial',
+                tradition: MagicalTradition.arcane,
+                levels: [
+                    {
+                        level: 0,
+                        spells: [{ slug: 'light' }, { slug: 'detect-magic' }],
+                    },
+                ],
+            }
+            const slots = {
+                slot0: makeSlot(2, [
+                    { id: null, expended: false },
+                    { id: null, expended: false },
+                ]),
+            }
+            mockGetIndex.mockResolvedValue([
+                { _id: 'id-li', name: 'Light', system: { slug: 'light' } },
+                {
+                    _id: 'id-dm',
+                    name: 'Detect Magic',
+                    system: { slug: 'detect-magic' },
+                },
+            ])
+            mockGetDocument.mockImplementation((id: string) =>
+                Promise.resolve({
+                    toObject: () => ({
+                        _id: id,
+                        name: id,
+                        type: 'spell',
+                        system: { slug: id, location: { value: '' } },
+                    }),
+                }),
+            )
+            mockCreateEmbeddedDocuments.mockResolvedValue([
+                { id: 'new-li', name: 'Light' },
+            ])
+            const update = vi.fn().mockResolvedValue([])
+            mockActor.updateEmbeddedDocuments = update
+            mockActor.items = [{ type: 'spellcastingEntry', id: 'entry-1' }]
+
+            await resolveAndApplySpellList(
+                list,
+                slots,
+                'entry-1',
+                'prepared',
+                mockActor,
+            )
+
+            const updated = update.mock.calls[0][1][0]['system.slots']
+            expect(updated.slot0.prepared[0].id).toBe('new-li')
+            expect(updated.slot0.prepared[1].id).toBeNull()
+        })
+
+        it('uses rank 1 when an innate creature level is not a positive number', async () => {
+            const list: SpellList = {
+                name: 'Innate Zero',
+                tradition: MagicalTradition.arcane,
+                levels: [
+                    { level: 0, spells: [{ slug: 'light' }] },
+                    { level: 1, spells: [{ slug: 'magic-missile' }] },
+                    { level: 3, spells: [{ slug: 'fireball' }] },
+                ],
+            }
+            mockGetIndex.mockResolvedValue([
+                { _id: 'id-li', name: 'Light', system: { slug: 'light' } },
+                {
+                    _id: 'id-mm',
+                    name: 'Magic Missile',
+                    system: { slug: 'magic-missile' },
+                },
+                {
+                    _id: 'id-fb',
+                    name: 'Fireball',
+                    system: { slug: 'fireball' },
+                },
+            ])
+            mockGetDocument.mockImplementation((id: string) =>
+                Promise.resolve({
+                    toObject: () => ({
+                        name: id,
+                        type: 'spell',
+                        system: { slug: id, location: { value: '' } },
+                    }),
+                }),
+            )
+            mockCreateEmbeddedDocuments.mockResolvedValue([
+                { id: 'a' },
+                { id: 'b' },
+            ])
+
+            await resolveAndApplySpellList(
+                list,
+                {},
+                'entry-1',
+                'innate',
+                mockActor,
+                '0',
+            )
+
+            expect(mockGetDocument.mock.calls.map((call) => call[0])).toEqual([
+                'id-li',
+                'id-mm',
+            ])
+        })
+
         it('skips index entries without system or slug', async () => {
             const slots = { slot0: makeSlot(5) }
 
