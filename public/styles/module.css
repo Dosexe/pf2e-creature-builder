@@ -179,6 +179,323 @@
     background-color: color-mix(in srgb, rgb(158, 158, 158) 40%, var(--color-bg, #222));
 }
 
+.creatureBuilderForm .iwr-section {
+    margin-top: 0.45rem;
+}
+
+.creatureBuilderFormModern .iwr-section > summary.collapsibleHeader h3 {
+    font-size: var(--font-size-16, 1rem);
+}
+
+.creatureBuilderForm .iwr-group {
+    margin: 0.35rem 0 0.65rem;
+}
+
+.creatureBuilderForm .iwr-group-label {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.creatureBuilderForm .iwr-add,
+.creatureBuilderForm .iwr-editor-block {
+    position: relative;
+}
+
+.creatureBuilderForm .iwr-add {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.creatureBuilderForm .iwr-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.creatureBuilderForm .iwr-row {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+    border-radius: 3px;
+    background: rgba(158, 158, 158, 0.15);
+}
+
+.creatureBuilderForm .iwr-entry > .iwr-remove {
+    margin-top: 0.4rem;
+}
+
+.creatureBuilderForm .iwr-row-bar {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    padding-right: 0.15rem;
+}
+
+.creatureBuilderForm .iwr-summary-lead {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.creatureBuilderForm .iwr-row-summary {
+    flex: 0 0 auto;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+    padding: 0.4rem 0.15rem 0.4rem 0.55rem;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.creatureBuilderForm .iwr-summary-type {
+    font-weight: 600;
+}
+
+.creatureBuilderForm .iwr-summary-meta {
+    display: inline-flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.75rem;
+    min-width: 0;
+    margin-left: 0.15rem;
+    color: color-mix(in srgb, currentColor 78%, transparent);
+    white-space: normal;
+}
+
+.creatureBuilderForm .iwr-entry:not([data-iwr-expanded='true']) .iwr-summary-lead {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
+.creatureBuilderForm .iwr-entry:not([data-iwr-expanded='true']) .iwr-row-summary,
+.creatureBuilderForm .iwr-entry:not([data-iwr-expanded='true']) .iwr-summary-value,
+.creatureBuilderForm .iwr-entry:not([data-iwr-expanded='true']) .iwr-summary-meta,
+.creatureBuilderForm .iwr-entry:not([data-iwr-expanded='true']) .iwr-summary-except,
+.creatureBuilderForm .iwr-entry:not([data-iwr-expanded='true']) .iwr-summary-double {
+    display: inline;
+    width: auto;
+    white-space: normal;
+}
+
+.creatureBuilderForm .iwr-entry:not([data-iwr-expanded='true']) .iwr-summary-value {
+    margin-left: 0.4rem;
+}
+
+.creatureBuilderForm .iwr-entry:not([data-iwr-expanded='true']) .iwr-summary-meta {
+    margin-left: 0.45rem;
+}
+
+.creatureBuilderForm .iwr-entry:not([data-iwr-expanded='true']) .iwr-summary-double {
+    margin-left: 0.75rem;
+}
+
+.creatureBuilderForm .iwr-summary-meta:empty,
+.creatureBuilderForm .iwr-entry .iwr-summary-meta[hidden],
+.creatureBuilderForm .iwr-entry[data-iwr-expanded='true'] .iwr-summary-meta {
+    display: none;
+}
+
+.creatureBuilderForm .iwr-summary-value {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.creatureBuilderForm .iwr-entry[data-iwr-expanded='true'] .iwr-summary-value {
+    display: none;
+}
+
+.creatureBuilderForm .iwr-row-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.45rem;
+    border-top: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+}
+
+.creatureBuilderForm .iwr-value-field {
+    display: inline-flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: auto;
+    gap: 0.4rem;
+    margin: 0;
+}
+
+.creatureBuilderForm .iwr-entry:not([data-iwr-expanded='true']) .iwr-value-field {
+    display: none;
+}
+
+.creatureBuilderForm .iwr-value-input {
+    box-sizing: border-box;
+    width: 2.75rem;
+    margin: 0;
+    padding: 0.1rem 0.3rem;
+    color: var(--color-text-primary);
+    background: transparent;
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+    border-radius: 3px;
+    text-align: center;
+}
+
+.creatureBuilderForm .iwr-range-hint {
+    font-size: 0.9em;
+    padding: 0.1rem 0.4rem;
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 55%, transparent));
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--color-text-primary, currentColor) 8%, transparent);
+    white-space: nowrap;
+}
+
+.creatureBuilderForm .iwr-editor-block {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 3px;
+}
+
+.creatureBuilderForm .iwr-editor-block--exceptions {
+    background: color-mix(in srgb, #a67c2d 32%, transparent);
+}
+
+.creatureBuilderForm .iwr-editor-block--double {
+    background: color-mix(in srgb, #3d6ea5 34%, transparent);
+}
+
+.creatureBuilderForm .iwr-editor-label {
+    flex: 0 0 auto;
+    margin: 0;
+    font-size: 0.78em;
+    letter-spacing: 0.04em;
+    text-transform: none;
+}
+
+.creatureBuilderForm .iwr-editor-divider {
+    display: none;
+}
+
+.creatureBuilderForm .iwr-chips {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 8rem;
+    margin: 0;
+}
+
+.creatureBuilderForm .iwr-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    height: 25px;
+    padding: 0 2px 0 6px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--color-text-primary, currentColor) 14%, transparent);
+}
+
+.creatureBuilderForm .iwr-chip-remove {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.creatureBuilderForm .iwr-add-modifier-wrap {
+    position: relative;
+    margin-left: auto;
+}
+
+.creatureBuilderForm .iwr-add-modifier-wrap .iwr-type-menu {
+    top: calc(100% + 2px);
+    right: 0;
+    left: auto;
+}
+
+.creatureBuilderForm .iwr-add-modifier {
+    min-height: 25px;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 55%, transparent));
+    border-radius: 3px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.creatureBuilderForm .iwr-add-modifier:hover {
+    background: color-mix(in srgb, var(--color-text-primary, currentColor) 14%, transparent);
+}
+
+.creatureBuilderForm .iwr-add-modifier:focus,
+.creatureBuilderForm .iwr-add-modifier:focus-visible {
+    outline: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+.creatureBuilderForm .iwr-type-menu {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    min-width: 12rem;
+    max-height: 16rem;
+    overflow-y: auto;
+    padding: 0.25rem;
+    color: var(--color-text-primary);
+    background-color: color-mix(in srgb, rgb(158, 158, 158) 22%, var(--color-bg, #222));
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+    border-radius: 3px;
+}
+
+.creatureBuilderForm .iwr-type-filter {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 0.25rem;
+    padding: 0.25rem 0.4rem;
+    color: var(--color-text-primary);
+    background: transparent;
+    border: 1px solid var(--color-border, color-mix(in srgb, currentColor 45%, transparent));
+    border-radius: 3px;
+}
+
+.creatureBuilderForm .iwr-type-menu[hidden] {
+    display: none;
+}
+
+.creatureBuilderForm .iwr-type-menu button {
+    border: none;
+    background: transparent;
+    color: var(--color-text-primary);
+    text-align: left;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+}
+
+.creatureBuilderForm .iwr-type-menu button:hover {
+    background-color: color-mix(in srgb, rgb(158, 158, 158) 40%, var(--color-bg, #222));
+}
+
 .creatureBuilderForm .sense-entry {
     display: flex;
     flex-wrap: wrap;
@@ -251,7 +568,13 @@
 }
 
 .creatureBuilderForm details.collapsibleSection {
-    margin-bottom: 0.35rem;
+    margin: 0;
+    padding: 0.65rem 0 0.75rem;
+    border-top: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
+}
+
+.creatureBuilderForm .form-main > details.collapsibleSection:last-of-type {
+    border-bottom: 1px solid var(--color-border, color-mix(in srgb, currentColor 28%, transparent));
 }
 
 .creatureBuilderForm summary.collapsibleHeader {
@@ -276,7 +599,7 @@ summary.collapsibleHeader {
     font-size: 1.1em;
 }
 
-.creatureBuilderForm details[open] .creatureBuilderHeaderArrow {
+.creatureBuilderForm details[open] > summary .creatureBuilderHeaderArrow {
     transform: rotate(90deg);
 }
 

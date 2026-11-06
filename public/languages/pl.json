@@ -101,7 +101,7 @@
     "PF2EMONSTERMAKER.addLore": "Dodaj Wiedzę",
     "PF2EMONSTERMAKER.loreName": "Nazwa wiedzy (np. Wojna)",
 
-    "pf2e-creature-builder.form.size": "Rozmiar",
+    "pf2e-creature-builder.form.size.label": "Rozmiar",
     "pf2e-creature-builder.form.size.tiny": "Drobny",
     "pf2e-creature-builder.form.size.small": "Mały",
     "pf2e-creature-builder.form.size.medium": "Średni",

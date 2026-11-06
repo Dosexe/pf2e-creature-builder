@@ -10,6 +10,22 @@ import { DEFAULT_CREATURE_SIZE } from '@/systems/creatureSizes'
 import { getCreatureSystem } from '@/systems/getCreatureSystem'
 import { statisticValues } from '@/Values'
 import {
+    type ActorIwr,
+    availableIwrModifiers,
+    availableIwrTypes,
+    cloneActorIwr,
+    defaultIwrValue,
+    emptyActorIwr,
+    IWR_KINDS,
+    type IwrDraft,
+    type IwrKind,
+    iwrCollapsedSummary,
+    iwrFromControls,
+    iwrListKey,
+    iwrTypeLabel,
+    recommendedIwrText,
+} from './iwr'
+import {
     closestTierForEdit,
     displayEditedDamage,
     displayEditedNumber,
@@ -79,6 +95,7 @@ interface CreatureBuilderFormConfig {
     detectedAttacks?: DetectedAttack[]
     detectedSpeeds?: SpeedChip[]
     detectedSenses?: SenseDraft[]
+    detectedIwr?: ActorIwr
     actorLevel: string
     droppedItems?: Record<string, unknown>[]
     root: HTMLElement
@@ -142,7 +159,7 @@ export function capturePreservedControls(root: {
 
     for (const input of Array.from(
         root.querySelectorAll(
-            'input[name^="speedType-"], input[name^="speedValue-"], input[name^="senseRange"], input[name="sensesInitialized"], input[name="movementSensesPresent"]',
+            'input[name^="speedType-"], input[name^="speedValue-"], input[name^="senseRange"], input[name="sensesInitialized"], input[name="movementSensesPresent"], input[name="iwrPresent"], input[name="iwrPreserved"], input[name^="immunity-"], input[name^="resistance-"], input[name^="weakness-"]',
         ),
     )) {
         const field = input as HTMLInputElement
@@ -175,6 +192,7 @@ class CreatureBuilderFormUI {
     private readonly detectedAttacks: DetectedAttack[]
     private readonly detectedSpeeds: SpeedChip[]
     private readonly detectedSenses: SenseDraft[]
+    private readonly detectedIwr: ActorIwr
     private readonly actorLevel: string
     private readonly droppedItems: Record<string, unknown>[]
     private readonly root: HTMLElement
@@ -185,6 +203,12 @@ class CreatureBuilderFormUI {
     private damageEditor: HTMLElement | null = null
     private damageEditorBadge: HTMLElement | null = null
     private senseCounter: number = 0
+    private iwr: ActorIwr = emptyActorIwr()
+    private expandedIwrKey: string | null = null
+    private iwrRendering = false
+    private iwrPointerInRow = false
+    private iwrPointerTimer: ReturnType<typeof setTimeout> | undefined
+    private iwrCollapseTimer: ReturnType<typeof setTimeout> | undefined
     private traits: string[] = []
     private selectedDropdownIndex: number = -1
 
@@ -222,6 +246,11 @@ class CreatureBuilderFormUI {
         const speedsTray = this.queryById('speedsTray')
         if (speedsTray && !speedsTray.contains(target)) {
             this.hideSpeedMenu()
+        }
+        const element =
+            target instanceof Element ? target : target.parentElement
+        if (!element?.closest('.iwr-add, .iwr-editor-block')) {
+            this.hideIwrMenus()
         }
         const dieField = this.damageEditor?.querySelector(
             '.damage-editor-die-field',
@@ -270,6 +299,7 @@ class CreatureBuilderFormUI {
         this.detectedAttacks = config.detectedAttacks ?? []
         this.detectedSpeeds = config.detectedSpeeds ?? []
         this.detectedSenses = config.detectedSenses ?? []
+        this.detectedIwr = cloneActorIwr(config.detectedIwr ?? emptyActorIwr())
         this.actorLevel = String(config.actorLevel)
         this.droppedItems = config.droppedItems ?? []
         this.root = config.root
@@ -286,6 +316,7 @@ class CreatureBuilderFormUI {
         this.initializeTraits()
         this.initializeLoreSkills()
         this.initializeMovement()
+        this.initializeIwr()
         this.restoreManualAttacks()
         this.initializeAttacks()
         this.initCollapsibleSections()
@@ -307,6 +338,7 @@ class CreatureBuilderFormUI {
             this.updateSpellcastingOptionsVisibility()
             this.applyAllStatHighlights()
             this.updateStatPreview()
+            this.refreshIwrRangeHints()
         }, 0)
     }
 
@@ -319,6 +351,11 @@ class CreatureBuilderFormUI {
             clearTimeout(this.initTimer)
             this.initTimer = undefined
         }
+        if (this.iwrCollapseTimer !== undefined) {
+            clearTimeout(this.iwrCollapseTimer)
+            this.iwrCollapseTimer = undefined
+        }
+        this.unbindIwrPointerListeners()
 
         document.removeEventListener('click', this.onDocumentClick)
         this.root.removeEventListener('click', this.onBadgeClick)
@@ -1645,6 +1682,12 @@ class CreatureBuilderFormUI {
         this.renderSpeeds([{ type: 'land', value: DEFAULT_LAND_SPEED }])
         this.renderSenses([])
         this.hideSpeedMenu()
+        this.iwr = emptyActorIwr()
+        this.expandedIwrKey = null
+        this.renderIwr()
+        this.queryById<HTMLDetailsElement>('sectionIwr')?.removeAttribute(
+            'open',
+        )
 
         this.updateSpellcastingOptionsVisibility()
         this.clearDroppedItems()
@@ -2685,6 +2728,673 @@ class CreatureBuilderFormUI {
                     })
                 }
             }
+        }
+    }
+
+    private initializeIwr(): void {
+        if (!this.queryById('immunityRows')) return
+        this.bindIwrPointerListeners()
+        const restored = iwrFromControls(this.preservedControls)
+        this.iwr = cloneActorIwr(restored ?? this.detectedIwr)
+        this.expandedIwrKey = null
+        this.renderIwr()
+        for (const kind of IWR_KINDS) {
+            this.queryById(this.iwrAddId(kind))?.addEventListener(
+                'click',
+                () => {
+                    this.toggleIwrTypeMenu(kind)
+                },
+            )
+        }
+        this.queryById<HTMLSelectElement>(
+            'creatureBuilderLevel',
+        )?.addEventListener('change', () => {
+            this.refreshIwrRangeHints()
+        })
+    }
+
+    private renderIwr(): void {
+        if (!this.queryById('immunityRows')) return
+        this.iwrRendering = true
+        try {
+            this.writeIwrPreserved()
+            for (const kind of IWR_KINDS) this.renderIwrList(kind)
+            this.syncIwrAddButtons()
+        } finally {
+            this.iwrRendering = false
+        }
+    }
+
+    private renderIwrList(kind: IwrKind): void {
+        const container = this.queryById(this.iwrRowsId(kind))
+        if (!container) return
+        container.replaceChildren()
+        const drafts = this.iwr[iwrListKey(kind)]
+        for (let index = 0; index < drafts.length; index++) {
+            const draft = drafts[index]
+            if (!draft) continue
+            container.append(this.buildIwrRow(kind, index, draft))
+        }
+    }
+
+    private buildIwrRow(
+        kind: IwrKind,
+        index: number,
+        draft: IwrDraft,
+    ): HTMLElement {
+        const expanded = this.expandedIwrKey === `${kind}:${index}`
+        const entry = document.createElement('div')
+        entry.className = 'iwr-entry'
+        entry.dataset.iwrKind = kind
+        entry.dataset.iwrType = draft.type
+        entry.dataset.iwrIndex = String(index)
+        if (expanded) entry.dataset.iwrExpanded = 'true'
+        const row = document.createElement('div')
+        row.className = 'iwr-row'
+
+        const bar = document.createElement('div')
+        bar.className = 'iwr-row-bar'
+        const lead = document.createElement('div')
+        lead.className = 'iwr-summary-lead'
+        const summary = document.createElement('button')
+        summary.type = 'button'
+        summary.className = 'iwr-row-summary'
+        summary.setAttribute('aria-expanded', expanded ? 'true' : 'false')
+        const typeLabel = document.createElement('span')
+        typeLabel.className = 'iwr-summary-type'
+        typeLabel.textContent = iwrTypeLabel(kind, draft.type)
+        summary.append(typeLabel)
+        summary.addEventListener('click', () => {
+            this.expandIwr(kind, index)
+        })
+        lead.append(summary)
+        if (kind === 'resistance' || kind === 'weakness') {
+            const value = document.createElement('span')
+            value.className = 'iwr-summary-value'
+            value.textContent = String(draft.value ?? '')
+            lead.append(value)
+            this.appendIwrValueField(lead, kind, draft)
+        }
+        const meta = document.createElement('span')
+        meta.className = 'iwr-summary-meta'
+        const collapsedSummary = iwrCollapsedSummary(
+            kind,
+            draft.exceptions,
+            draft.doubleVs,
+        )
+        meta.textContent = collapsedSummary
+        meta.hidden = expanded || collapsedSummary.length === 0
+        lead.append(meta)
+        bar.addEventListener('click', (event) => {
+            const target = event.target
+            if (!(target instanceof Element)) return
+            if (target.closest('.iwr-row-summary, .iwr-value-field')) {
+                return
+            }
+            this.expandIwr(kind, index)
+        })
+
+        const remove = document.createElement('span')
+        remove.className =
+            'iwr-remove creatureBuilderRemoveIcon fa-solid fa-fw fa-trash'
+        const removeLabel = this.iwrLabel(
+            'pf2e-creature-builder.form.iwr.remove',
+            'Remove',
+        )
+        remove.title = removeLabel
+        remove.setAttribute('aria-label', removeLabel)
+        remove.addEventListener('click', (event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            this.removeIwr(kind, index)
+        })
+        bar.append(lead)
+
+        const editor = document.createElement('div')
+        editor.className = 'iwr-row-editor'
+        editor.hidden = !expanded
+        if (expanded) {
+            editor.append(
+                this.buildModifierBlock(
+                    kind,
+                    index,
+                    'exceptions',
+                    draft.exceptions,
+                ),
+            )
+            if (kind === 'resistance') {
+                const divider = document.createElement('div')
+                divider.className = 'iwr-editor-divider'
+                editor.append(
+                    divider,
+                    this.buildModifierBlock(
+                        kind,
+                        index,
+                        'doubleVs',
+                        draft.doubleVs,
+                    ),
+                )
+            }
+        }
+
+        row.append(bar, editor)
+        this.appendIwrHidden(row, `${kind}-${index}-type`, draft.type)
+        this.appendIwrHidden(
+            row,
+            `${kind}-${index}-exceptions`,
+            draft.exceptions.join(','),
+        )
+        if (kind !== 'immunity') {
+            this.appendIwrHidden(
+                row,
+                `${kind}-${index}-value`,
+                String(draft.value ?? 0),
+            )
+        }
+        if (kind === 'resistance') {
+            this.appendIwrHidden(
+                row,
+                `${kind}-${index}-doubleVs`,
+                draft.doubleVs.join(','),
+            )
+        }
+
+        entry.append(row, remove)
+        entry.addEventListener('focusout', (event) => {
+            if (this.iwrRendering) return
+            const key = `${kind}:${index}`
+            if (this.expandedIwrKey !== key) return
+            const next = event.relatedTarget
+            if (next instanceof Node && entry.contains(next)) return
+            // Foundry often focuses the window, not the button, when a row
+            // control is clicked. That pointer press still belongs to the row.
+            if (this.iwrPointerInRow) return
+            this.scheduleIwrCollapse(key)
+        })
+        return entry
+    }
+
+    private appendIwrValueField(
+        parent: HTMLElement,
+        kind: 'resistance' | 'weakness',
+        draft: IwrDraft,
+    ): void {
+        const field = document.createElement('label')
+        field.className = 'iwr-value-field'
+        const input = document.createElement('input')
+        input.type = 'number'
+        input.className = 'iwr-value-input'
+        input.setAttribute(
+            'aria-label',
+            this.iwrLabel('pf2e-creature-builder.form.iwr.value', 'Value'),
+        )
+        input.value = String(
+            draft.value ?? defaultIwrValue(kind, this.currentLevel()),
+        )
+        input.addEventListener('input', () => {
+            const numeric = Number(input.value)
+            if (input.value.trim() === '' || !Number.isFinite(numeric)) return
+            draft.value = Math.round(numeric)
+            const hidden = input
+                .closest('.iwr-row')
+                ?.querySelector<HTMLInputElement>(`input[name$="-value"]`)
+            if (hidden) hidden.value = String(draft.value)
+            const summary = input
+                .closest('.iwr-row')
+                ?.querySelector('.iwr-summary-value')
+            if (summary) summary.textContent = String(draft.value)
+        })
+        const hint = document.createElement('span')
+        hint.className = 'iwr-range-hint'
+        hint.textContent = recommendedIwrText(this.currentLevel())
+        field.append(input, hint)
+        parent.append(field)
+    }
+
+    private buildModifierBlock(
+        kind: IwrKind,
+        index: number,
+        mode: 'exceptions' | 'doubleVs',
+        slugs: string[],
+    ): HTMLElement {
+        const block = document.createElement('div')
+        block.className = `iwr-editor-block iwr-editor-block--${
+            mode === 'exceptions' ? 'exceptions' : 'double'
+        }`
+        const label = document.createElement('span')
+        label.className = 'iwr-editor-label'
+        label.textContent = this.iwrLabel(
+            mode === 'exceptions'
+                ? 'pf2e-creature-builder.form.iwr.exceptions'
+                : 'pf2e-creature-builder.form.iwr.double-vs',
+            mode === 'exceptions' ? 'Exceptions' : 'Double Vs',
+        )
+        const chips = document.createElement('div')
+        chips.className = 'iwr-chips'
+        for (const slug of slugs) {
+            chips.append(this.buildIwrChip(kind, index, mode, slug))
+        }
+        const addWrap = document.createElement('div')
+        addWrap.className = 'iwr-add-modifier-wrap'
+        const add = document.createElement('button')
+        add.type = 'button'
+        add.className = 'iwr-add-modifier'
+        add.textContent = this.iwrLabel(
+            mode === 'exceptions'
+                ? 'pf2e-creature-builder.form.iwr.add-exception'
+                : 'pf2e-creature-builder.form.iwr.add-double-vs',
+            '+ Add',
+        )
+        add.addEventListener('click', (event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            this.toggleModifierMenu(kind, index, mode)
+        })
+        const menu = document.createElement('div')
+        menu.className = 'iwr-type-menu'
+        menu.hidden = true
+        menu.dataset.modifier = mode
+        addWrap.append(add, menu)
+        chips.append(addWrap)
+        block.append(label, chips)
+        return block
+    }
+
+    private buildIwrChip(
+        kind: IwrKind,
+        index: number,
+        mode: 'exceptions' | 'doubleVs',
+        slug: string,
+    ): HTMLElement {
+        const chip = document.createElement('span')
+        chip.className = 'iwr-chip'
+        chip.dataset.slug = slug
+        const name = document.createElement('span')
+        name.textContent = iwrTypeLabel(kind, slug)
+        const remove = document.createElement('button')
+        remove.type = 'button'
+        remove.className = 'iwr-chip-remove'
+        remove.textContent = '×'
+        remove.setAttribute(
+            'aria-label',
+            this.iwrLabel('pf2e-creature-builder.form.iwr.remove', 'Remove'),
+        )
+        remove.addEventListener('click', (event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            this.removeIwrModifier(kind, index, mode, slug)
+        })
+        chip.append(name, remove)
+        return chip
+    }
+
+    private appendIwrHidden(
+        row: HTMLElement,
+        name: string,
+        value: string,
+    ): void {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = name
+        input.value = value
+        row.append(input)
+    }
+
+    private toggleIwrTypeMenu(kind: IwrKind): void {
+        const menu = this.queryById<HTMLElement>(this.iwrMenuId(kind))
+        if (!menu) return
+        const opening = menu.hidden
+        this.hideIwrMenus()
+        if (!opening) return
+        const used = this.iwr[iwrListKey(kind)].map((row) => row.type)
+        const choices = availableIwrTypes(kind, used)
+        this.fillIwrMenu(menu, choices, (slug) => {
+            this.addIwr(kind, slug)
+        })
+        menu.hidden = choices.length === 0
+        this.keepExpandedIwrOpen()
+        this.focusIwrFilter(menu)
+    }
+
+    private toggleModifierMenu(
+        kind: IwrKind,
+        index: number,
+        mode: 'exceptions' | 'doubleVs',
+    ): void {
+        const menu = this.iwrRowElement(
+            kind,
+            index,
+        )?.querySelector<HTMLElement>(`.iwr-type-menu[data-modifier="${mode}"]`)
+        if (!menu) return
+        const opening = menu.hidden
+        this.hideIwrMenus()
+        if (!opening) return
+        const draft = this.iwr[iwrListKey(kind)][index]
+        if (!draft) return
+        const choices = availableIwrModifiers(kind, draft.type, [
+            ...draft.exceptions,
+            ...draft.doubleVs,
+        ])
+        this.fillIwrMenu(menu, choices, (slug) => {
+            this.addIwrModifier(kind, index, mode, slug)
+        })
+        menu.hidden = choices.length === 0
+        this.keepExpandedIwrOpen()
+        this.focusIwrFilter(menu)
+    }
+
+    private focusIwrFilter(menu: HTMLElement): void {
+        if (menu.hidden) return
+        menu.querySelector<HTMLInputElement>('.iwr-type-filter')?.focus()
+    }
+
+    private fillIwrMenu(
+        menu: HTMLElement,
+        choices: { slug: string; label: string }[],
+        onChoose: (slug: string) => void,
+    ): void {
+        menu.replaceChildren()
+        const filter = document.createElement('input')
+        filter.type = 'search'
+        filter.className = 'iwr-type-filter'
+        filter.autocomplete = 'off'
+        filter.placeholder = this.iwrLabel(
+            'pf2e-creature-builder.form.iwr.filter',
+            'Filter',
+        )
+        filter.setAttribute('aria-label', filter.placeholder)
+        const buttons: HTMLButtonElement[] = []
+        filter.addEventListener('input', () => {
+            const query = filter.value.trim().toLowerCase()
+            for (const button of buttons) {
+                const label = button.textContent?.toLowerCase() ?? ''
+                button.hidden = query.length > 0 && !label.includes(query)
+            }
+        })
+        filter.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault()
+                menu.hidden = true
+                return
+            }
+            if (event.key !== 'Enter') return
+            event.preventDefault()
+            buttons.find((button) => !button.hidden)?.click()
+        })
+        filter.addEventListener('click', (event) => {
+            event.stopPropagation()
+        })
+        menu.append(filter)
+        for (const choice of choices) {
+            const button = document.createElement('button')
+            button.type = 'button'
+            button.textContent = choice.label
+            button.dataset.iwrType = choice.slug
+            button.addEventListener('click', (event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                onChoose(choice.slug)
+            })
+            buttons.push(button)
+            menu.append(button)
+        }
+    }
+
+    private addIwr(kind: IwrKind, type: string): void {
+        const list = this.iwr[iwrListKey(kind)]
+        if (list.some((row) => row.type === type)) return
+        const draft: IwrDraft = { type, exceptions: [], doubleVs: [] }
+        if (kind !== 'immunity') {
+            draft.value = defaultIwrValue(kind, this.currentLevel())
+        }
+        list.push(draft)
+        this.expandedIwrKey = `${kind}:${list.length - 1}`
+        this.hideIwrMenus()
+        this.renderIwr()
+        this.focusExpandedIwr()
+    }
+
+    private addIwrModifier(
+        kind: IwrKind,
+        index: number,
+        mode: 'exceptions' | 'doubleVs',
+        slug: string,
+    ): void {
+        const draft = this.iwr[iwrListKey(kind)][index]
+        if (!draft || slug === draft.type) return
+        const other = mode === 'exceptions' ? draft.doubleVs : draft.exceptions
+        if (draft[mode].includes(slug) || other.includes(slug)) return
+        draft[mode].push(slug)
+        this.hideIwrMenus()
+        this.renderIwr()
+        this.focusExpandedIwr()
+    }
+
+    private removeIwrModifier(
+        kind: IwrKind,
+        index: number,
+        mode: 'exceptions' | 'doubleVs',
+        slug: string,
+    ): void {
+        const draft = this.iwr[iwrListKey(kind)][index]
+        if (!draft) return
+        draft[mode] = draft[mode].filter((item) => item !== slug)
+        this.renderIwr()
+        this.focusExpandedIwr()
+    }
+
+    private removeIwr(kind: IwrKind, index: number): void {
+        this.iwr[iwrListKey(kind)].splice(index, 1)
+        this.expandedIwrKey = null
+        this.hideIwrMenus()
+        this.renderIwr()
+    }
+
+    private expandIwr(kind: IwrKind, index: number): void {
+        const key = `${kind}:${index}`
+        if (this.expandedIwrKey === key) return
+        this.commitExpandedIwrValue()
+        this.expandedIwrKey = key
+        this.hideIwrMenus()
+        this.renderIwr()
+        this.focusExpandedIwr()
+    }
+
+    private collapseIwr(): void {
+        if (!this.expandedIwrKey) return
+        this.commitExpandedIwrValue()
+        this.expandedIwrKey = null
+        this.hideIwrMenus()
+        this.renderIwr()
+    }
+
+    private readonly onIwrPointerDown = (event: Event): void => {
+        if (!this.expandedIwrKey) return
+        const row = this.expandedIwrRow()
+        const target = event.target
+        if (!row || !(target instanceof Node)) return
+        if (row.contains(target)) {
+            this.iwrPointerInRow = true
+            return
+        }
+        const element =
+            target instanceof Element ? target : target.parentElement
+        // Collapse rebuilds the rows. Doing it here removes the button
+        // before its click runs, so the next menu never opens.
+        if (element?.closest('.iwr-add, .iwr-entry, .iwr-editor-block')) {
+            this.iwrPointerInRow = true
+            this.commitExpandedIwrValue()
+            return
+        }
+        this.iwrPointerInRow = false
+        this.collapseIwr()
+    }
+
+    private readonly onIwrPointerUp = (): void => {
+        if (this.iwrPointerTimer !== undefined) {
+            clearTimeout(this.iwrPointerTimer)
+        }
+        // Stay set through the click and the focus change it causes.
+        this.iwrPointerTimer = setTimeout(() => {
+            this.iwrPointerTimer = undefined
+            this.iwrPointerInRow = false
+        }, 0)
+    }
+
+    private bindIwrPointerListeners(): void {
+        this.unbindIwrPointerListeners()
+        this.root.addEventListener('pointerdown', this.onIwrPointerDown, true)
+        this.root.addEventListener('pointerup', this.onIwrPointerUp, true)
+        this.root.addEventListener('pointercancel', this.onIwrPointerUp, true)
+    }
+
+    private unbindIwrPointerListeners(): void {
+        this.root.removeEventListener(
+            'pointerdown',
+            this.onIwrPointerDown,
+            true,
+        )
+        this.root.removeEventListener('pointerup', this.onIwrPointerUp, true)
+        this.root.removeEventListener(
+            'pointercancel',
+            this.onIwrPointerUp,
+            true,
+        )
+        if (this.iwrPointerTimer !== undefined) {
+            clearTimeout(this.iwrPointerTimer)
+            this.iwrPointerTimer = undefined
+        }
+        this.iwrPointerInRow = false
+    }
+
+    private scheduleIwrCollapse(key: string): void {
+        if (this.iwrCollapseTimer !== undefined) {
+            clearTimeout(this.iwrCollapseTimer)
+        }
+        this.iwrCollapseTimer = setTimeout(() => {
+            this.iwrCollapseTimer = undefined
+            if (this.iwrRendering || this.expandedIwrKey !== key) return
+            if (this.iwrPointerInRow) return
+            if (this.root.querySelector('.iwr-type-menu:not([hidden])')) return
+            const row = this.expandedIwrRow()
+            if (row?.contains(document.activeElement)) return
+            this.collapseIwr()
+        }, 0)
+    }
+
+    private keepExpandedIwrOpen(): void {
+        if (this.iwrCollapseTimer !== undefined) {
+            clearTimeout(this.iwrCollapseTimer)
+            this.iwrCollapseTimer = undefined
+        }
+    }
+
+    private commitExpandedIwrValue(): void {
+        const parsed = this.parseIwrKey(this.expandedIwrKey)
+        if (!parsed || parsed.kind === 'immunity') return
+        const draft = this.iwr[iwrListKey(parsed.kind)][parsed.index]
+        const input = this.iwrRowElement(
+            parsed.kind,
+            parsed.index,
+        )?.querySelector<HTMLInputElement>('.iwr-value-input')
+        if (!draft || !input) return
+        const numeric = Number(input.value)
+        draft.value =
+            input.value.trim() !== '' && Number.isFinite(numeric)
+                ? Math.round(numeric)
+                : defaultIwrValue(parsed.kind, this.currentLevel())
+    }
+
+    private focusExpandedIwr(): void {
+        this.expandedIwrRow()
+            ?.querySelector<HTMLElement>('.iwr-value-input')
+            ?.focus()
+    }
+
+    private refreshIwrRangeHints(): void {
+        const hint = recommendedIwrText(this.currentLevel())
+        for (const element of Array.from(
+            this.root.querySelectorAll('.iwr-range-hint'),
+        )) {
+            element.textContent = hint
+        }
+    }
+
+    private writeIwrPreserved(): void {
+        const input = this.queryById<HTMLInputElement>('iwrPreserved')
+        if (input) input.value = JSON.stringify(this.iwr.preserved)
+    }
+
+    private syncIwrAddButtons(): void {
+        for (const kind of IWR_KINDS) {
+            const button = this.queryById<HTMLButtonElement>(
+                this.iwrAddId(kind),
+            )
+            if (!button) continue
+            const used = this.iwr[iwrListKey(kind)].map((row) => row.type)
+            button.disabled = availableIwrTypes(kind, used).length === 0
+        }
+    }
+
+    private hideIwrMenus(): void {
+        for (const menu of Array.from(
+            this.root.querySelectorAll<HTMLElement>('.iwr-type-menu'),
+        )) {
+            menu.hidden = true
+            menu.replaceChildren()
+        }
+    }
+
+    private iwrRowElement(kind: IwrKind, index: number): HTMLElement | null {
+        return (
+            this.queryById(this.iwrRowsId(kind))?.querySelector<HTMLElement>(
+                `[data-iwr-index="${index}"]`,
+            ) ?? null
+        )
+    }
+
+    private expandedIwrRow(): HTMLElement | null {
+        const parsed = this.parseIwrKey(this.expandedIwrKey)
+        if (!parsed) return null
+        return this.iwrRowElement(parsed.kind, parsed.index)
+    }
+
+    private parseIwrKey(
+        key: string | null,
+    ): { kind: IwrKind; index: number } | null {
+        if (!key) return null
+        const [kind, index] = key.split(':')
+        if (!kind || !(IWR_KINDS as readonly string[]).includes(kind)) {
+            return null
+        }
+        return { kind: kind as IwrKind, index: Number(index) }
+    }
+
+    private iwrRowsId(kind: IwrKind): string {
+        if (kind === 'immunity') return 'immunityRows'
+        if (kind === 'resistance') return 'resistanceRows'
+        return 'weaknessRows'
+    }
+
+    private iwrAddId(kind: IwrKind): string {
+        if (kind === 'immunity') return 'addImmunityButton'
+        if (kind === 'resistance') return 'addResistanceButton'
+        return 'addWeaknessButton'
+    }
+
+    private iwrMenuId(kind: IwrKind): string {
+        if (kind === 'immunity') return 'immunityTypeMenu'
+        if (kind === 'resistance') return 'resistanceTypeMenu'
+        return 'weaknessTypeMenu'
+    }
+
+    private iwrLabel(key: string, fallback: string): string {
+        try {
+            const value = (window as any).game?.i18n?.localize?.(key)
+            if (!value || value === key) return fallback
+            return value
+        } catch {
+            return fallback
         }
     }
 }

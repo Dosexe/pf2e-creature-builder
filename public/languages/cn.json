@@ -101,7 +101,7 @@
     "PF2EMONSTERMAKER.addLore": "添加学识",
     "PF2EMONSTERMAKER.loreName": "学识名称（例如：战争）",
 
-    "pf2e-creature-builder.form.size": "体型",
+    "pf2e-creature-builder.form.size.label": "体型",
     "pf2e-creature-builder.form.size.tiny": "超小型",
     "pf2e-creature-builder.form.size.small": "小型",
     "pf2e-creature-builder.form.size.medium": "中型",

@@ -44,7 +44,7 @@
 
             <div class="form-group">
                 <label for="{{fieldId}}creatureBuilderSize">
-                    {{localize "pf2e-creature-builder.form.size"}}
+                    {{localize "pf2e-creature-builder.form.size.label"}}
                 </label>
                 <div class="form-fields">
                     <select name="pf2e-creature-builder.form.size" id="{{fieldId}}creatureBuilderSize" class="stat-select">
@@ -129,6 +129,41 @@
                         </div>
                     </div>
                     {{/if}}
+                    {{/if}}
+                    {{#if (eq this.name "Defence + Perception")}}
+                    <details class="collapsibleSection iwr-section" id="{{@root.fieldId}}sectionIwr"{{#if @root.iwrOpen}} open{{/if}}>
+                        <summary class="collapsibleHeader">
+                            <h3>{{localize "pf2e-creature-builder.form.iwr.title"}}<i class="fa-sharp fa-solid fa-caret-right creatureBuilderHeaderArrow"></i></h3>
+                        </summary>
+                        <div class="collapsibleContent">
+                            <input type="hidden" name="iwrPresent" value="true">
+                            <input type="hidden" name="iwrPreserved" id="{{@root.fieldId}}iwrPreserved" value="">
+                            <div class="iwr-group">
+                                <div class="iwr-group-label" id="{{@root.fieldId}}immunityLabel">{{localize "pf2e-creature-builder.form.iwr.immunities"}}</div>
+                                <div class="iwr-rows" id="{{@root.fieldId}}immunityRows"></div>
+                                <div class="iwr-add">
+                                    <button type="button" class="creatureBuilderAddButton" id="{{@root.fieldId}}addImmunityButton">{{localize "pf2e-creature-builder.form.iwr.add-immunity"}}</button>
+                                    <div class="iwr-type-menu" id="{{@root.fieldId}}immunityTypeMenu" hidden></div>
+                                </div>
+                            </div>
+                            <div class="iwr-group">
+                                <div class="iwr-group-label" id="{{@root.fieldId}}resistanceLabel">{{localize "pf2e-creature-builder.form.iwr.resistances"}}</div>
+                                <div class="iwr-rows" id="{{@root.fieldId}}resistanceRows"></div>
+                                <div class="iwr-add">
+                                    <button type="button" class="creatureBuilderAddButton" id="{{@root.fieldId}}addResistanceButton">{{localize "pf2e-creature-builder.form.iwr.add-resistance"}}</button>
+                                    <div class="iwr-type-menu" id="{{@root.fieldId}}resistanceTypeMenu" hidden></div>
+                                </div>
+                            </div>
+                            <div class="iwr-group">
+                                <div class="iwr-group-label" id="{{@root.fieldId}}weaknessLabel">{{localize "pf2e-creature-builder.form.iwr.weaknesses"}}</div>
+                                <div class="iwr-rows" id="{{@root.fieldId}}weaknessRows"></div>
+                                <div class="iwr-add">
+                                    <button type="button" class="creatureBuilderAddButton" id="{{@root.fieldId}}addWeaknessButton">{{localize "pf2e-creature-builder.form.iwr.add-weakness"}}</button>
+                                    <div class="iwr-type-menu" id="{{@root.fieldId}}weaknessTypeMenu" hidden></div>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                     {{/if}}
                 </div>
             </details>

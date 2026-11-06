@@ -274,7 +274,7 @@ describe('CreatureBuilderFormUI', () => {
             'grg',
         ])
         expect(size.value).toBe('lg')
-        expect(enLang[CREATURE_SIZE_FIELD]).toBe('Size')
+        expect(enLang[`${CREATURE_SIZE_FIELD}.label`]).toBe('Size')
         expect(enLang[`${CREATURE_SIZE_FIELD}.gargantuan`]).toBe('Gargantuan')
 
         const label = root.querySelector(
@@ -308,6 +308,14 @@ describe('CreatureBuilderFormUI', () => {
         const defence = root.querySelector(
             '[data-section-name="Defence + Perception"]',
         )
+        const iwr = root.querySelector(
+            `#${CSS.escape(`${fieldId}sectionIwr`)}`,
+        ) as HTMLDetailsElement
+        expect(defence?.contains(iwr)).toBe(true)
+        expect(iwr.open).toBe(false)
+        expect(
+            iwr.querySelector(`#${CSS.escape(`${fieldId}addImmunityButton`)}`),
+        ).toBeTruthy()
         const movement = root.querySelector(
             `#${CSS.escape(`${fieldId}sectionMovement`)}`,
         ) as HTMLDetailsElement
@@ -4303,5 +4311,702 @@ describe('Manual Input', () => {
         expect(overrideInput(Statistics.str)).toBeNull()
         expect(document.querySelector('.loreEntry')).toBeNull()
         ui.destroy()
+    })
+})
+
+describe('immunities, resistances, and weaknesses', () => {
+    const mountIwr = (open = false) => {
+        const defence = document.createElement('details')
+        defence.dataset.sectionName = 'Defence + Perception'
+        defence.open = true
+        defence.innerHTML = `
+            <details class="collapsibleSection iwr-section" id="sectionIwr"${open ? ' open' : ''}>
+                <div class="collapsibleContent">
+                    <input type="hidden" name="iwrPresent" value="true">
+                    <input type="hidden" name="iwrPreserved" id="iwrPreserved" value="">
+                    <div id="immunityRows"></div>
+                    <div class="iwr-add">
+                        <button type="button" id="addImmunityButton">+ Add immunity</button>
+                        <div class="iwr-type-menu" id="immunityTypeMenu" hidden></div>
+                    </div>
+                    <div id="resistanceRows"></div>
+                    <div class="iwr-add">
+                        <button type="button" id="addResistanceButton">+ Add resistance</button>
+                        <div class="iwr-type-menu" id="resistanceTypeMenu" hidden></div>
+                    </div>
+                    <div id="weaknessRows"></div>
+                    <div class="iwr-add">
+                        <button type="button" id="addWeaknessButton">+ Add weakness</button>
+                        <div class="iwr-type-menu" id="weaknessTypeMenu" hidden></div>
+                    </div>
+                </div>
+            </details>
+        `
+        document.body.append(defence)
+        const level = document.getElementById(
+            'creatureBuilderLevel',
+        ) as HTMLSelectElement
+        level.value = '1'
+    }
+
+    const recommended = (min: number, max: number) =>
+        enLang['pf2e-creature-builder.form.iwr.recommended']
+            .replace('{min}', String(min))
+            .replace('{max}', String(max))
+
+    it('opens the defence subsection only when the creature already has values', () => {
+        const source = readFileSync(
+            'public/forms/creatureBuilderForm.html',
+            'utf8',
+        )
+        const handlebars = Handlebars.create()
+        handlebars.registerHelper('localize', (key: string) => key)
+        handlebars.registerHelper('concat', (...args: unknown[]) =>
+            args.filter((arg) => typeof arg !== 'object').join(''),
+        )
+        handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b)
+        const statistics = JSON.parse(JSON.stringify(DefaultCreatureStatistics))
+        const closed = handlebars.compile(source)({
+            fieldId: 'cb-',
+            CreatureStatistics: statistics,
+        })
+        const opened = handlebars.compile(source)({
+            fieldId: 'cb-',
+            iwrOpen: true,
+            CreatureStatistics: statistics,
+        })
+        expect(closed).toContain('id="cb-sectionIwr"')
+        expect(closed).not.toContain('id="cb-sectionIwr" open')
+        expect(opened).toContain('id="cb-sectionIwr" open')
+        expect(opened.indexOf('sectionIwr')).toBeLessThan(
+            opened.indexOf('sectionMovement'),
+        )
+    })
+
+    it('adds an immunity and commits exceptions when focus leaves the row', async () => {
+        mountIwr()
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+
+        document.getElementById('addImmunityButton')?.click()
+        const menu = document.getElementById('immunityTypeMenu') as HTMLElement
+        expect(menu.hidden).toBe(false)
+        expect(menu.querySelector('[data-iwr-type="custom"]')).toBeNull()
+        expect(menu.querySelector('[data-iwr-type="disease"]')).toBeTruthy()
+        expect(menu.querySelector('[data-iwr-type="all-damage"]')).toBeNull()
+        menu.querySelector<HTMLButtonElement>('[data-iwr-type="fire"]')?.click()
+
+        const added = document.querySelector(
+            '[data-iwr-type="fire"]',
+        ) as HTMLElement
+        expect(added.dataset.iwrExpanded).toBe('true')
+        expect(added.querySelector('.iwr-summary-meta')?.hidden).toBe(true)
+        added.querySelector<HTMLButtonElement>('.iwr-add-modifier')?.click()
+        const exceptionMenu = added.querySelector(
+            '.iwr-type-menu',
+        ) as HTMLElement
+        expect(exceptionMenu.hidden).toBe(false)
+        expect(exceptionMenu.querySelector('[data-iwr-type="fire"]')).toBeNull()
+        exceptionMenu
+            .querySelector<HTMLButtonElement>('[data-iwr-type="cold"]')
+            ?.click()
+
+        const withException = document.querySelector(
+            '[data-iwr-type="fire"]',
+        ) as HTMLElement
+        expect(withException.dataset.iwrExpanded).toBe('true')
+        expect(
+            withException.querySelector(
+                '.iwr-editor-block--exceptions .iwr-chip',
+            )?.textContent,
+        ).toContain('Cold')
+        expect(
+            (
+                withException.querySelector(
+                    'input[name="immunity-0-exceptions"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('cold')
+
+        const outside = document.createElement('button')
+        document.body.append(outside)
+        outside.dispatchEvent(
+            new PointerEvent('pointerdown', { bubbles: true }),
+        )
+        outside.focus()
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        const saved = document.querySelector(
+            '[data-iwr-type="fire"]',
+        ) as HTMLElement
+        expect(saved.dataset.iwrExpanded).toBeUndefined()
+        expect(
+            (saved.querySelector('.iwr-row-editor') as HTMLElement).hidden,
+        ).toBe(true)
+        expect(saved.querySelector('.iwr-summary-meta')?.textContent).toBe(
+            '(except: Cold)',
+        )
+        expect(
+            saved
+                .querySelector('.iwr-row')
+                ?.contains(saved.querySelector('.iwr-remove')),
+        ).toBe(false)
+        expect(
+            (
+                saved.querySelector(
+                    'input[name="immunity-0-exceptions"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('cold')
+
+        document.getElementById('addImmunityButton')?.click()
+        expect(
+            document.querySelector('#immunityTypeMenu [data-iwr-type="fire"]'),
+        ).toBeNull()
+        document.body.click()
+        expect(
+            (document.getElementById('immunityTypeMenu') as HTMLElement).hidden,
+        ).toBe(true)
+
+        saved
+            .querySelector('.iwr-remove')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(document.querySelector('[data-iwr-type="fire"]')).toBeNull()
+        expect(document.querySelector('input[name="iwrPresent"]')).toBeTruthy()
+        ui.destroy()
+    })
+
+    it('keeps the row open when add exception is clicked without focusing it', async () => {
+        mountIwr()
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+        document.getElementById('addWeaknessButton')?.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                '#weaknessTypeMenu [data-iwr-type="fire"]',
+            )
+            ?.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                '[data-iwr-kind="weakness"] .iwr-row-summary',
+            )
+            ?.click()
+
+        const row = document.querySelector(
+            '[data-iwr-kind="weakness"]',
+        ) as HTMLElement
+        const add = row.querySelector<HTMLButtonElement>('.iwr-add-modifier')
+        const value = row.querySelector<HTMLInputElement>('.iwr-value-input')
+        if (!add || !value) throw new Error('missing weakness editor')
+
+        add.dispatchEvent(
+            new PointerEvent('pointerdown', {
+                bubbles: true,
+                cancelable: true,
+            }),
+        )
+        value.dispatchEvent(
+            new FocusEvent('focusout', {
+                bubbles: true,
+                relatedTarget: document.body,
+            }),
+        )
+        add.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        const open = document.querySelector(
+            '[data-iwr-kind="weakness"]',
+        ) as HTMLElement
+        expect(open.dataset.iwrExpanded).toBe('true')
+        expect(
+            (open.querySelector('.iwr-type-menu') as HTMLElement).hidden,
+        ).toBe(false)
+        ui.destroy()
+    })
+
+    it('opens the other add menu without collapsing the row', async () => {
+        mountIwr()
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+        document.getElementById('addResistanceButton')?.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                '#resistanceTypeMenu [data-iwr-type="fire"]',
+            )
+            ?.click()
+
+        const row = document.querySelector(
+            '[data-iwr-kind="resistance"]',
+        ) as HTMLElement
+        const exceptionsAdd = row.querySelector<HTMLButtonElement>(
+            '.iwr-editor-block--exceptions .iwr-add-modifier',
+        )
+        const doubleAdd = row.querySelector<HTMLButtonElement>(
+            '.iwr-editor-block--double .iwr-add-modifier',
+        )
+        if (!exceptionsAdd || !doubleAdd) throw new Error('missing add buttons')
+
+        exceptionsAdd.dispatchEvent(
+            new PointerEvent('pointerdown', { bubbles: true }),
+        )
+        exceptionsAdd.click()
+        const exceptionsMenu = row.querySelector(
+            '.iwr-editor-block--exceptions .iwr-type-menu',
+        ) as HTMLElement
+        expect(exceptionsMenu.hidden).toBe(false)
+
+        doubleAdd.dispatchEvent(
+            new PointerEvent('pointerdown', { bubbles: true }),
+        )
+        exceptionsMenu.querySelector('input')?.dispatchEvent(
+            new FocusEvent('focusout', {
+                bubbles: true,
+                relatedTarget: document.body,
+            }),
+        )
+        doubleAdd.click()
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        const open = document.querySelector(
+            '[data-iwr-kind="resistance"]',
+        ) as HTMLElement
+        expect(open.dataset.iwrExpanded).toBe('true')
+        expect(open.isConnected).toBe(true)
+        expect(doubleAdd.isConnected).toBe(true)
+        const doubleMenu = open.querySelector(
+            '.iwr-editor-block--double .iwr-type-menu',
+        ) as HTMLElement
+        expect(doubleMenu.hidden).toBe(false)
+        expect(doubleMenu.style.position).toBe('')
+        expect(doubleMenu.parentElement).toBe(doubleAdd.parentElement)
+        expect(
+            (
+                open.querySelector(
+                    '.iwr-editor-block--exceptions .iwr-type-menu',
+                ) as HTMLElement
+            ).hidden,
+        ).toBe(true)
+        ui.destroy()
+    })
+
+    it('opens another immunity menu while a row is expanded', () => {
+        mountIwr()
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+        document.getElementById('addImmunityButton')?.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                '#immunityTypeMenu [data-iwr-type="fire"]',
+            )
+            ?.click()
+
+        const add = document.getElementById(
+            'addImmunityButton',
+        ) as HTMLButtonElement
+        add.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+        expect(add.isConnected).toBe(true)
+        add.click()
+        expect(
+            (document.getElementById('immunityTypeMenu') as HTMLElement).hidden,
+        ).toBe(false)
+        expect(
+            document
+                .querySelector('[data-iwr-kind="immunity"]')
+                ?.getAttribute('data-iwr-expanded'),
+        ).toBe('true')
+        ui.destroy()
+    })
+
+    it('separates resistance exceptions from double vs', () => {
+        mountIwr()
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+        document.getElementById('addResistanceButton')?.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                '#resistanceTypeMenu [data-iwr-type="physical"]',
+            )
+            ?.click()
+
+        const row = document.querySelector(
+            '[data-iwr-kind="resistance"]',
+        ) as HTMLElement
+        expect(row.dataset.iwrExpanded).toBe('true')
+        expect(row.querySelector('.iwr-summary-value')?.textContent).toBe('2')
+        const lead = row.querySelector('.iwr-summary-lead')
+        const type = row.querySelector('.iwr-summary-type')
+        const value = row.querySelector('.iwr-summary-value')
+        expect(lead?.contains(type)).toBe(true)
+        expect(value?.parentElement).toBe(lead)
+        expect(
+            type &&
+                value &&
+                type.compareDocumentPosition(value) &
+                    Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+        expect(row.querySelector('.iwr-summary-meta')?.textContent).toBe('')
+        row.querySelector<HTMLButtonElement>('.iwr-row-summary')?.click()
+
+        const editor = document.querySelector(
+            '[data-iwr-kind="resistance"] .iwr-row-editor',
+        ) as HTMLElement
+        expect(editor.hidden).toBe(false)
+        expect(
+            editor.querySelector('.iwr-editor-block--exceptions'),
+        ).toBeTruthy()
+        expect(editor.querySelector('.iwr-editor-block--double')).toBeTruthy()
+        expect(editor.querySelector('.iwr-editor-divider')).toBeTruthy()
+        expect(
+            editor.querySelector(
+                '.iwr-editor-block--exceptions .iwr-editor-label',
+            )?.textContent,
+        ).toBe('Exceptions')
+        expect(
+            editor.querySelector('.iwr-editor-block--double .iwr-editor-label')
+                ?.textContent,
+        ).toBe('Double Vs')
+        expect(
+            editor.querySelector(
+                '.iwr-editor-block--exceptions .iwr-add-modifier',
+            )?.textContent,
+        ).toBe('+ Add')
+        expect(
+            editor.querySelector('.iwr-editor-block--double .iwr-add-modifier')
+                ?.textContent,
+        ).toBe('+ Add')
+        editor
+            .querySelector<HTMLButtonElement>(
+                '.iwr-editor-block--exceptions .iwr-add-modifier',
+            )
+            ?.click()
+        editor
+            .querySelector<HTMLButtonElement>(
+                '.iwr-editor-block--exceptions [data-iwr-type="adamantine"]',
+            )
+            ?.click()
+
+        const open = document.querySelector(
+            '[data-iwr-kind="resistance"]',
+        ) as HTMLElement
+        const doubleBlock = open.querySelector(
+            '.iwr-editor-block--double',
+        ) as HTMLElement
+        doubleBlock
+            .querySelector<HTMLButtonElement>('.iwr-add-modifier')
+            ?.click()
+        expect(
+            doubleBlock.querySelector('[data-iwr-type="adamantine"]'),
+        ).toBeNull()
+        doubleBlock
+            .querySelector<HTMLButtonElement>('[data-iwr-type="silver"]')
+            ?.click()
+
+        const saved = document.querySelector(
+            '[data-iwr-kind="resistance"]',
+        ) as HTMLElement
+        expect(
+            (
+                saved.querySelector(
+                    'input[name="resistance-0-exceptions"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('adamantine')
+        expect(
+            (
+                saved.querySelector(
+                    'input[name="resistance-0-doubleVs"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('silver')
+        expect(
+            saved.querySelector('.iwr-editor-block--exceptions .iwr-chip')
+                ?.textContent,
+        ).toContain('Adamantine')
+        expect(
+            saved.querySelector('.iwr-editor-block--double .iwr-chip')
+                ?.textContent,
+        ).toContain('Silver')
+        expect(saved.querySelector('.iwr-summary-meta')?.hidden).toBe(true)
+        expect(saved.querySelector('.iwr-summary-meta')?.textContent).toBe(
+            '(except: Adamantine; double vs: Silver)',
+        )
+        const summaryLead = saved.querySelector('.iwr-summary-lead')
+        const summaryValue = saved.querySelector('.iwr-summary-value')
+        const summaryMeta = saved.querySelector('.iwr-summary-meta')
+        expect(summaryLead?.contains(summaryMeta)).toBe(true)
+        expect(
+            summaryValue &&
+                summaryMeta &&
+                summaryValue.compareDocumentPosition(summaryMeta) &
+                    Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+        expect(
+            saved
+                .querySelector('.iwr-row')
+                ?.contains(saved.querySelector('.iwr-remove')),
+        ).toBe(false)
+
+        saved
+            .querySelector('.iwr-chip-remove')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        const withoutException = document.querySelector(
+            '[data-iwr-kind="resistance"]',
+        ) as HTMLElement
+        expect(withoutException.dataset.iwrExpanded).toBe('true')
+        expect(
+            (
+                withoutException.querySelector(
+                    'input[name="resistance-0-exceptions"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('')
+        expect(
+            withoutException.querySelector(
+                '.iwr-editor-block--double .iwr-chip',
+            )?.textContent,
+        ).toContain('Silver')
+        ui.destroy()
+    })
+
+    it('shows the recommended weakness range for the creature level', async () => {
+        mountIwr()
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+        document.getElementById('addWeaknessButton')?.click()
+        expect(
+            document.querySelector(
+                '#weaknessTypeMenu [data-iwr-type="disease"]',
+            ),
+        ).toBeNull()
+        expect(
+            document.querySelector(
+                '#weaknessTypeMenu [data-iwr-type="all-damage"]',
+            ),
+        ).toBeTruthy()
+        document
+            .querySelector<HTMLButtonElement>(
+                '#weaknessTypeMenu [data-iwr-type="fire"]',
+            )
+            ?.click()
+
+        const row = document.querySelector(
+            '[data-iwr-kind="weakness"]',
+        ) as HTMLElement
+        expect(row.querySelector('.iwr-summary-value')?.textContent).toBe('3')
+        row.querySelector<HTMLButtonElement>('.iwr-row-summary')?.click()
+        const expanded = document.querySelector(
+            '[data-iwr-kind="weakness"]',
+        ) as HTMLElement
+        expect(expanded.querySelector('.iwr-range-hint')?.textContent).toBe(
+            recommended(2, 3),
+        )
+
+        const input = expanded.querySelector(
+            '.iwr-value-input',
+        ) as HTMLInputElement
+        input.value = ''
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        const outside = document.createElement('button')
+        document.body.append(outside)
+        outside.focus()
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        const reset = document.querySelector(
+            '[data-iwr-kind="weakness"]',
+        ) as HTMLElement
+        expect(reset.dataset.iwrExpanded).toBeUndefined()
+        expect(reset.querySelector('.iwr-summary-value')?.textContent).toBe('3')
+        reset.querySelector<HTMLButtonElement>('.iwr-row-summary')?.click()
+        const again = document.querySelector(
+            '[data-iwr-kind="weakness"]',
+        ) as HTMLElement
+        const edited = again.querySelector(
+            '.iwr-value-input',
+        ) as HTMLInputElement
+        edited.value = '1.6'
+        const away = document.createElement('button')
+        document.body.append(away)
+        away.focus()
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        expect(
+            document.querySelector(
+                '[data-iwr-kind="weakness"] .iwr-summary-value',
+            )?.textContent,
+        ).toBe('2')
+        document
+            .querySelector<HTMLButtonElement>(
+                '[data-iwr-kind="weakness"] .iwr-row-summary',
+            )
+            ?.click()
+        const reopened = document.querySelector(
+            '[data-iwr-kind="weakness"] .iwr-value-input',
+        ) as HTMLInputElement
+        reopened.value = '9'
+        reopened.dispatchEvent(new Event('input', { bubbles: true }))
+        const level = document.getElementById(
+            'creatureBuilderLevel',
+        ) as HTMLSelectElement
+        level.value = '5'
+        level.dispatchEvent(new Event('change'))
+
+        const still = document.querySelector(
+            '[data-iwr-kind="weakness"]',
+        ) as HTMLElement
+        expect(still.querySelector('.iwr-range-hint')?.textContent).toBe(
+            recommended(4, 8),
+        )
+        expect(
+            (still.querySelector('.iwr-value-input') as HTMLInputElement).value,
+        ).toBe('9')
+        expect(still.querySelector('.iwr-summary-value')?.textContent).toBe('9')
+        ui.destroy()
+    })
+
+    it('restores preserved rows and keeps custom entries for submit', () => {
+        mountIwr(true)
+        const section = document.getElementById(
+            'sectionIwr',
+        ) as HTMLDetailsElement
+        expect(section.open).toBe(true)
+        const ui = new CreatureBuilderFormUI(
+            buildConfig({
+                actorLevel: '3',
+                detectedIwr: {
+                    immunities: [
+                        { type: 'poison', exceptions: [], doubleVs: [] },
+                    ],
+                    resistances: [],
+                    weaknesses: [],
+                    preserved: {
+                        immunities: [],
+                        resistances: [],
+                        weaknesses: [],
+                    },
+                },
+                preservedControls: {
+                    iwrPresent: 'true',
+                    'immunity-0-type': 'fire',
+                    'immunity-0-exceptions': 'cold',
+                    iwrPreserved: JSON.stringify({
+                        immunities: [],
+                        resistances: [],
+                        weaknesses: [{ type: 'custom', value: 4 }],
+                    }),
+                },
+            }),
+        )
+        ui.initialize()
+        expect(document.querySelector('[data-iwr-type="poison"]')).toBeNull()
+        expect(document.querySelector('[data-iwr-type="fire"]')).toBeTruthy()
+        expect(
+            (
+                document.querySelector(
+                    'input[name="immunity-0-exceptions"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('cold')
+        expect(
+            (document.getElementById('iwrPreserved') as HTMLInputElement).value,
+        ).toContain('"type":"custom"')
+
+        const captured = capturePreservedControls(document.body)
+        expect(captured?.iwrPresent).toBe('true')
+        expect(captured?.['immunity-0-type']).toBe('fire')
+        expect(captured?.iwrPreserved).toContain('custom')
+
+        ui.resetToDefaults()
+        expect(document.querySelector('.iwr-row')).toBeNull()
+        expect(section.open).toBe(false)
+        ui.destroy()
+    })
+
+    it('uses fallback labels when localization throws', () => {
+        mountIwr()
+        ;(window as any).game.i18n.localize = () => {
+            throw new Error('missing translation')
+        }
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+        document.getElementById('addImmunityButton')?.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                '#immunityTypeMenu [data-iwr-type="fire"]',
+            )
+            ?.click()
+        expect(
+            document.querySelector('.iwr-remove')?.getAttribute('aria-label'),
+        ).toBe('Remove')
+        expect(document.querySelector('.iwr-remove')?.tagName).toBe('SPAN')
+        expect(
+            document
+                .querySelector('.iwr-remove')
+                ?.classList.contains('fa-trash'),
+        ).toBe(true)
+        ui.destroy()
+    })
+
+    it('filters the type menu and keeps the add control on the chip line', () => {
+        mountIwr()
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+        document.getElementById('addImmunityButton')?.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                '#immunityTypeMenu [data-iwr-type="fire"]',
+            )
+            ?.click()
+        document.querySelector<HTMLButtonElement>('.iwr-row-summary')?.click()
+        document.querySelector<HTMLButtonElement>('.iwr-add-modifier')?.click()
+
+        const row = document.querySelector('.iwr-row') as HTMLElement
+        expect(row.querySelector('.iwr-chips .iwr-add-modifier')).toBeTruthy()
+        const menu = row.querySelector('.iwr-type-menu') as HTMLElement
+        const filter = menu.querySelector(
+            '.iwr-type-filter',
+        ) as HTMLInputElement
+        filter.value = 'cold'
+        filter.dispatchEvent(new Event('input'))
+        expect(
+            menu.querySelector<HTMLButtonElement>('[data-iwr-type="cold"]')
+                ?.hidden,
+        ).toBe(false)
+        expect(
+            menu.querySelector<HTMLButtonElement>('[data-iwr-type="acid"]')
+                ?.hidden,
+        ).toBe(true)
+        filter.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+        )
+        expect(
+            (
+                document.querySelector(
+                    'input[name="immunity-0-exceptions"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('cold')
+        ui.destroy()
+    })
+
+    it('uses the running system catalogs in the add menu', () => {
+        mountIwr()
+        ;(globalThis as { CONFIG?: unknown }).CONFIG = {
+            PF2E: {
+                immunityTypes: {
+                    fire: 'PF2E.Damage.RollFlavor.fire',
+                    custom: '',
+                },
+            },
+        }
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        try {
+            ui.initialize()
+            document.getElementById('addImmunityButton')?.click()
+            const types = Array.from(
+                document.querySelectorAll('#immunityTypeMenu button'),
+            ).map((button) => (button as HTMLButtonElement).dataset.iwrType)
+            expect(types).toEqual(['fire'])
+        } finally {
+            delete (globalThis as { CONFIG?: unknown }).CONFIG
+            ui.destroy()
+        }
     })
 })

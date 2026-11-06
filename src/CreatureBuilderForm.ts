@@ -26,6 +26,13 @@ import {
     parseSpellcastingFormData,
 } from './CreatureBuilderSpellcasting'
 import {
+    type ActorIwr,
+    actorHasIwr,
+    emptyActorIwr,
+    iwrActorUpdate,
+    readActorIwr,
+} from './iwr'
+import {
     actorFields,
     type CasterType,
     DefaultCreatureLevel,
@@ -433,6 +440,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             detectedAttacks: this.detectAttacks(),
             detectedSpeeds: this.detectSpeeds(),
             detectedSenses: this.detectSenses(),
+            detectedIwr: this.detectIwr(),
             actorLevel,
             droppedItems: this.droppedItems,
             root: this.element,
@@ -1173,6 +1181,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             Object.assign(updateData, this.applyTraits(formData))
             Object.assign(updateData, this.applyHitPoints(formData))
             Object.assign(updateData, this.applyMovementAndSenses(formData))
+            Object.assign(updateData, this.applyIwr(formData))
 
             // Clone original actor with overrides (copies all data + items; save to world)
             const newActor: Actor | undefined = await this.actor.clone(
@@ -1481,6 +1490,15 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         return movementActorUpdate(formData) ?? {}
     }
 
+    detectIwr(): ActorIwr {
+        if (this.useDefaultLevel) return emptyActorIwr()
+        return readActorIwr(this.actor)
+    }
+
+    applyIwr(formData: object): Record<string, unknown> {
+        return iwrActorUpdate(formData) ?? {}
+    }
+
     detectSize(): string {
         if (this.useDefaultLevel) return DEFAULT_CREATURE_SIZE
         const size = foundry.utils.getProperty(
@@ -1569,6 +1587,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             detectedLoreSkills: detectedLoreSkills,
             actorLevel: actorLevel,
             fieldId: this.fieldIdPrefix(),
+            iwrOpen: !this.useDefaultLevel && actorHasIwr(this.actor),
         }
     }
 }
