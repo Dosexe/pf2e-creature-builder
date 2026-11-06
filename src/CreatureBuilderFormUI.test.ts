@@ -4856,8 +4856,17 @@ describe('immunities, resistances, and weaknesses', () => {
         )
         expect(
             (still.querySelector('.iwr-value-input') as HTMLInputElement).value,
-        ).toBe('9')
-        expect(still.querySelector('.iwr-summary-value')?.textContent).toBe('9')
+        ).toBe('14')
+        expect(still.querySelector('.iwr-summary-value')?.textContent).toBe(
+            '14',
+        )
+        expect(
+            (
+                still.querySelector(
+                    'input[name="weakness-0-value"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('14')
         ui.destroy()
     })
 

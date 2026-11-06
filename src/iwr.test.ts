@@ -14,6 +14,7 @@ import {
     readActorIwr,
     recommendedIwrText,
     resistanceWeaknessRange,
+    scaleIwrValue,
 } from './iwr'
 
 afterEach(() => {
@@ -36,6 +37,14 @@ describe('resistance and weakness ranges', () => {
         expect(defaultIwrValue('weakness', '3')).toBe(6)
         expect(defaultIwrValue('resistance', '3')).toBe(3)
         expect(recommendedIwrText('3')).toBe('Recommended 3–6')
+    })
+
+    it('moves an existing value with the level table', () => {
+        expect(scaleIwrValue('weakness', '1', '5', 3)).toBe(8)
+        expect(scaleIwrValue('weakness', '1', '5', 9)).toBe(14)
+        expect(scaleIwrValue('resistance', '1', '5', 2)).toBe(4)
+        expect(scaleIwrValue('resistance', '1', '5', 5)).toBe(7)
+        expect(scaleIwrValue('resistance', '5', '5', 4)).toBe(4)
     })
 
     it('uses a translated recommendation when the system provides one', () => {

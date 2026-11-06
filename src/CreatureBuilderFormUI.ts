@@ -24,6 +24,7 @@ import {
     iwrListKey,
     iwrTypeLabel,
     recommendedIwrText,
+    scaleIwrValue,
 } from './iwr'
 import {
     closestTierForEdit,
@@ -209,6 +210,7 @@ class CreatureBuilderFormUI {
     private iwrPointerInRow = false
     private iwrPointerTimer: ReturnType<typeof setTimeout> | undefined
     private iwrCollapseTimer: ReturnType<typeof setTimeout> | undefined
+    private iwrLevel = '1'
     private traits: string[] = []
     private selectedDropdownIndex: number = -1
 
@@ -2746,11 +2748,33 @@ class CreatureBuilderFormUI {
                 },
             )
         }
+        this.iwrLevel = this.currentLevel()
         this.queryById<HTMLSelectElement>(
             'creatureBuilderLevel',
         )?.addEventListener('change', () => {
-            this.refreshIwrRangeHints()
+            const next = this.currentLevel()
+            this.scaleIwrForLevel(this.iwrLevel, next)
+            this.iwrLevel = next
         })
+    }
+
+    private scaleIwrForLevel(from: string, to: string): void {
+        if (from === to) {
+            this.refreshIwrRangeHints()
+            return
+        }
+        this.commitExpandedIwrValue()
+        for (const kind of ['resistance', 'weakness'] as const) {
+            for (const draft of this.iwr[iwrListKey(kind)]) {
+                draft.value = scaleIwrValue(
+                    kind,
+                    from,
+                    to,
+                    draft.value ?? defaultIwrValue(kind, from),
+                )
+            }
+        }
+        this.renderIwr()
     }
 
     private renderIwr(): void {

@@ -337,6 +337,20 @@ export function defaultIwrValue(
     return kind === 'weakness' ? range.max : range.min
 }
 
+/** Keep a value's distance from the level's recommended end. */
+export function scaleIwrValue(
+    kind: 'resistance' | 'weakness',
+    sourceLevel: string,
+    targetLevel: string,
+    value: number,
+): number {
+    return (
+        value +
+        (defaultIwrValue(kind, targetLevel) -
+            defaultIwrValue(kind, sourceLevel))
+    )
+}
+
 export function recommendedIwrText(level: string): string {
     const range = resistanceWeaknessRange(level)
     const template =
