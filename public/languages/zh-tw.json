@@ -96,6 +96,20 @@
     "PF2EMONSTERMAKER.addLore": "新增學識",
     "PF2EMONSTERMAKER.loreName": "學識名稱（例如：戰爭）",
 
+    "pf2e-creature-builder.form.size": "體型",
+    "pf2e-creature-builder.form.size.tiny": "超小型",
+    "pf2e-creature-builder.form.size.small": "小型",
+    "pf2e-creature-builder.form.size.medium": "中型",
+    "pf2e-creature-builder.form.size.large": "大型",
+    "pf2e-creature-builder.form.size.huge": "超大型",
+    "pf2e-creature-builder.form.size.gargantuan": "巨型",
+    "pf2e-creature-builder.form.manualInput": "手動輸入",
+    "pf2e-creature-builder.form.manual.dice": "骰子",
+    "pf2e-creature-builder.form.manual.die": "骰型",
+    "pf2e-creature-builder.form.manual.bonus": "加值",
+    "pf2e-creature-builder.form.manual.apply": "套用",
+    "pf2e-creature-builder.form.manual.cancel": "取消",
+
     "PF2EMONSTERMAKER.traits": "特性",
     "PF2EMONSTERMAKER.traitsPlaceholder": "輸入特性後按 Enter",
 

@@ -17,6 +17,7 @@ A Foundry VTT module for the Pathfinder 2E and Starfinder 2E systems that lets y
 - Support for themed spell lists on Pathfinder 2e
 - Custom roadmaps [BETA] (see [ROADMAPS.md](ROADMAPS.md))
 - Live preview, drag-and-drop of items and color-coded stats
+- Manual Input for the bonus badges, including a damage editor for strikes
 
 ## Starfinder 2e
 
@@ -91,13 +92,30 @@ INT [Low v]     +1    WIS [Moderate v] +4 CHA [High v]     +5
 
 Use the **Show Bonuses** checkbox at the top of the form to hide or show the bonus badges.
 
+### Size
+
+**Size** sits with the name and level. The built-in choices are Tiny, Small, Medium, Large, Huge, and Gargantuan. When the running system publishes `CONFIG.PF2E.actorSizes`, that list is used instead. Submit writes the chosen size onto the creature.
+
+### Manual Input
+
+**Manual Input** appears next to **Show Bonuses** while bonuses are shown. Turn it on to edit a badge: click it, type a value, then leave the field or press Enter. Escape puts the previous value back. Text that is not a number is ignored, and the previous value stays.
+
+- A modifier accepts `5` or `+5` and is shown as `+5`. Only a leading minus, such as `-2`, is negative.
+- Hit Points, Armor Class, and the spell badge stay unsigned. The spell badge is the spell DC, so `25` and `+25` both display as `25`.
+- Strike damage opens a small panel with three fields: number of dice, die (`d4`, `d6`, `d8`, `d10`, or `d12`), and damage bonus. The die list shows a dice icon after each size. After you choose one, that icon sits to the left of the die field, and the three fields stay the same width. Apply writes a formula such as `2d6+4`, `2d6-1`, or `1d8` when the bonus is 0. Cancel or Escape leaves the badge unchanged. The panel stays inside the window and closes if the form scrolls.
+- Lore skills and extra attacks use the same badges. Lore follows the Acrobatics table. Each extra attack has an attack-bonus badge and a damage badge.
+
+Saving a value moves that row's Extreme, High, Moderate, or other menu to the closest creature-building tier. Submit uses the typed value. If you edited only an attack's bonus or only its damage, the other one still comes from its tier.
+
+Changing the dropdown by hand clears that edit and shows the table value again. Changing the level drops the typed number and uses the detected tier's table value for the new level. A value detected as High becomes the High value at the new level. A roadmap still replaces the stats it sets. Lore skills and extra attacks keep the tier detected from the typed value and use that tier's table value for the current level, the same way a level change does. Typed values and the Manual Input checkbox stay when the form re-renders. Turning **Manual Input** or **Show Bonuses** off clears every edit, and hiding bonuses also hides Manual Input. **Reset to Defaults** clears every edit.
+
 ### Strikes
 
 **Strike Attack Bonus** and **Strike Damage** create one Strike from the creature-building table. That Strike is always added, including when attacks are generated from weapons. It is skipped only when the builder was opened on a creature that already has attacks.
 
 **Add Attack** works like Lore: each row is a name plus an attack-bonus tier and a damage tier. Every row is created on submit. A blank name uses the usual Strike label.
 
-Attacks copied from an existing creature use the original strike. The row's tiers decide how the attack bonus, dice count, and damage bonus scale. The die size, traits, melee or ranged, and the rest of the strike stay with the original.
+Attacks copied from an existing creature use the original strike. The row's tiers decide how the attack bonus, dice count, and damage bonus scale. The die size, traits, melee or ranged, and the rest of the strike stay with the original. A typed damage formula is still applied when the original strike has no primary damage roll.
 
 ### Drag-and-Drop Items & Actions
 

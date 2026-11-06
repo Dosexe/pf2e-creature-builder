@@ -101,10 +101,24 @@
     "PF2EMONSTERMAKER.addLore": "Add Lore",
     "PF2EMONSTERMAKER.loreName": "Lore name (e.g. Warfare)",
 
+    "pf2e-creature-builder.form.size": "Size",
+    "pf2e-creature-builder.form.size.tiny": "Tiny",
+    "pf2e-creature-builder.form.size.small": "Small",
+    "pf2e-creature-builder.form.size.medium": "Medium",
+    "pf2e-creature-builder.form.size.large": "Large",
+    "pf2e-creature-builder.form.size.huge": "Huge",
+    "pf2e-creature-builder.form.size.gargantuan": "Gargantuan",
+
     "PF2EMONSTERMAKER.traits": "Traits",
     "PF2EMONSTERMAKER.traitsPlaceholder": "Search traits...",
 
     "PF2EMONSTERMAKER.showBonuses": "Show Bonuses",
+    "pf2e-creature-builder.form.manualInput": "Manual Input",
+    "pf2e-creature-builder.form.manual.dice": "Dice",
+    "pf2e-creature-builder.form.manual.die": "Die",
+    "pf2e-creature-builder.form.manual.bonus": "Bonus",
+    "pf2e-creature-builder.form.manual.apply": "Apply",
+    "pf2e-creature-builder.form.manual.cancel": "Cancel",
     "PF2EMONSTERMAKER.preview": "Preview",
     "PF2EMONSTERMAKER.resetDefaults": "Reset to Defaults",
 

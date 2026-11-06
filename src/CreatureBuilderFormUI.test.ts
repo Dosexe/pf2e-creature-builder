@@ -3,8 +3,14 @@ import { readFileSync } from 'node:fs'
 import Handlebars from 'handlebars'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SpellListCollection } from '@/spellcasting/model/spellList'
+import {
+    CREATURE_SIZE_FIELD,
+    FALLBACK_CREATURE_SIZES,
+} from '@/systems/creatureSizes'
 import enLang from '../public/languages/en.json'
-import CreatureBuilderFormUI from './CreatureBuilderFormUI'
+import CreatureBuilderFormUI, {
+    capturePreservedControls,
+} from './CreatureBuilderFormUI'
 import { DefaultCreatureStatistics, Levels, Options, Statistics } from './Keys'
 import { statisticValues } from './Values'
 
@@ -62,10 +68,19 @@ const setupDom = () => {
                 <option value="${Options.extreme}">extreme</option>
             </select>
             <button id="creatureBuilderResetButton" type="button">Reset</button>
+            <select id="creatureBuilderSize" name="${CREATURE_SIZE_FIELD}">
+                <option value="tiny">Tiny</option>
+                <option value="sm">Small</option>
+                <option value="med">Medium</option>
+                <option value="lg">Large</option>
+                <option value="huge">Huge</option>
+                <option value="grg">Gargantuan</option>
+            </select>
             <select id="creatureBuilderLevel">
                 <option value="-1">-1</option>
                 <option value="1">1</option>
                 <option value="3">3</option>
+                <option value="5">5</option>
             </select>
             <select id="creatureBuilderRoadmap">
                 <option value="Default">Default</option>
@@ -179,6 +194,8 @@ describe('CreatureBuilderFormUI', () => {
             Levels,
             RoadMaps: { TestRoadmap: {} },
             SpellLists: { pyromancer: { name: 'Pyromancer' } },
+            Sizes: FALLBACK_CREATURE_SIZES,
+            detectedSize: 'med',
             CreatureStatistics: JSON.parse(
                 JSON.stringify(DefaultCreatureStatistics),
             ),
@@ -189,6 +206,7 @@ describe('CreatureBuilderFormUI', () => {
             buildConfig({
                 root,
                 idPrefix: fieldId,
+                detectedSize: 'lg',
                 creatureStatistics: JSON.parse(
                     JSON.stringify(DefaultCreatureStatistics),
                 ),
@@ -237,6 +255,27 @@ describe('CreatureBuilderFormUI', () => {
         traitsLabel.click()
         expect(document.activeElement).toBe(traitsInput)
         expect(dropdown?.classList.contains('show')).toBe(true)
+
+        const size = root.querySelector(
+            `#${CSS.escape(`${fieldId}creatureBuilderSize`)}`,
+        ) as HTMLSelectElement
+        const traitsGroup = traitsLabel.closest('.form-group')
+        expect(size).toBeTruthy()
+        expect(
+            size.compareDocumentPosition(traitsGroup!) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+        expect(Array.from(size.options).map((option) => option.value)).toEqual([
+            'tiny',
+            'sm',
+            'med',
+            'lg',
+            'huge',
+            'grg',
+        ])
+        expect(size.value).toBe('lg')
+        expect(enLang[CREATURE_SIZE_FIELD]).toBe('Size')
+        expect(enLang[`${CREATURE_SIZE_FIELD}.gargantuan`]).toBe('Gargantuan')
 
         const label = root.querySelector(
             `label[for="${fieldId}toggleBadges"]`,
@@ -668,6 +707,10 @@ describe('CreatureBuilderFormUI', () => {
         ) as HTMLSelectElement
         level.value = '3'
         roadmap.value = 'TestRoadmap'
+        const size = document.getElementById(
+            'creatureBuilderSize',
+        ) as HTMLSelectElement
+        size.value = 'huge'
 
         ui.resetToDefaults()
 
@@ -684,6 +727,7 @@ describe('CreatureBuilderFormUI', () => {
         expect(document.getElementById('addAttackButton')).toBeTruthy()
         expect(level.value).toBe('-1')
         expect(roadmap.value).toBe('Default')
+        expect(size.value).toBe('med')
     })
 
     it('applies roadmap values to selects', () => {
@@ -3334,6 +3378,846 @@ describe('movement and senses controls', () => {
             'A creature needs at least one speed.',
         )
         delete (globalThis as { ui?: unknown }).ui
+        ui.destroy()
+    })
+})
+
+describe('Manual Input', () => {
+    const mount = () => {
+        const form = document.querySelector('.creatureBuilderForm')!
+        form.classList.add('creatureBuilderFormModern')
+
+        const show = document.createElement('input')
+        show.type = 'checkbox'
+        show.id = 'toggleBadges'
+        show.checked = true
+        const manualLabel = document.createElement('label')
+        manualLabel.htmlFor = 'toggleManualInput'
+        manualLabel.className = 'toggle-badges-label'
+        const manual = document.createElement('input')
+        manual.type = 'checkbox'
+        manual.id = 'toggleManualInput'
+        manualLabel.append(manual, document.createTextNode('Manual Input'))
+        form.append(show, manualLabel)
+
+        const str = document.getElementById(
+            `creatureBuilder${Statistics.str}`,
+        ) as HTMLSelectElement
+        for (const option of [
+            Options.extreme,
+            Options.low,
+            Options.terrible,
+            Options.abysmal,
+        ]) {
+            const element = document.createElement('option')
+            element.value = option
+            element.textContent = option
+            str.append(element)
+        }
+        str.value = Options.moderate
+
+        const strBadge = document.createElement('span')
+        strBadge.className = 'stat-value-badge'
+        strBadge.dataset.statBadge = Statistics.str
+        strBadge.dataset.overrideField = Statistics.str
+        strBadge.textContent = '--'
+        form.append(strBadge)
+
+        const hp = document.createElement('select')
+        hp.id = `creatureBuilder${Statistics.hp}`
+        hp.name = Statistics.hp
+        for (const option of [
+            Options.low,
+            Options.moderate,
+            Options.high,
+            Options.extreme,
+        ]) {
+            const element = document.createElement('option')
+            element.value = option
+            element.textContent = option
+            hp.append(element)
+        }
+        hp.value = Options.moderate
+        const hpBadge = document.createElement('span')
+        hpBadge.className = 'stat-value-badge'
+        hpBadge.dataset.statBadge = Statistics.hp
+        hpBadge.dataset.overrideField = Statistics.hp
+        form.append(hp, hpBadge)
+
+        const spell = document.getElementById(
+            'creatureBuilderPF2EMONSTERMAKER.spellcasting',
+        ) as HTMLSelectElement
+        const spellBadge = document.createElement('span')
+        spellBadge.className = 'stat-value-badge'
+        spellBadge.dataset.statBadge = Statistics.spellcasting
+        spellBadge.dataset.overrideField = Statistics.spellcasting
+        form.append(spellBadge)
+
+        const damage = document.getElementById(
+            `creatureBuilder${Statistics.strikeDamage}`,
+        ) as HTMLSelectElement
+        const damageBadge = document.createElement('span')
+        damageBadge.className = 'stat-value-badge'
+        damageBadge.dataset.statBadge = Statistics.strikeDamage
+        damageBadge.dataset.overrideField = Statistics.strikeDamage
+        form.append(damageBadge)
+
+        const ability = document.createElement('span')
+        ability.dataset.ability = Statistics.str
+        const damagePreview = document.createElement('span')
+        damagePreview.className = 'preview-stat'
+        damagePreview.dataset.stat = Statistics.strikeDamage
+        const spellPreview = document.createElement('span')
+        spellPreview.className = 'preview-stat'
+        spellPreview.dataset.stat = Statistics.spellcasting
+        document.body.append(ability, damagePreview, spellPreview)
+
+        return {
+            show,
+            manual,
+            manualLabel,
+            str,
+            strBadge,
+            hp,
+            hpBadge,
+            spell,
+            spellBadge,
+            damage,
+            damageBadge,
+            ability,
+            damagePreview,
+            spellPreview,
+        }
+    }
+
+    const start = () => {
+        vi.useFakeTimers()
+        const controls = mount()
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+        vi.runAllTimers()
+        return { ui, ...controls }
+    }
+
+    const enableManual = (manual: HTMLInputElement) => {
+        manual.checked = true
+        manual.dispatchEvent(new Event('change'))
+    }
+
+    const commitBadge = (badge: HTMLElement, value: string) => {
+        badge.click()
+        const input = badge.querySelector('input') as HTMLInputElement
+        expect(input).toBeTruthy()
+        input.value = value
+        input.dispatchEvent(new Event('blur'))
+    }
+
+    const overrideInput = (field: string) =>
+        document.querySelector<HTMLInputElement>(
+            `input[name="${CSS.escape(`manualOverride.${field}`)}"]`,
+        )
+
+    it('places Manual Input beside Show Bonuses in the form template', () => {
+        const source = readFileSync(
+            'public/forms/creatureBuilderForm.html',
+            'utf8',
+        )
+        const bonuses = source.indexOf('toggleBadges')
+        const manual = source.indexOf('toggleManualInput')
+        expect(bonuses).toBeGreaterThan(-1)
+        expect(manual).toBeGreaterThan(bonuses)
+        expect(source).toContain('pf2e-creature-builder.form.manualInput')
+        expect(enLang['pf2e-creature-builder.form.manualInput']).toBe(
+            'Manual Input',
+        )
+    })
+
+    it('shows Manual Input only while Show Bonuses is on', () => {
+        const { ui, show, manual, manualLabel } = start()
+        expect(manualLabel.hidden).toBe(false)
+
+        show.checked = false
+        show.dispatchEvent(new Event('change'))
+        expect(manualLabel.hidden).toBe(true)
+        expect(manual.checked).toBe(false)
+        expect(document.querySelector('.hide-badges')).toBeTruthy()
+
+        show.checked = true
+        show.dispatchEvent(new Event('change'))
+        expect(manualLabel.hidden).toBe(false)
+        expect(manual.checked).toBe(false)
+        ui.destroy()
+    })
+
+    it('hides Manual Input when Show Bonuses starts unchecked', () => {
+        vi.useFakeTimers()
+        const { manualLabel, show } = mount()
+        show.checked = false
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+        vi.runAllTimers()
+        expect(manualLabel.hidden).toBe(true)
+        ui.destroy()
+    })
+
+    it('saves a modifier on blur and snaps the tier without replacing the typed number', () => {
+        const { ui, manual, str, strBadge, ability } = start()
+        expect(strBadge.textContent).toBe('+3')
+        enableManual(manual)
+        expect(strBadge.classList.contains('stat-value-badge--editable')).toBe(
+            true,
+        )
+
+        commitBadge(strBadge, '5')
+        expect(strBadge.textContent).toBe('+5')
+        expect(str.value).toBe(Options.extreme)
+        expect(str.classList.contains('stat-level-extreme')).toBe(true)
+        expect(overrideInput(Statistics.str)?.value).toBe('+5')
+        expect(ability.textContent).toContain('+5')
+
+        commitBadge(strBadge, '+7')
+        expect(strBadge.textContent).toBe('+7')
+        expect(str.value).toBe(Options.extreme)
+        expect(overrideInput(Statistics.str)?.value).toBe('+7')
+        expect(ability.textContent).toContain('+7')
+        ui.destroy()
+    })
+
+    it('restores a saved override and the manual toggle after another render', () => {
+        const { ui, manual, strBadge } = start()
+        enableManual(manual)
+        commitBadge(strBadge, '+7')
+
+        const preserved = capturePreservedControls(document.body)
+        expect(preserved?.toggleManualInput).toBe('true')
+        expect(preserved?.[`manualOverride.${Statistics.str}`]).toBe('+7')
+
+        ui.destroy()
+        for (const input of Array.from(
+            document.querySelectorAll('input[name^="manualOverride."]'),
+        )) {
+            input.remove()
+        }
+        const dropdown = document.createElement('div')
+        dropdown.id = 'creatureBuilderTraitsDropdown'
+        dropdown.className = 'tagify__dropdown'
+        dropdown.innerHTML = '<div class="tagify__dropdown__wrapper"></div>'
+        document.body.append(dropdown)
+        manual.checked = false
+        strBadge.textContent = '+3'
+
+        const restored = new CreatureBuilderFormUI(
+            buildConfig({ preservedControls: preserved ?? undefined }),
+        )
+        restored.initialize()
+        vi.runAllTimers()
+
+        expect(manual.checked).toBe(true)
+        expect(overrideInput(Statistics.str)?.value).toBe('+7')
+        expect(strBadge.textContent).toBe('+7')
+        restored.destroy()
+    })
+
+    it('commits a modifier with Enter and restores the previous value on Escape', () => {
+        const { ui, manual, str, strBadge } = start()
+        enableManual(manual)
+
+        strBadge.click()
+        const entering = strBadge.querySelector('input') as HTMLInputElement
+        entering.value = '4'
+        entering.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+        )
+        expect(strBadge.textContent).toBe('+4')
+        expect(str.value).toBe(Options.high)
+
+        strBadge.click()
+        const escaping = strBadge.querySelector('input') as HTMLInputElement
+        escaping.value = '9'
+        escaping.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        )
+        expect(strBadge.textContent).toBe('+4')
+        expect(str.value).toBe(Options.high)
+        ui.destroy()
+    })
+
+    it('grows the badge by about a fifth while editing and then restores it', () => {
+        const { ui, manual, strBadge } = start()
+        enableManual(manual)
+        strBadge.getBoundingClientRect = () =>
+            ({
+                width: 40,
+                height: 22,
+                top: 0,
+                left: 0,
+                bottom: 22,
+                right: 40,
+                x: 0,
+                y: 0,
+                toJSON() {
+                    return {}
+                },
+            }) as DOMRect
+
+        strBadge.click()
+        expect(strBadge.classList.contains('stat-value-badge--editing')).toBe(
+            true,
+        )
+        expect(strBadge.style.width).toBe('48px')
+        expect(strBadge.style.height).toBe('27px')
+
+        const input = strBadge.querySelector('input') as HTMLInputElement
+        input.value = '5'
+        input.dispatchEvent(new Event('blur'))
+        expect(strBadge.classList.contains('stat-value-badge--editing')).toBe(
+            false,
+        )
+        expect(strBadge.style.width).toBe('')
+        expect(strBadge.style.height).toBe('')
+        ui.destroy()
+    })
+
+    it('keeps the previous badge when the typed text is not a number', () => {
+        const { ui, manual, str, strBadge } = start()
+        enableManual(manual)
+        commitBadge(strBadge, 'nope')
+        expect(strBadge.textContent).toBe('+3')
+        expect(str.value).toBe(Options.moderate)
+        expect(overrideInput(Statistics.str)).toBeNull()
+        ui.destroy()
+    })
+
+    it('does not open an editor for a stat set to None', () => {
+        const { ui, manual, spellBadge } = start()
+        expect(spellBadge.textContent).toBe('--')
+        enableManual(manual)
+        expect(
+            spellBadge.classList.contains('stat-value-badge--editable'),
+        ).toBe(false)
+        spellBadge.click()
+        expect(spellBadge.querySelector('input')).toBeNull()
+        ui.destroy()
+    })
+
+    it('saves HP without a plus and snaps its tier', () => {
+        const { ui, manual, hp, hpBadge } = start()
+        expect(hpBadge.textContent).toBe('20')
+        enableManual(manual)
+        commitBadge(hpBadge, '+28')
+        expect(hpBadge.textContent).toBe('28')
+        expect(hp.value).toBe(Options.extreme)
+        expect(overrideInput(Statistics.hp)?.value).toBe('28')
+        ui.destroy()
+    })
+
+    it('saves the spell box as a DC and leaves the select when that tier is missing', () => {
+        const { ui, manual, spell, spellBadge, spellPreview } = start()
+        spell.value = Options.moderate
+        spell.dispatchEvent(new Event('change'))
+        expect(spellBadge.textContent).toBe('14')
+
+        enableManual(manual)
+        commitBadge(spellBadge, '18')
+        expect(spellBadge.textContent).toBe('18')
+        expect(spell.value).toBe(Options.high)
+        expect(spellPreview.textContent).toContain('18')
+        expect(spellPreview.textContent).not.toContain('26')
+
+        commitBadge(spellBadge, '+20')
+        expect(spellBadge.textContent).toBe('20')
+        expect(spell.value).toBe(Options.high)
+        expect(overrideInput(Statistics.spellcasting)?.value).toBe('20')
+        ui.destroy()
+    })
+
+    it('keeps the damage editor inside the form window', () => {
+        const { ui, manual, damageBadge } = start()
+        enableManual(manual)
+        const previousRect = HTMLElement.prototype.getBoundingClientRect
+        const frame = { left: 100, top: 50, width: 500, height: 400 }
+        let anchor = { left: 120, bottom: 80 }
+        let panel = { width: 100, height: 80 }
+        const box = (
+            left: number,
+            top: number,
+            width: number,
+            height: number,
+        ) =>
+            ({
+                x: left,
+                y: top,
+                left,
+                top,
+                right: left + width,
+                bottom: top + height,
+                width,
+                height,
+                toJSON() {
+                    return {}
+                },
+            }) as DOMRect
+        HTMLElement.prototype.getBoundingClientRect = function () {
+            if (this.classList.contains('damage-editor')) {
+                return box(0, 0, panel.width, panel.height)
+            }
+            if (this === document.body) {
+                return box(frame.left, frame.top, frame.width, frame.height)
+            }
+            if (this === damageBadge) {
+                return box(anchor.left, 0, 40, anchor.bottom)
+            }
+            return previousRect.call(this)
+        }
+
+        try {
+            damageBadge.click()
+            const editor = document.querySelector(
+                '.damage-editor',
+            ) as HTMLElement
+            expect(editor.hidden).toBe(false)
+            expect(editor.style.left).toBe('120px')
+            expect(editor.style.top).toBe('84px')
+
+            anchor = { left: 550, bottom: 420 }
+            panel = { width: 200, height: 160 }
+            damageBadge.click()
+            expect(editor.style.left).toBe('400px')
+            expect(editor.style.top).toBe('290px')
+
+            panel = { width: 2000, height: 2000 }
+            damageBadge.click()
+            expect(editor.style.left).toBe('100px')
+            expect(editor.style.top).toBe('50px')
+        } finally {
+            HTMLElement.prototype.getBoundingClientRect = previousRect
+            ui.destroy()
+        }
+    })
+
+    it('closes the damage editor on scroll without hiding the traits list', () => {
+        const { ui, manual, damageBadge } = start()
+        enableManual(manual)
+        damageBadge.click()
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        expect(editor.hidden).toBe(false)
+
+        const input = document.getElementById(
+            'creatureBuilderTraitsInput',
+        ) as HTMLElement
+        const dropdown = document.getElementById(
+            'creatureBuilderTraitsDropdown',
+        ) as HTMLElement
+        input.textContent = 'und'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        expect(dropdown.classList.contains('show')).toBe(true)
+
+        window.dispatchEvent(new Event('scroll', { bubbles: true }))
+        expect(editor.hidden).toBe(true)
+        expect(dropdown.classList.contains('show')).toBe(true)
+        expect(dropdown.parentElement).toBe(document.body)
+        ui.destroy()
+    })
+
+    it('opens a damage panel and saves the formula from its three fields', () => {
+        const { ui, manual, damage, damageBadge, damagePreview } = start()
+        expect(damageBadge.textContent).toBe('1d6+2')
+        enableManual(manual)
+        damageBadge.click()
+
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        expect(editor.hidden).toBe(false)
+        const count = editor.querySelector(
+            '.damage-editor-count',
+        ) as HTMLInputElement
+        const die = editor.querySelector(
+            '.damage-editor-die',
+        ) as HTMLSelectElement
+        const bonus = editor.querySelector(
+            '.damage-editor-bonus',
+        ) as HTMLInputElement
+        expect(count.value).toBe('1')
+        expect(die.value).toBe('d6')
+        expect(bonus.value).toBe('2')
+        expect(Array.from(die.options).map((option) => option.value)).toEqual([
+            'd4',
+            'd6',
+            'd8',
+            'd10',
+            'd12',
+        ])
+        const dieValue = editor.querySelector(
+            '.damage-editor-die-value',
+        ) as HTMLElement
+        const dieIcon = editor.querySelector(
+            '.damage-editor-die-icon',
+        ) as HTMLElement
+        expect(dieValue.textContent).toBe('d6')
+        expect(dieIcon.tagName).toBe('SPAN')
+        expect(dieIcon.closest('.damage-editor-die-trigger')).toBeNull()
+        expect(dieIcon.nextElementSibling?.contains(dieValue)).toBe(true)
+        expect(dieIcon.className).toBe(
+            'fa-light fa-dice-d6 damage-editor-die-icon',
+        )
+        const choices = Array.from(
+            editor.querySelectorAll<HTMLButtonElement>(
+                '.damage-editor-die-option',
+            ),
+        )
+        expect(choices.map((choice) => choice.dataset.die)).toEqual([
+            'd4',
+            'd6',
+            'd8',
+            'd10',
+            'd12',
+        ])
+        for (const choice of choices) {
+            const label = choice.querySelector(
+                '.damage-editor-die-option-label',
+            )
+            const icon = choice.querySelector('i')
+            expect(label?.textContent).toBe(choice.dataset.die)
+            expect(label?.nextElementSibling).toBe(icon)
+            expect(icon?.className).toBe(
+                `fa-light fa-dice-${choice.dataset.die}`,
+            )
+        }
+        const list = editor.querySelector(
+            '.damage-editor-die-list',
+        ) as HTMLElement
+        expect(list.hidden).toBe(true)
+        ;(
+            editor.querySelector(
+                '.damage-editor-die-trigger',
+            ) as HTMLButtonElement
+        ).click()
+        expect(list.hidden).toBe(false)
+        count.click()
+        expect(list.hidden).toBe(true)
+        ;(
+            editor.querySelector(
+                '.damage-editor-die-trigger',
+            ) as HTMLButtonElement
+        ).click()
+        choices[3].click()
+        expect(die.value).toBe('d10')
+        expect(list.hidden).toBe(true)
+        expect(dieValue.textContent).toBe('d10')
+        expect(dieIcon.className).toBe(
+            'fa-light fa-dice-d10 damage-editor-die-icon',
+        )
+        die.value = 'd6'
+        die.dispatchEvent(new Event('change'))
+
+        count.value = '2'
+        die.value = 'd6'
+        bonus.value = '-1'
+        editor
+            .querySelector('.damage-editor-apply')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(damageBadge.textContent).toBe('2d6-1')
+        expect(damage.value).toBe(Options.high)
+        expect(overrideInput(Statistics.strikeDamage)?.value).toBe('2d6-1')
+        expect(damagePreview.textContent).toContain('2d6-1')
+        expect(editor.hidden).toBe(true)
+        ui.destroy()
+    })
+
+    it('leaves attack damage unchanged when the panel is cancelled or the bonus is invalid', () => {
+        const { ui, manual, damage, damageBadge } = start()
+        enableManual(manual)
+        damageBadge.click()
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        const bonus = editor.querySelector(
+            '.damage-editor-bonus',
+        ) as HTMLInputElement
+        bonus.value = 'nope'
+        editor
+            .querySelector('.damage-editor-apply')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(damageBadge.textContent).toBe('1d6+2')
+        expect(editor.hidden).toBe(false)
+
+        editor
+            .querySelector('.damage-editor-cancel')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(editor.hidden).toBe(true)
+        expect(damageBadge.textContent).toBe('1d6+2')
+        expect(damage.value).toBe(Options.moderate)
+        expect(overrideInput(Statistics.strikeDamage)).toBeNull()
+        ui.destroy()
+    })
+
+    it('saves a damage formula with no bonus', () => {
+        const { ui, manual, damage, damageBadge } = start()
+        enableManual(manual)
+        damageBadge.click()
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        ;(
+            editor.querySelector('.damage-editor-count') as HTMLInputElement
+        ).value = '1'
+        ;(
+            editor.querySelector('.damage-editor-die') as HTMLSelectElement
+        ).value = 'd8'
+        ;(
+            editor.querySelector('.damage-editor-bonus') as HTMLInputElement
+        ).value = ''
+        editor
+            .querySelector('.damage-editor-apply')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(damageBadge.textContent).toBe('1d8')
+        expect(damage.value).toBe(Options.low)
+        ui.destroy()
+    })
+
+    it('closes the damage panel on Escape without saving', () => {
+        const { ui, manual, damageBadge } = start()
+        enableManual(manual)
+        damageBadge.click()
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        editor.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+        )
+        expect(editor.hidden).toBe(false)
+        editor.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        )
+        expect(editor.hidden).toBe(true)
+        expect(damageBadge.textContent).toBe('1d6+2')
+        ui.destroy()
+    })
+
+    it('shows and edits lore and extra-attack boxes', () => {
+        const { ui, manual } = start()
+        enableManual(manual)
+        ui.addLoreSkill('Forest')
+        const lore = document.querySelector('.loreEntry')!
+        const loreBadge = lore.querySelector('.stat-value-badge') as HTMLElement
+        const loreSelect = lore.querySelector('select') as HTMLSelectElement
+        expect(loreBadge.textContent).toBe('+6')
+        commitBadge(loreBadge, '10')
+        expect(loreBadge.textContent).toBe('+10')
+        expect(loreSelect.value).toBe(Options.extreme)
+        expect(overrideInput('loreLevel0')?.value).toBe('+10')
+
+        loreSelect.value = Options.low
+        loreSelect.dispatchEvent(new Event('change'))
+        expect(loreBadge.textContent).toBe('+4')
+        expect(overrideInput('loreLevel0')).toBeNull()
+
+        ui.addAttack('Claw')
+        const attack = document.querySelector('.attackEntry')!
+        const [bonusBadge, attackDamage] = Array.from(
+            attack.querySelectorAll<HTMLElement>('.stat-value-badge'),
+        )
+        expect(bonusBadge.textContent).toBe('+7')
+        expect(attackDamage.textContent).toBe('1d6+2')
+
+        commitBadge(bonusBadge, '11')
+        expect(bonusBadge.textContent).toBe('+11')
+        expect(
+            (
+                attack.querySelector(
+                    'select[name="attackBonus0"]',
+                ) as HTMLSelectElement
+            ).value,
+        ).toBe(Options.extreme)
+        expect(overrideInput('attackBonus0')?.value).toBe('+11')
+
+        attackDamage.click()
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        ;(
+            editor.querySelector('.damage-editor-count') as HTMLInputElement
+        ).value = '3'
+        ;(
+            editor.querySelector('.damage-editor-die') as HTMLSelectElement
+        ).value = 'd10'
+        ;(
+            editor.querySelector('.damage-editor-bonus') as HTMLInputElement
+        ).value = '+2'
+        editor
+            .querySelector('.damage-editor-apply')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(attackDamage.textContent).toBe('3d10+2')
+        expect(
+            (
+                attack.querySelector(
+                    'select[name="attackDamage0"]',
+                ) as HTMLSelectElement
+            ).value,
+        ).toBe(Options.extreme)
+        expect(overrideInput('attackDamage0')?.value).toBe('3d10+2')
+        ui.destroy()
+    })
+
+    it('clears one edit when its select is changed by hand', () => {
+        const { ui, manual, str, strBadge } = start()
+        enableManual(manual)
+        commitBadge(strBadge, '+7')
+        str.value = Options.low
+        str.dispatchEvent(new Event('change'))
+        expect(strBadge.textContent).toBe('+1')
+        expect(overrideInput(Statistics.str)).toBeNull()
+        ui.destroy()
+    })
+
+    it('scales a typed value to its detected tier when the level changes', () => {
+        const { ui, manual, str, strBadge } = start()
+        enableManual(manual)
+        commitBadge(strBadge, '+4')
+        expect(str.value).toBe(Options.high)
+
+        ui.addLoreSkill('Forest')
+        const lore = document.querySelector('.loreEntry')!
+        const loreBadge = lore.querySelector('.stat-value-badge') as HTMLElement
+        const loreSelect = lore.querySelector('select') as HTMLSelectElement
+        commitBadge(loreBadge, '+10')
+        expect(loreSelect.value).toBe(Options.extreme)
+
+        ui.addAttack('Claw')
+        const attack = document.querySelector('.attackEntry')!
+        const [bonusBadge, attackDamage] = Array.from(
+            attack.querySelectorAll<HTMLElement>('.stat-value-badge'),
+        )
+        const bonusSelect = attack.querySelector(
+            'select[name="attackBonus0"]',
+        ) as HTMLSelectElement
+        const damageSelect = attack.querySelector(
+            'select[name="attackDamage0"]',
+        ) as HTMLSelectElement
+        commitBadge(bonusBadge, '11')
+        attackDamage.click()
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        ;(
+            editor.querySelector('.damage-editor-count') as HTMLInputElement
+        ).value = '2'
+        ;(
+            editor.querySelector('.damage-editor-die') as HTMLSelectElement
+        ).value = 'd6'
+        ;(
+            editor.querySelector('.damage-editor-bonus') as HTMLInputElement
+        ).value = '-1'
+        editor
+            .querySelector('.damage-editor-apply')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(bonusSelect.value).toBe(Options.extreme)
+        expect(damageSelect.value).toBe(Options.high)
+
+        const level = document.getElementById(
+            'creatureBuilderLevel',
+        ) as HTMLSelectElement
+        level.value = '5'
+        level.dispatchEvent(new Event('change'))
+
+        expect(str.value).toBe(Options.high)
+        expect(strBadge.textContent).toBe('+5')
+        expect(overrideInput(Statistics.str)).toBeNull()
+        expect(loreSelect.value).toBe(Options.extreme)
+        expect(loreBadge.textContent).toBe('+16')
+        expect(overrideInput('loreLevel0')).toBeNull()
+        expect(bonusSelect.value).toBe(Options.extreme)
+        expect(bonusBadge.textContent).toBe('+17')
+        expect(overrideInput('attackBonus0')).toBeNull()
+        expect(damageSelect.value).toBe(Options.high)
+        expect(attackDamage.textContent).toBe('2d8+7')
+        expect(overrideInput('attackDamage0')).toBeNull()
+        ui.destroy()
+    })
+
+    it('clears roadmap stats and scales lore and extra attacks to their tiers', () => {
+        const { ui, manual, str, strBadge } = start()
+        enableManual(manual)
+        commitBadge(strBadge, '+7')
+        expect(str.value).toBe(Options.extreme)
+
+        ui.addLoreSkill('Forest')
+        const lore = document.querySelector('.loreEntry')!
+        const loreBadge = lore.querySelector('.stat-value-badge') as HTMLElement
+        const loreSelect = lore.querySelector('select') as HTMLSelectElement
+        commitBadge(loreBadge, '+9')
+        expect(loreSelect.value).toBe(Options.extreme)
+
+        ui.addAttack('Claw')
+        const attack = document.querySelector('.attackEntry')!
+        const [bonusBadge, attackDamage] = Array.from(
+            attack.querySelectorAll<HTMLElement>('.stat-value-badge'),
+        )
+        const bonusSelect = attack.querySelector(
+            'select[name="attackBonus0"]',
+        ) as HTMLSelectElement
+        const damageSelect = attack.querySelector(
+            'select[name="attackDamage0"]',
+        ) as HTMLSelectElement
+        commitBadge(bonusBadge, '+10')
+        attackDamage.click()
+        const editor = document.querySelector('.damage-editor') as HTMLElement
+        ;(
+            editor.querySelector('.damage-editor-count') as HTMLInputElement
+        ).value = '2'
+        ;(
+            editor.querySelector('.damage-editor-die') as HTMLSelectElement
+        ).value = 'd6'
+        ;(
+            editor.querySelector('.damage-editor-bonus') as HTMLInputElement
+        ).value = '-1'
+        editor
+            .querySelector('.damage-editor-apply')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+        const roadmap = document.getElementById(
+            'creatureBuilderRoadmap',
+        ) as HTMLSelectElement
+        roadmap.value = 'TestRoadmap'
+        roadmap.dispatchEvent(new Event('change'))
+
+        expect(str.value).toBe(Options.moderate)
+        expect(strBadge.textContent).toBe('+3')
+        expect(overrideInput(Statistics.str)).toBeNull()
+        expect(loreSelect.value).toBe(Options.extreme)
+        expect(loreBadge.textContent).toBe('+10')
+        expect(overrideInput('loreLevel0')).toBeNull()
+        expect(bonusSelect.value).toBe(Options.extreme)
+        expect(bonusBadge.textContent).toBe('+11')
+        expect(overrideInput('attackBonus0')).toBeNull()
+        expect(damageSelect.value).toBe(Options.high)
+        expect(attackDamage.textContent).toBe('1d6+3')
+        expect(overrideInput('attackDamage0')).toBeNull()
+        ui.destroy()
+    })
+
+    it('drops every edit when Manual Input or Show Bonuses is turned off', () => {
+        const { ui, show, manual, str, strBadge } = start()
+        enableManual(manual)
+        commitBadge(strBadge, '+7')
+        expect(str.value).toBe(Options.extreme)
+
+        manual.checked = false
+        manual.dispatchEvent(new Event('change'))
+        expect(strBadge.textContent).toBe('+5')
+        expect(overrideInput(Statistics.str)).toBeNull()
+        expect(strBadge.classList.contains('stat-value-badge--editable')).toBe(
+            false,
+        )
+
+        enableManual(manual)
+        commitBadge(strBadge, '+7')
+        show.checked = false
+        show.dispatchEvent(new Event('change'))
+        expect(manual.checked).toBe(false)
+        expect(strBadge.textContent).toBe('+5')
+        expect(overrideInput(Statistics.str)).toBeNull()
+        ui.destroy()
+    })
+
+    it('drops edits on reset', () => {
+        const { ui, manual, strBadge } = start()
+        enableManual(manual)
+        commitBadge(strBadge, '+7')
+        ui.addLoreSkill('Forest')
+        ui.resetToDefaults()
+        expect(strBadge.textContent).toBe('+2')
+        expect(overrideInput(Statistics.str)).toBeNull()
+        expect(document.querySelector('.loreEntry')).toBeNull()
         ui.destroy()
     })
 })
