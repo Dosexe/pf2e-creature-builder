@@ -164,6 +164,15 @@ describe('CreatureSystem', () => {
             ...FALLBACK_CREATURE_SIZES,
         ])
 
+        vi.stubGlobal('CONFIG', {
+            PF2E: {
+                actorSizes: { '  lg  ': ' Large ', '   ': 'blank', gap: '  ' },
+            },
+        })
+        expect(new Pf2eCreatureSystem().sizes()).toEqual([
+            { value: 'lg', label: ' Large ' },
+        ])
+
         vi.stubGlobal('CONFIG', { PF2E: { actorSizes: 'tiny' } })
         expect(
             new Sf2eCreatureSystem().sizes().map((size) => size.value),

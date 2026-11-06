@@ -2124,6 +2124,9 @@ describe('CreatureBuilderForm', () => {
                             },
                         ]
                     }
+                    if (selector === '[id$="manualAttacksContainer"]') {
+                        return [{ id: 'window-manualAttacksContainer' }]
+                    }
                     return []
                 },
             }
@@ -2136,6 +2139,7 @@ describe('CreatureBuilderForm', () => {
                 [Statistics.strikeBonus]: Options.high,
                 attackName0: 'Bite',
                 attackSource0: '{"item":{}}',
+                manualAttacksPresent: 'true',
             })
         })
 
