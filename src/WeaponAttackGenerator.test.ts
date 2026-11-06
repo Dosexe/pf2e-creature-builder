@@ -195,6 +195,32 @@ describe('attacksFromWeapon', () => {
         })
     })
 
+    it('stores the weapon link on the Starfinder system flag', () => {
+        const previous = (globalThis as { game?: unknown }).game
+        ;(globalThis as { game?: unknown }).game = { system: { id: 'sf2e' } }
+        try {
+            const [attack] = attacksFromWeapon(
+                {
+                    source: {
+                        ...longsword,
+                        flags: { sf2e: { fixedAttack: 12 } },
+                    },
+                    document: { id: 'weapon-1' },
+                },
+                attackContext(),
+            )
+
+            expect(attack.flags).toEqual({
+                sf2e: { linkedWeapon: 'weapon-1' },
+            })
+            expect(attack).toMatchObject({
+                system: { bonus: { value: 12 } },
+            })
+        } finally {
+            ;(globalThis as { game?: unknown }).game = previous
+        }
+    })
+
     it('fills defaults when the weapon has no attack details', () => {
         const [blank] = attacksFromWeapon(
             { source: { name: '   ', img: '' } },

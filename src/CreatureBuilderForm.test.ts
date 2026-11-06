@@ -2007,6 +2007,58 @@ describe('CreatureBuilderForm', () => {
         expect(form.actor).toBe(originalActor)
     })
 
+    it('records the current schema version on a new Starfinder creature', async () => {
+        const game = (
+            globalThis as unknown as { game: Record<string, unknown> }
+        ).game
+        const previousSettings = game.settings
+        game.settings = {
+            settings: {
+                get: (key: string) =>
+                    key === 'sf2e.worldSchemaVersion'
+                        ? { default: 0.961 }
+                        : undefined,
+            },
+        }
+        game.system = { id: 'sf2e' }
+        try {
+            const originalActor = buildActor()
+            const newActor = buildActor({
+                deleteEmbeddedDocuments: vi.fn().mockResolvedValue(undefined),
+            })
+            ;(
+                originalActor as unknown as { clone: ReturnType<typeof vi.fn> }
+            ).clone = vi.fn().mockResolvedValue(newActor)
+            const form = new CreatureBuilderForm(originalActor)
+            vi.spyOn(form, 'applyStrike').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applySpellcasting').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
+
+            // biome-ignore lint/complexity/useLiteralKeys: protected property
+            await form['_updateObject'](undefined as unknown as Event, {
+                [Statistics.name]: 'Alien',
+                [Statistics.level]: '1',
+            })
+
+            expect(
+                (
+                    originalActor as unknown as {
+                        clone: ReturnType<typeof vi.fn>
+                    }
+                ).clone,
+            ).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    'system._migration.version': 0.961,
+                }),
+                { save: true },
+            )
+        } finally {
+            game.settings = previousSettings
+            game.system = undefined
+        }
+    })
+
     it('applySpellList calls resolveAndApplySpellList for a valid spell list key', async () => {
         const resolverSpy = vi
             .spyOn(SpellListResolverModule, 'resolveAndApplySpellList')

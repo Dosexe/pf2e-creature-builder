@@ -1,4 +1,5 @@
 import type { ItemData } from '@/model/item'
+import { withSchemaVersion } from '@/schemaVersion'
 import type {
     CasterType,
     DetectedSpell,
@@ -243,9 +244,9 @@ export function buildSpellcastingEntry(config: SpellcastingConfig): ItemData {
         spellsLabel,
     )
 
-    return {
+    return withSchemaVersion({
         name,
-        type: 'spellcastingEntry',
+        type: 'spellcastingEntry' as const,
         system: {
             spelldc: {
                 value: config.spellcastingBonus,
@@ -260,10 +261,10 @@ export function buildSpellcastingEntry(config: SpellcastingConfig): ItemData {
             ability: {
                 value: config.keyAttribute,
             },
-            showUnpreparedSpells: { value: true },
+            showSlotlessLevels: { value: true },
             slots: slots,
         },
-    }
+    })
 }
 
 /**
