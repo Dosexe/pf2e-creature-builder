@@ -211,8 +211,6 @@
     "pf2e-creature-builder.form.iwr.double-vs": "Double Vs",
     "pf2e-creature-builder.form.iwr.except": "except",
     "pf2e-creature-builder.form.iwr.summary-double-vs": "double vs",
-    "pf2e-creature-builder.form.iwr.no-exceptions": "No exceptions",
-    "pf2e-creature-builder.form.iwr.no-double-vs": "No double vs",
     "pf2e-creature-builder.form.iwr.remove": "Remove",
     "pf2e-creature-builder.form.iwr.value": "Value",
     "pf2e-creature-builder.form.iwr.recommended": "Recommended {min}–{max}"

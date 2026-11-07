@@ -3353,7 +3353,12 @@ class CreatureBuilderFormUI {
 
     private writeIwrPreserved(): void {
         const input = this.queryById<HTMLInputElement>('iwrPreserved')
-        if (input) input.value = JSON.stringify(this.iwr.preserved)
+        if (!input) return
+        try {
+            input.value = JSON.stringify(this.iwr.preserved)
+        } catch {
+            input.value = ''
+        }
     }
 
     private syncIwrAddButtons(): void {

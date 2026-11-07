@@ -131,5 +131,23 @@
     "pf2e-creature-builder.form.skills.piloting": "Pilotaż",
     "pf2e-creature-builder.form.strikes.add-attack": "Dodaj atak",
     "pf2e-creature-builder.form.strikes.attack-name": "Nazwa ataku",
-    "pf2e-creature-builder.form.items.generate-attacks": "Generuj ataki z broni"
+    "pf2e-creature-builder.form.items.generate-attacks": "Generuj ataki z broni",
+
+    "pf2e-creature-builder.form.iwr.title": "Immunitety, odporności i słabości",
+    "pf2e-creature-builder.form.iwr.immunities": "Immunitety",
+    "pf2e-creature-builder.form.iwr.resistances": "Odporności",
+    "pf2e-creature-builder.form.iwr.weaknesses": "Słabości",
+    "pf2e-creature-builder.form.iwr.add-immunity": "+ Dodaj immunitet",
+    "pf2e-creature-builder.form.iwr.add-resistance": "+ Dodaj odporność",
+    "pf2e-creature-builder.form.iwr.add-weakness": "+ Dodaj słabość",
+    "pf2e-creature-builder.form.iwr.add-exception": "+ Dodaj",
+    "pf2e-creature-builder.form.iwr.filter": "Filtruj",
+    "pf2e-creature-builder.form.iwr.add-double-vs": "+ Dodaj",
+    "pf2e-creature-builder.form.iwr.exceptions": "Wyjątki",
+    "pf2e-creature-builder.form.iwr.double-vs": "Podwójne przeciw",
+    "pf2e-creature-builder.form.iwr.except": "oprócz",
+    "pf2e-creature-builder.form.iwr.summary-double-vs": "podwójne przeciw",
+    "pf2e-creature-builder.form.iwr.remove": "Usuń",
+    "pf2e-creature-builder.form.iwr.value": "Wartość",
+    "pf2e-creature-builder.form.iwr.recommended": "Zalecane {min}–{max}"
 }

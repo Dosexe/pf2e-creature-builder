@@ -74,6 +74,15 @@ describe('language files', () => {
         )
         expect(template).toContain(`{{localize "${SIZE_LABEL_KEY}"}}`)
         expect(template).not.toContain(`{{localize "${CREATURE_SIZE_FIELD}"}}`)
+        const iwrKeys = [
+            'pf2e-creature-builder.form.iwr.title',
+            'pf2e-creature-builder.form.iwr.immunities',
+            'pf2e-creature-builder.form.iwr.resistances',
+            'pf2e-creature-builder.form.iwr.weaknesses',
+            'pf2e-creature-builder.form.iwr.add-immunity',
+            'pf2e-creature-builder.form.iwr.add-resistance',
+            'pf2e-creature-builder.form.iwr.add-weakness',
+        ]
 
         for (const file of files) {
             const translations = JSON.parse(
@@ -97,6 +106,10 @@ describe('language files', () => {
                 expect(translationAt(expanded, size.label)).toEqual(
                     expect.any(String),
                 )
+            }
+            for (const key of iwrKeys) {
+                expect(translationAt(expanded, key)).toEqual(expect.any(String))
+                expect(template).toContain(`{{localize "${key}"}}`)
             }
         }
     })

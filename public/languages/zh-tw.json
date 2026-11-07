@@ -126,5 +126,23 @@
     "pf2e-creature-builder.form.skills.piloting": "駕駛",
     "pf2e-creature-builder.form.strikes.add-attack": "新增攻擊",
     "pf2e-creature-builder.form.strikes.attack-name": "攻擊名稱",
-    "pf2e-creature-builder.form.items.generate-attacks": "從武器產生攻擊"
+    "pf2e-creature-builder.form.items.generate-attacks": "從武器產生攻擊",
+
+    "pf2e-creature-builder.form.iwr.title": "免疫、抗性與弱點",
+    "pf2e-creature-builder.form.iwr.immunities": "免疫",
+    "pf2e-creature-builder.form.iwr.resistances": "抗性",
+    "pf2e-creature-builder.form.iwr.weaknesses": "弱點",
+    "pf2e-creature-builder.form.iwr.add-immunity": "+ 新增免疫",
+    "pf2e-creature-builder.form.iwr.add-resistance": "+ 新增抗性",
+    "pf2e-creature-builder.form.iwr.add-weakness": "+ 新增弱點",
+    "pf2e-creature-builder.form.iwr.add-exception": "+ 新增",
+    "pf2e-creature-builder.form.iwr.filter": "篩選",
+    "pf2e-creature-builder.form.iwr.add-double-vs": "+ 新增",
+    "pf2e-creature-builder.form.iwr.exceptions": "例外",
+    "pf2e-creature-builder.form.iwr.double-vs": "雙重對抗",
+    "pf2e-creature-builder.form.iwr.except": "除外",
+    "pf2e-creature-builder.form.iwr.summary-double-vs": "雙重對抗",
+    "pf2e-creature-builder.form.iwr.remove": "移除",
+    "pf2e-creature-builder.form.iwr.value": "數值",
+    "pf2e-creature-builder.form.iwr.recommended": "建議 {min}–{max}"
 }

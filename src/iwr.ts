@@ -344,10 +344,11 @@ export function scaleIwrValue(
     targetLevel: string,
     value: number,
 ): number {
-    return (
+    return Math.max(
+        0,
         value +
-        (defaultIwrValue(kind, targetLevel) -
-            defaultIwrValue(kind, sourceLevel))
+            (defaultIwrValue(kind, targetLevel) -
+                defaultIwrValue(kind, sourceLevel)),
     )
 }
 
@@ -456,7 +457,15 @@ export function readActorIwr(actor: object): ActorIwr {
                 kind === 'resistance'
                     ? resistanceIdentity(parsed.draft)
                     : parsed.draft.type
-            if (seen.has(identity)) continue
+            if (seen.has(identity)) {
+                // A second immunity or weakness of the same type is not
+                // shown. Keep the source object so save does not delete it.
+                if (kind !== 'resistance') {
+                    const extra = cloneEntry(entry)
+                    if (extra !== undefined) result.preserved[key].push(extra)
+                }
+                continue
+            }
             seen.add(identity)
             result[key].push(parsed.draft)
         }
@@ -615,6 +624,9 @@ function parseActorEntry(
     ) {
         return { preserved: cloneEntry(entry) }
     }
+    if (hasUnmodeledKeys(record, kind)) {
+        return { preserved: cloneEntry(entry) }
+    }
     const exceptions = cleanSlugs(record.exceptions, type)
     const doubleVs =
         kind === 'resistance'
@@ -675,12 +687,21 @@ function iwrFromData(data: FormRecord): ActorIwr {
             }
             const identity =
                 kind === 'resistance' ? resistanceIdentity(draft) : type
-            if (seen.has(identity)) continue
+            if (seen.has(identity)) {
+                if (kind !== 'resistance') {
+                    result.preserved[key].push(toActor(kind, draft))
+                }
+                continue
+            }
             seen.add(identity)
             result[key].push(draft)
         }
     }
-    result.preserved = preservedFromValue(data[IWR_PRESERVED])
+    const stored = preservedFromValue(data[IWR_PRESERVED])
+    for (const kind of IWR_KINDS) {
+        const key = iwrListKey(kind)
+        result.preserved[key].push(...stored[key])
+    }
     return result
 }
 
@@ -740,7 +761,11 @@ function preservedFromValue(value: unknown): PreservedIwr {
 }
 
 function arrayOrEmpty(value: unknown): unknown[] {
-    return Array.isArray(value) ? value.map(cloneEntry) : []
+    if (!Array.isArray(value)) return []
+    return value.flatMap((item) => {
+        const cloned = cloneEntry(item)
+        return cloned === undefined ? [] : [cloned]
+    })
 }
 
 function immunityToActor(draft: IwrDraft): Record<string, unknown> {
@@ -773,11 +798,27 @@ function cloneDraft(draft: IwrDraft): IwrDraft {
     }
 }
 
+const MODELED_KEYS: Record<IwrKind, ReadonlySet<string>> = {
+    immunity: new Set(['type', 'exceptions']),
+    weakness: new Set(['type', 'value', 'exceptions']),
+    resistance: new Set(['type', 'value', 'exceptions', 'doubleVs']),
+}
+
+function hasUnmodeledKeys(record: FormRecord, kind: IwrKind): boolean {
+    return Object.keys(record).some((key) => !MODELED_KEYS[kind].has(key))
+}
+
+function toActor(kind: IwrKind, draft: IwrDraft): Record<string, unknown> {
+    if (kind === 'immunity') return immunityToActor(draft)
+    if (kind === 'weakness') return weaknessToActor(draft)
+    return resistanceToActor(draft)
+}
+
 function cloneEntry(entry: unknown): unknown {
     try {
         return JSON.parse(JSON.stringify(entry))
     } catch {
-        return entry
+        return undefined
     }
 }
 

@@ -45,6 +45,7 @@ describe('resistance and weakness ranges', () => {
         expect(scaleIwrValue('resistance', '1', '5', 2)).toBe(4)
         expect(scaleIwrValue('resistance', '1', '5', 5)).toBe(7)
         expect(scaleIwrValue('resistance', '5', '5', 4)).toBe(4)
+        expect(scaleIwrValue('resistance', '5', '1', 0)).toBe(0)
     })
 
     it('uses a translated recommendation when the system provides one', () => {
@@ -193,6 +194,7 @@ describe('actor iwr', () => {
         ])
         expect(iwr.weaknesses).toEqual([])
         expect(iwr.preserved.immunities).toEqual([
+            { type: 'fire', exceptions: [] },
             { type: 'custom', custom: 'Dreams' },
             'not-an-entry',
         ])
@@ -226,6 +228,39 @@ describe('actor iwr', () => {
                 doubleVs: [],
             },
         ])
+        const duplicateWeakness = readActorIwr({
+            _source: {
+                system: {
+                    attributes: {
+                        weaknesses: [
+                            { type: 'fire', value: 5 },
+                            {
+                                type: 'fire',
+                                value: 10,
+                                applyOnce: true,
+                                source: 'Bestiary',
+                            },
+                            {
+                                type: 'cold',
+                                value: 4,
+                                definition: ['item:trait:magical'],
+                            },
+                        ],
+                    },
+                },
+            },
+        })
+        expect(duplicateWeakness.weaknesses).toEqual([
+            { type: 'fire', value: 5, exceptions: [], doubleVs: [] },
+        ])
+        expect(duplicateWeakness.preserved.weaknesses).toEqual([
+            { type: 'fire', value: 10, applyOnce: true, source: 'Bestiary' },
+            {
+                type: 'cold',
+                value: 4,
+                definition: ['item:trait:magical'],
+            },
+        ])
         expect(
             readActorIwr({
                 system: {
@@ -237,11 +272,11 @@ describe('actor iwr', () => {
         ).toEqual([{ type: 'fire', doubleVs: { bad: true } }])
         const circular: Record<string, unknown> = { type: 'custom' }
         circular.self = circular
-        expect(
-            readActorIwr({
-                system: { attributes: { immunities: [circular] } },
-            }).preserved.immunities,
-        ).toEqual([circular])
+        const dropped = readActorIwr({
+            system: { attributes: { immunities: [circular] } },
+        })
+        expect(dropped.preserved.immunities).toEqual([])
+        expect(() => JSON.stringify(dropped.preserved)).not.toThrow()
         expect(actorHasIwr(actor)).toBe(true)
         expect(actorHasIwr({ system: {} })).toBe(false)
     })
@@ -298,6 +333,7 @@ describe('actor iwr', () => {
             'system.attributes.immunities': [
                 { type: 'fire', exceptions: ['mental'] },
                 { type: 'cold', exceptions: ['sonic'] },
+                { type: 'fire' },
                 { type: 'custom' },
             ],
             'system.attributes.resistances': [
@@ -332,7 +368,10 @@ describe('actor iwr', () => {
                 { type: 'fire', value: 5, exceptions: ['cold'] },
                 { type: 'fire', value: 10 },
             ],
-            'system.attributes.immunities': [{ type: 'fire' }],
+            'system.attributes.immunities': [
+                { type: 'fire' },
+                { type: 'fire', exceptions: ['cold'] },
+            ],
         })
     })
 
