@@ -4870,6 +4870,71 @@ describe('immunities, resistances, and weaknesses', () => {
         ui.destroy()
     })
 
+    it('scales from the creature level rather than the select default', async () => {
+        mountIwr()
+        const level = document.getElementById(
+            'creatureBuilderLevel',
+        ) as HTMLSelectElement
+        level.value = '-1'
+        for (const value of ['4', '10']) {
+            const option = document.createElement('option')
+            option.value = value
+            option.textContent = value
+            level.append(option)
+        }
+        const ui = new CreatureBuilderFormUI(
+            buildConfig({
+                actorLevel: '4',
+                detectedIwr: {
+                    immunities: [],
+                    resistances: [
+                        {
+                            type: 'fire',
+                            value: 5,
+                            exceptions: [],
+                            doubleVs: [],
+                        },
+                    ],
+                    weaknesses: [
+                        {
+                            type: 'cold',
+                            value: 5,
+                            exceptions: [],
+                            doubleVs: [],
+                        },
+                    ],
+                    preserved: {
+                        immunities: [],
+                        resistances: [],
+                        weaknesses: [],
+                    },
+                },
+            }),
+        )
+        ui.initialize()
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        expect(level.value).toBe('4')
+
+        level.value = '10'
+        level.dispatchEvent(new Event('change'))
+
+        expect(
+            (
+                document.querySelector(
+                    'input[name="resistance-0-value"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('8')
+        expect(
+            (
+                document.querySelector(
+                    'input[name="weakness-0-value"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('11')
+        ui.destroy()
+    })
+
     it('restores preserved rows and keeps custom entries for submit', () => {
         mountIwr(true)
         const section = document.getElementById(

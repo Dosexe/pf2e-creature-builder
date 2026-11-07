@@ -569,6 +569,9 @@ class CreatureBuilderFormUI {
         ) {
             levelSelect.value = String(this.actorLevel)
         }
+        // The select's first option is -1 until the actor level is applied.
+        // Scaling has to start from the creature's level, not that default.
+        this.iwrLevel = this.currentLevel()
 
         this.applyDetectedSize()
 
