@@ -346,6 +346,56 @@ describe('attacksFromWeapon', () => {
         })
     })
 
+    it('reads a numeric fixed attack from the other system when the active one has none', () => {
+        const previous = (globalThis as { game?: unknown }).game
+        ;(globalThis as { game?: unknown }).game = { system: { id: 'sf2e' } }
+        try {
+            const [fromOther] = attacksFromWeapon(
+                {
+                    source: {
+                        name: 'Dagger',
+                        flags: {
+                            sf2e: { linkedWeapon: 'weapon-1' },
+                            pf2e: { fixedAttack: 4 },
+                        },
+                    },
+                },
+                attackContext(),
+            )
+            expect(fromOther.system).toMatchObject({ bonus: { value: 4 } })
+
+            const [preferred] = attacksFromWeapon(
+                {
+                    source: {
+                        name: 'Dagger',
+                        flags: {
+                            sf2e: { fixedAttack: 9, notes: 'kept' },
+                            pf2e: { fixedAttack: 4 },
+                        },
+                    },
+                },
+                attackContext(),
+            )
+            expect(preferred.system).toMatchObject({ bonus: { value: 9 } })
+
+            const [nonnumeric] = attacksFromWeapon(
+                {
+                    source: {
+                        name: 'Dagger',
+                        flags: {
+                            sf2e: { fixedAttack: 'high' },
+                            pf2e: { fixedAttack: 4 },
+                        },
+                    },
+                },
+                attackContext(),
+            )
+            expect(nonnumeric.system).toMatchObject({ bonus: { value: 4 } })
+        } finally {
+            ;(globalThis as { game?: unknown }).game = previous
+        }
+    })
+
     it('copies ranged and reload traits without duplicates', () => {
         const [attack] = attacksFromWeapon(
             {

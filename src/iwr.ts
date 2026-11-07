@@ -451,8 +451,13 @@ export function readActorIwr(actor: object): ActorIwr {
                 result.preserved[key].push(parsed.preserved)
                 continue
             }
-            if (!parsed.draft || seen.has(parsed.draft.type)) continue
-            seen.add(parsed.draft.type)
+            if (!parsed.draft) continue
+            const identity =
+                kind === 'resistance'
+                    ? resistanceIdentity(parsed.draft)
+                    : parsed.draft.type
+            if (seen.has(identity)) continue
+            seen.add(identity)
             result[key].push(parsed.draft)
         }
     }
@@ -652,8 +657,7 @@ function iwrFromData(data: FormRecord): ActorIwr {
         const seen = new Set<string>()
         for (const index of fieldIndexes(data, kind)) {
             const type = stringValue(data[`${kind}-${index}-type`]).trim()
-            if (!type || type === 'custom' || seen.has(type)) continue
-            seen.add(type)
+            if (!type || type === 'custom') continue
             const exceptions = cleanSlugs(
                 slugList(data[`${kind}-${index}-exceptions`]),
                 type,
@@ -669,11 +673,24 @@ function iwrFromData(data: FormRecord): ActorIwr {
             if (kind !== 'immunity') {
                 draft.value = readValue(data[`${kind}-${index}-value`])
             }
+            const identity =
+                kind === 'resistance' ? resistanceIdentity(draft) : type
+            if (seen.has(identity)) continue
+            seen.add(identity)
             result[key].push(draft)
         }
     }
     result.preserved = preservedFromValue(data[IWR_PRESERVED])
     return result
+}
+
+function resistanceIdentity(draft: IwrDraft): string {
+    return JSON.stringify([
+        draft.type,
+        draft.value ?? null,
+        draft.exceptions,
+        draft.doubleVs,
+    ])
 }
 
 function fieldIndexes(data: FormRecord, kind: IwrKind): string[] {
@@ -703,7 +720,7 @@ function stringValue(value: unknown): string {
 function readValue(value: unknown): number {
     const numeric = typeof value === 'number' ? value : Number(value)
     if (!Number.isFinite(numeric)) return 0
-    return Math.round(numeric)
+    return Math.max(0, Math.round(numeric))
 }
 
 function preservedFromValue(value: unknown): PreservedIwr {

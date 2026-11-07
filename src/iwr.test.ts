@@ -200,6 +200,32 @@ describe('actor iwr', () => {
         expect(iwr.preserved.weaknesses).toEqual([
             { type: 'cold', value: 3, doubleVs: ['fire'] },
         ])
+        const varied = readActorIwr({
+            _source: {
+                system: {
+                    attributes: {
+                        resistances: [
+                            { type: 'fire', value: 5 },
+                            { type: 'fire', value: 5 },
+                            {
+                                type: 'fire',
+                                value: 10,
+                                exceptions: ['cold'],
+                            },
+                        ],
+                    },
+                },
+            },
+        })
+        expect(varied.resistances).toEqual([
+            { type: 'fire', value: 5, exceptions: [], doubleVs: [] },
+            {
+                type: 'fire',
+                value: 10,
+                exceptions: ['cold'],
+                doubleVs: [],
+            },
+        ])
         expect(
             readActorIwr({
                 system: {
@@ -283,6 +309,46 @@ describe('actor iwr', () => {
                 },
             ],
             'system.attributes.weaknesses': [{ type: 'fire', value: 0 }],
+        })
+        expect(
+            iwrActorUpdate({
+                iwrPresent: 'true',
+                'resistance-0-type': 'fire',
+                'resistance-0-value': '5',
+                'resistance-1-type': 'fire',
+                'resistance-1-value': '5',
+                'resistance-2-type': 'fire',
+                'resistance-2-value': '5',
+                'resistance-2-exceptions': 'cold',
+                'resistance-3-type': 'fire',
+                'resistance-3-value': '10',
+                'immunity-0-type': 'fire',
+                'immunity-1-type': 'fire',
+                'immunity-1-exceptions': 'cold',
+            }),
+        ).toMatchObject({
+            'system.attributes.resistances': [
+                { type: 'fire', value: 5 },
+                { type: 'fire', value: 5, exceptions: ['cold'] },
+                { type: 'fire', value: 10 },
+            ],
+            'system.attributes.immunities': [{ type: 'fire' }],
+        })
+    })
+
+    it('clamps a negative resistance or weakness to zero on submit', () => {
+        expect(
+            iwrActorUpdate({
+                iwrPresent: 'true',
+                'resistance-0-type': 'fire',
+                'resistance-0-value': '-3',
+                'weakness-0-type': 'cold',
+                'weakness-0-value': -1.2,
+            }),
+        ).toEqual({
+            'system.attributes.immunities': [],
+            'system.attributes.resistances': [{ type: 'fire', value: 0 }],
+            'system.attributes.weaknesses': [{ type: 'cold', value: 0 }],
         })
     })
 

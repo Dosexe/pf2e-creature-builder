@@ -4870,6 +4870,44 @@ describe('immunities, resistances, and weaknesses', () => {
         ui.destroy()
     })
 
+    it('keeps a typed resistance or weakness at zero or above', () => {
+        mountIwr()
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+        document.getElementById('addResistanceButton')?.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                '#resistanceTypeMenu [data-iwr-type="fire"]',
+            )
+            ?.click()
+        const input = document.querySelector(
+            '.iwr-value-input',
+        ) as HTMLInputElement
+        input.value = '-4'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        expect(input.value).toBe('0')
+        expect(
+            (
+                document.querySelector(
+                    'input[name="resistance-0-value"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('0')
+        input.value = ''
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        expect(
+            (
+                document.querySelector(
+                    'input[name="resistance-0-value"]',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('2')
+        expect(document.querySelector('.iwr-summary-value')?.textContent).toBe(
+            '2',
+        )
+        ui.destroy()
+    })
+
     it('scales from the creature level rather than the select default', async () => {
         mountIwr()
         const level = document.getElementById(

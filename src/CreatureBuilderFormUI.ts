@@ -2960,8 +2960,12 @@ class CreatureBuilderFormUI {
         )
         input.addEventListener('input', () => {
             const numeric = Number(input.value)
-            if (input.value.trim() === '' || !Number.isFinite(numeric)) return
-            draft.value = Math.round(numeric)
+            const cleared = input.value.trim() === ''
+            if (!cleared && !Number.isFinite(numeric)) return
+            draft.value = cleared
+                ? defaultIwrValue(kind, this.currentLevel())
+                : Math.max(0, Math.round(numeric))
+            if (!cleared && numeric < 0) input.value = String(draft.value)
             const hidden = input
                 .closest('.iwr-row')
                 ?.querySelector<HTMLInputElement>(`input[name$="-value"]`)
@@ -3328,7 +3332,7 @@ class CreatureBuilderFormUI {
         const numeric = Number(input.value)
         draft.value =
             input.value.trim() !== '' && Number.isFinite(numeric)
-                ? Math.round(numeric)
+                ? Math.max(0, Math.round(numeric))
                 : defaultIwrValue(parsed.kind, this.currentLevel())
     }
 
