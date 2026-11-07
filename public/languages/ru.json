@@ -101,7 +101,7 @@
     "PF2EMONSTERMAKER.addLore": "Добавить Знание",
     "PF2EMONSTERMAKER.loreName": "Название знания (напр. Война)",
 
-    "pf2e-creature-builder.form.size": "Размер",
+    "pf2e-creature-builder.form.size.label": "Размер",
     "pf2e-creature-builder.form.size.tiny": "Крошечный",
     "pf2e-creature-builder.form.size.small": "Маленький",
     "pf2e-creature-builder.form.size.medium": "Средний",
@@ -130,5 +130,23 @@
     "pf2e-creature-builder.form.skills.piloting": "Пилотирование",
     "pf2e-creature-builder.form.strikes.add-attack": "Добавить атаку",
     "pf2e-creature-builder.form.strikes.attack-name": "Название атаки",
-    "pf2e-creature-builder.form.items.generate-attacks": "Создавать атаки из оружия"
+    "pf2e-creature-builder.form.items.generate-attacks": "Создавать атаки из оружия",
+
+    "pf2e-creature-builder.form.iwr.title": "Иммунитеты, сопротивления и уязвимости",
+    "pf2e-creature-builder.form.iwr.immunities": "Иммунитеты",
+    "pf2e-creature-builder.form.iwr.resistances": "Сопротивления",
+    "pf2e-creature-builder.form.iwr.weaknesses": "Уязвимости",
+    "pf2e-creature-builder.form.iwr.add-immunity": "+ Добавить иммунитет",
+    "pf2e-creature-builder.form.iwr.add-resistance": "+ Добавить сопротивление",
+    "pf2e-creature-builder.form.iwr.add-weakness": "+ Добавить уязвимость",
+    "pf2e-creature-builder.form.iwr.add-exception": "+ Добавить",
+    "pf2e-creature-builder.form.iwr.filter": "Фильтр",
+    "pf2e-creature-builder.form.iwr.add-double-vs": "+ Добавить",
+    "pf2e-creature-builder.form.iwr.exceptions": "Исключения",
+    "pf2e-creature-builder.form.iwr.double-vs": "Двойное против",
+    "pf2e-creature-builder.form.iwr.except": "кроме",
+    "pf2e-creature-builder.form.iwr.summary-double-vs": "двойное против",
+    "pf2e-creature-builder.form.iwr.remove": "Удалить",
+    "pf2e-creature-builder.form.iwr.value": "Значение",
+    "pf2e-creature-builder.form.iwr.recommended": "Рекомендуется {min}–{max}"
 }

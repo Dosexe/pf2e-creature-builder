@@ -1,4 +1,5 @@
 import type { ItemData } from '@/model/item'
+import { schemaVersionUpdate, withSchemaVersion } from '@/schemaVersion'
 import type {
     CasterType as SpellcastingCasterType,
     SpellSlot,
@@ -25,6 +26,13 @@ import {
     generateSpellSlots,
     parseSpellcastingFormData,
 } from './CreatureBuilderSpellcasting'
+import {
+    type ActorIwr,
+    actorHasIwr,
+    emptyActorIwr,
+    iwrActorUpdate,
+    readActorIwr,
+} from './iwr'
 import {
     actorFields,
     type CasterType,
@@ -433,6 +441,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             detectedAttacks: this.detectAttacks(),
             detectedSpeeds: this.detectSpeeds(),
             detectedSenses: this.detectSenses(),
+            detectedIwr: this.detectIwr(),
             actorLevel,
             droppedItems: this.droppedItems,
             root: this.element,
@@ -718,7 +727,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             typeof damageType === 'string' && damageType.trim() !== ''
                 ? damageType.trim()
                 : 'bludgeoning'
-        return {
+        const strike: ItemData = {
             name,
             type: 'melee',
             system: {
@@ -734,6 +743,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 },
             },
         }
+        return withSchemaVersion(strike)
     }
 
     async applySpellcasting(formData: object) {
@@ -963,15 +973,15 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                     ],
                     10,
                 )
-            const loreItem: ItemData = {
+            const loreItem = withSchemaVersion({
                 name: `${lore.name} Lore`,
-                type: 'lore',
+                type: 'lore' as const,
                 system: {
                     mod: {
                         value: value,
                     },
                 },
-            }
+            })
 
             try {
                 await Item.create(loreItem, { parent: this.actor })
@@ -1015,7 +1025,9 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         const createEach = async (items: Record<string, unknown>[]) => {
             for (const item of items) {
                 try {
-                    const created = await createEmbedded('Item', [item])
+                    const created = await createEmbedded('Item', [
+                        withSchemaVersion(item),
+                    ])
                     if (item.type === 'weapon') {
                         weapons.push({
                             source: item,
@@ -1083,7 +1095,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         for (const weapon of dedupeWeaponAttacks(weapons)) {
             for (const attack of attacksFromWeapon(weapon, context)) {
                 try {
-                    await createEmbedded('Item', [attack])
+                    await createEmbedded('Item', [withSchemaVersion(attack)])
                     createdAny = true
                 } catch (error) {
                     globalLog(
@@ -1173,6 +1185,8 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             Object.assign(updateData, this.applyTraits(formData))
             Object.assign(updateData, this.applyHitPoints(formData))
             Object.assign(updateData, this.applyMovementAndSenses(formData))
+            Object.assign(updateData, this.applyIwr(formData))
+            Object.assign(updateData, schemaVersionUpdate(this.actor))
 
             // Clone original actor with overrides (copies all data + items; save to world)
             const newActor: Actor | undefined = await this.actor.clone(
@@ -1481,6 +1495,15 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         return movementActorUpdate(formData) ?? {}
     }
 
+    detectIwr(): ActorIwr {
+        if (this.useDefaultLevel) return emptyActorIwr()
+        return readActorIwr(this.actor)
+    }
+
+    applyIwr(formData: object): Record<string, unknown> {
+        return iwrActorUpdate(formData) ?? {}
+    }
+
     detectSize(): string {
         if (this.useDefaultLevel) return DEFAULT_CREATURE_SIZE
         const size = foundry.utils.getProperty(
@@ -1569,6 +1592,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             detectedLoreSkills: detectedLoreSkills,
             actorLevel: actorLevel,
             fieldId: this.fieldIdPrefix(),
+            iwrOpen: !this.useDefaultLevel && actorHasIwr(this.actor),
         }
     }
 }

@@ -1,4 +1,5 @@
 import { KeyPrefix } from '@/Keys'
+import { getCreatureSystem } from '@/systems/getCreatureSystem'
 import { globalLog } from '@/utils'
 
 /** Form field. The creature builder template uses this same name. */
@@ -128,7 +129,9 @@ function buildFallbackWeaponAttack(
     }
     if (typeof source.img === 'string' && source.img) attack.img = source.img
     if (weaponId) {
-        attack.flags = { pf2e: { linkedWeapon: weaponId } }
+        attack.flags = {
+            [getCreatureSystem().id]: { linkedWeapon: weaponId },
+        }
     }
     return attack
 }
@@ -140,8 +143,19 @@ function weaponLabel(source: Record<string, unknown>): string {
 }
 
 function fixedAttackBonus(source: Record<string, unknown>): number | undefined {
-    const value = asRecord(asRecord(source.flags).pf2e).fixedAttack
-    return typeof value === 'number' ? value : undefined
+    const flags = asRecord(source.flags)
+    const id = getCreatureSystem().id
+    const otherId = id === 'sf2e' ? 'pf2e' : 'sf2e'
+    return (
+        numericFlag(asRecord(flags[id]).fixedAttack) ??
+        numericFlag(asRecord(flags[otherId]).fixedAttack)
+    )
+}
+
+function numericFlag(value: unknown): number | undefined {
+    return typeof value === 'number' && Number.isFinite(value)
+        ? value
+        : undefined
 }
 
 function readWeaponDamage(source: Record<string, unknown>): {

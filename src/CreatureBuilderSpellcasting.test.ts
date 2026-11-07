@@ -584,7 +584,7 @@ describe('CreatureBuilderSpellcasting', () => {
                     ability: {
                         value: 'int',
                     },
-                    showUnpreparedSpells: { value: true },
+                    showSlotlessLevels: { value: true },
                 },
             })
         })

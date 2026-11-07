@@ -1224,6 +1224,112 @@ describe('CreatureBuilderForm', () => {
         expect(defaults.detectSenses()).toEqual([])
     })
 
+    it('reads and writes immunities, resistances, and weaknesses', () => {
+        const actor = buildActor({
+            _source: {
+                system: {
+                    attributes: {
+                        immunities: [
+                            { type: 'fire', exceptions: ['cold'] },
+                            { type: 'custom', exceptions: [] },
+                        ],
+                        resistances: [
+                            {
+                                type: 'physical',
+                                value: 5,
+                                exceptions: ['adamantine'],
+                                doubleVs: ['silver', 'adamantine'],
+                            },
+                        ],
+                        weaknesses: [
+                            {
+                                type: 'slashing',
+                                value: 5,
+                                exceptions: [{ label: 'Magical' }],
+                            },
+                        ],
+                    },
+                },
+            },
+            system: {
+                attributes: {
+                    immunities: [{ type: 'poison' }],
+                    resistances: [],
+                    weaknesses: [],
+                },
+            },
+        })
+        const form = new CreatureBuilderForm(actor)
+        expect(form.detectIwr()).toEqual({
+            immunities: [{ type: 'fire', exceptions: ['cold'], doubleVs: [] }],
+            resistances: [
+                {
+                    type: 'physical',
+                    value: 5,
+                    exceptions: ['adamantine'],
+                    doubleVs: ['silver'],
+                },
+            ],
+            weaknesses: [],
+            preserved: {
+                immunities: [{ type: 'custom', exceptions: [] }],
+                resistances: [],
+                weaknesses: [
+                    {
+                        type: 'slashing',
+                        value: 5,
+                        exceptions: [{ label: 'Magical' }],
+                    },
+                ],
+            },
+        })
+        expect(form.getData().iwrOpen).toBe(true)
+
+        const fresh = new CreatureBuilderForm(buildActor())
+        expect(fresh.detectIwr().immunities).toEqual([])
+        expect(fresh.getData().iwrOpen).toBe(false)
+
+        const defaults = new CreatureBuilderForm(actor, {
+            useDefaultLevel: true,
+        })
+        expect(defaults.detectIwr().immunities).toEqual([])
+        expect(defaults.getData().iwrOpen).toBe(false)
+
+        expect(form.applyIwr({})).toEqual({})
+        expect(
+            form.applyIwr({
+                iwrPresent: 'true',
+                'immunity-0-type': 'fire',
+                'immunity-0-exceptions': 'cold',
+                'resistance-0-type': 'physical',
+                'resistance-0-value': '5',
+                'resistance-0-exceptions': 'adamantine',
+                'resistance-0-doubleVs': 'silver',
+                'weakness-0-type': 'fire',
+                'weakness-0-value': '8',
+                iwrPreserved: JSON.stringify({
+                    immunities: [{ type: 'custom' }],
+                    resistances: [],
+                    weaknesses: [],
+                }),
+            }),
+        ).toEqual({
+            'system.attributes.immunities': [
+                { type: 'fire', exceptions: ['cold'] },
+                { type: 'custom' },
+            ],
+            'system.attributes.resistances': [
+                {
+                    type: 'physical',
+                    value: 5,
+                    exceptions: ['adamantine'],
+                    doubleVs: ['silver'],
+                },
+            ],
+            'system.attributes.weaknesses': [{ type: 'fire', value: 8 }],
+        })
+    })
+
     it('writes speeds and senses when the section is submitted', () => {
         const form = new CreatureBuilderForm(buildActor())
         expect(form.applyMovementAndSenses({})).toEqual({})
@@ -1899,6 +2005,58 @@ describe('CreatureBuilderForm', () => {
         )
         expect(newActor.sheet.render).toHaveBeenCalledWith(true)
         expect(form.actor).toBe(originalActor)
+    })
+
+    it('records the current schema version on a new Starfinder creature', async () => {
+        const game = (
+            globalThis as unknown as { game: Record<string, unknown> }
+        ).game
+        const previousSettings = game.settings
+        game.settings = {
+            settings: {
+                get: (key: string) =>
+                    key === 'sf2e.worldSchemaVersion'
+                        ? { default: 0.961 }
+                        : undefined,
+            },
+        }
+        game.system = { id: 'sf2e' }
+        try {
+            const originalActor = buildActor()
+            const newActor = buildActor({
+                deleteEmbeddedDocuments: vi.fn().mockResolvedValue(undefined),
+            })
+            ;(
+                originalActor as unknown as { clone: ReturnType<typeof vi.fn> }
+            ).clone = vi.fn().mockResolvedValue(newActor)
+            const form = new CreatureBuilderForm(originalActor)
+            vi.spyOn(form, 'applyStrike').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applySpellcasting').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
+            vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
+
+            // biome-ignore lint/complexity/useLiteralKeys: protected property
+            await form['_updateObject'](undefined as unknown as Event, {
+                [Statistics.name]: 'Alien',
+                [Statistics.level]: '1',
+            })
+
+            expect(
+                (
+                    originalActor as unknown as {
+                        clone: ReturnType<typeof vi.fn>
+                    }
+                ).clone,
+            ).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    'system._migration.version': 0.961,
+                }),
+                { save: true },
+            )
+        } finally {
+            game.settings = previousSettings
+            game.system = undefined
+        }
     })
 
     it('applySpellList calls resolveAndApplySpellList for a valid spell list key', async () => {
