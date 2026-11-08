@@ -195,6 +195,32 @@ describe('attacksFromWeapon', () => {
         })
     })
 
+    it('stores the weapon link on the Starfinder system flag', () => {
+        const previous = (globalThis as { game?: unknown }).game
+        ;(globalThis as { game?: unknown }).game = { system: { id: 'sf2e' } }
+        try {
+            const [attack] = attacksFromWeapon(
+                {
+                    source: {
+                        ...longsword,
+                        flags: { sf2e: { fixedAttack: 12 } },
+                    },
+                    document: { id: 'weapon-1' },
+                },
+                attackContext(),
+            )
+
+            expect(attack.flags).toEqual({
+                sf2e: { linkedWeapon: 'weapon-1' },
+            })
+            expect(attack).toMatchObject({
+                system: { bonus: { value: 12 } },
+            })
+        } finally {
+            ;(globalThis as { game?: unknown }).game = previous
+        }
+    })
+
     it('fills defaults when the weapon has no attack details', () => {
         const [blank] = attacksFromWeapon(
             { source: { name: '   ', img: '' } },
@@ -318,6 +344,56 @@ describe('attacksFromWeapon', () => {
             bonus: { value: 2 },
             damageRolls: { strikeDamageID: { damage: '1' } },
         })
+    })
+
+    it('reads a numeric fixed attack from the other system when the active one has none', () => {
+        const previous = (globalThis as { game?: unknown }).game
+        ;(globalThis as { game?: unknown }).game = { system: { id: 'sf2e' } }
+        try {
+            const [fromOther] = attacksFromWeapon(
+                {
+                    source: {
+                        name: 'Dagger',
+                        flags: {
+                            sf2e: { linkedWeapon: 'weapon-1' },
+                            pf2e: { fixedAttack: 4 },
+                        },
+                    },
+                },
+                attackContext(),
+            )
+            expect(fromOther.system).toMatchObject({ bonus: { value: 4 } })
+
+            const [preferred] = attacksFromWeapon(
+                {
+                    source: {
+                        name: 'Dagger',
+                        flags: {
+                            sf2e: { fixedAttack: 9, notes: 'kept' },
+                            pf2e: { fixedAttack: 4 },
+                        },
+                    },
+                },
+                attackContext(),
+            )
+            expect(preferred.system).toMatchObject({ bonus: { value: 9 } })
+
+            const [nonnumeric] = attacksFromWeapon(
+                {
+                    source: {
+                        name: 'Dagger',
+                        flags: {
+                            sf2e: { fixedAttack: 'high' },
+                            pf2e: { fixedAttack: 4 },
+                        },
+                    },
+                },
+                attackContext(),
+            )
+            expect(nonnumeric.system).toMatchObject({ bonus: { value: 4 } })
+        } finally {
+            ;(globalThis as { game?: unknown }).game = previous
+        }
     })
 
     it('copies ranged and reload traits without duplicates', () => {

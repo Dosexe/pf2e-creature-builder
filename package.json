@@ -29,8 +29,5 @@
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^5.0.5",
     "zod": "^4.6.7"
-  },
-  "dependencies": {
-    "@yaireo/tagify": "^4.39.0"
   }
 }

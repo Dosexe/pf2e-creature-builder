@@ -101,7 +101,7 @@
     "PF2EMONSTERMAKER.addLore": "Add Lore",
     "PF2EMONSTERMAKER.loreName": "Lore name (e.g. Warfare)",
 
-    "pf2e-creature-builder.form.size": "Size",
+    "pf2e-creature-builder.form.size.label": "Size",
     "pf2e-creature-builder.form.size.tiny": "Tiny",
     "pf2e-creature-builder.form.size.small": "Small",
     "pf2e-creature-builder.form.size.medium": "Medium",
@@ -195,5 +195,23 @@
     "pf2e-creature-builder.form.movement.sense.thoughtsense": "Thoughtsense",
     "pf2e-creature-builder.form.movement.sense.tremorsense": "Tremorsense",
     "pf2e-creature-builder.form.movement.sense.truesight": "Truesight",
-    "pf2e-creature-builder.form.movement.sense.wavesense": "Wavesense"
+    "pf2e-creature-builder.form.movement.sense.wavesense": "Wavesense",
+
+    "pf2e-creature-builder.form.iwr.title": "Immunities, Resistances, and Weaknesses",
+    "pf2e-creature-builder.form.iwr.immunities": "Immunities",
+    "pf2e-creature-builder.form.iwr.resistances": "Resistances",
+    "pf2e-creature-builder.form.iwr.weaknesses": "Weaknesses",
+    "pf2e-creature-builder.form.iwr.add-immunity": "+ Add immunity",
+    "pf2e-creature-builder.form.iwr.add-resistance": "+ Add resistance",
+    "pf2e-creature-builder.form.iwr.add-weakness": "+ Add weakness",
+    "pf2e-creature-builder.form.iwr.add-exception": "+ Add",
+    "pf2e-creature-builder.form.iwr.filter": "Filter",
+    "pf2e-creature-builder.form.iwr.add-double-vs": "+ Add",
+    "pf2e-creature-builder.form.iwr.exceptions": "Exceptions",
+    "pf2e-creature-builder.form.iwr.double-vs": "Double Vs",
+    "pf2e-creature-builder.form.iwr.except": "except",
+    "pf2e-creature-builder.form.iwr.summary-double-vs": "double vs",
+    "pf2e-creature-builder.form.iwr.remove": "Remove",
+    "pf2e-creature-builder.form.iwr.value": "Value",
+    "pf2e-creature-builder.form.iwr.recommended": "Recommended {min}–{max}"
 }
