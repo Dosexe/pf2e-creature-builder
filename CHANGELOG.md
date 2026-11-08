@@ -14,6 +14,13 @@ All notable changes to the PF2E Creature Builder module are documented here.
 - Changing the level replaces a typed value with the detected tier's table value at the new level. A roadmap still clears edits on the stats it sets. Lore skills and extra attacks keep their detected tiers and scale to that tier's value for the current level.
 - Typed values and the Manual Input checkbox stay when the form re-renders.
 - **Size** — A Size menu sets the creature size. The built-in choices are Tiny, Small, Medium, Large, Huge, and Gargantuan. When `CONFIG.PF2E.actorSizes` is present, that list is used instead.
+- **Immunities, Resistances, and Weaknesses** — Defence + Perception includes these three lists. A resistance or weakness has a value, and the row shows the recommended range for the creature's level.
+
+### Fixed
+
+- A creature saved from the builder, and the strikes, lore, and spellcasting entry it creates, record the current Pathfinder or Starfinder schema version.
+- New spellcasting entries use the current slotless-level field, so spells without slots stay visible.
+- A strike generated from a dropped weapon stores its link under the running system, and reads a fixed attack bonus saved by Pathfinder or Starfinder.
 
 
 ## 3.0.0 SF2e support

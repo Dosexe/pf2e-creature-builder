@@ -3357,7 +3357,7 @@ class CreatureBuilderFormUI {
         try {
             input.value = JSON.stringify(this.iwr.preserved)
         } catch {
-            input.value = ''
+            // Keep the last value that serialized. An empty string would wipe those entries on save.
         }
     }
 

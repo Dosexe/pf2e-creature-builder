@@ -12,12 +12,13 @@ A Foundry VTT module for the Pathfinder 2E and Starfinder 2E systems that lets y
 ### Key Features
 
 - Support for all official roadmaps from the [Pathfinder 2e rules](https://2e.aonprd.com/Rules.aspx?ID=2919) and [Starfinder 2e rules](https://2e.aonsrd.com/rules/1034-building-npcs)
-- Build from an existing creature — inherits attributes, skills, traits, spellcasting, and strikes
+- Build from an existing creature — inherits attributes, skills, traits, spellcasting, strikes, and immunities, resistances, and weaknesses
 - Lore skills, traits, and full spellcasting support
 - Support for themed spell lists on Pathfinder 2e
 - Custom roadmaps [BETA] (see [ROADMAPS.md](ROADMAPS.md))
 - Live preview, drag-and-drop of items and color-coded stats
 - Manual Input for the bonus badges, including a damage editor for strikes
+- Immunities, resistances, and weaknesses, with a recommended range for the creature level
 
 ## Starfinder 2e
 
@@ -37,6 +38,7 @@ When starting from an **existing creature**, the new creature will **inherit all
 - Traits
 - Spellcasting (if present)
 - Strikes
+- Immunities, resistances, and weaknesses
 
 Existing strikes are listed under **Strikes** with the attack name and the closest attack-bonus and damage tiers. On submit, each listed attack is copied from the original strike. Traits (including melee or ranged), attack effects, and extra damage such as persistent and splash stay as they were.
 
@@ -67,7 +69,7 @@ If you want to start over at any time, click **Reset to Defaults**, which will c
 
 ---
 
-## UI 2.0 — Modern Form
+## UI
 
 The builder has one layout: a compact stat grid with a live preview sidebar.
 
@@ -95,6 +97,14 @@ Use the **Show Bonuses** checkbox at the top of the form to hide or show the bon
 ### Size
 
 **Size** sits with the name and level. The built-in choices are Tiny, Small, Medium, Large, Huge, and Gargantuan. When the running system publishes `CONFIG.PF2E.actorSizes`, that list is used instead. Submit writes the chosen size onto the creature.
+
+### Immunities, Resistances, and Weaknesses
+
+**Defence + Perception** includes **Immunities, Resistances, and Weaknesses**. The section starts open when the creature already has any of them.
+
+Each list has an Add button. The menu lists types from the running system. A type can be added once. Click a row to add exceptions. A resistance can also list types it doubles against. The same type cannot be both an exception and a doubled type. A collapsed row shows those notes after the name.
+
+A resistance or weakness has a number and a recommended range for the current level, from the creature-building table. A new resistance starts at the low end of that range, and a new weakness starts at the high end. Type another number to replace it. Changing the level keeps that number the same distance from the recommended end for the new level.
 
 ### Manual Input
 
@@ -136,7 +146,7 @@ The **Items / Actions** section at the bottom of the form is a drop zone where y
 
 Dropped spells are automatically **linked to the creature's spellcasting entry** when the form is submitted.
 
-**Generate Attacks from Weapons** is on by default. Dropped weapons are still added to the creature, and one strike is generated per weapon name using the same numbers as PF2E's Generate Attack button. Two copies of the same weapon can both be added to the inventory; they still produce one strike for that name.
+**Generate Attacks from Weapons** is on by default. Dropped weapons are still added to the creature, and one strike is generated per weapon name using the same numbers as PF2E's Generate Attack button. The strike links to the dropped weapon on Pathfinder and Starfinder. A fixed attack bonus on the weapon is used when either system stored it. Two copies of the same weapon can both be added to the inventory; they still produce one strike for that name.
 
 ### Module Settings
 

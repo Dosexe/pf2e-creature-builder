@@ -5031,6 +5031,34 @@ describe('immunities, resistances, and weaknesses', () => {
         ui.destroy()
     })
 
+    it('leaves the preserved field unchanged when serialization fails', () => {
+        mountIwr()
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+        const input = document.getElementById(
+            'iwrPreserved',
+        ) as HTMLInputElement
+        const previous = '{"immunities":[{"type":"custom"}]}'
+        input.value = previous
+        const loop: Record<string, unknown> = { type: 'custom' }
+        loop.self = loop
+        ;(
+            ui as unknown as {
+                iwr: { preserved: { immunities: unknown[] } }
+            }
+        ).iwr.preserved.immunities = [loop]
+
+        document.getElementById('addImmunityButton')?.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                '#immunityTypeMenu [data-iwr-type="fire"]',
+            )
+            ?.click()
+
+        expect(input.value).toBe(previous)
+        ui.destroy()
+    })
+
     it('uses fallback labels when localization throws', () => {
         mountIwr()
         ;(window as any).game.i18n.localize = () => {
