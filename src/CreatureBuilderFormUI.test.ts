@@ -5059,6 +5059,26 @@ describe('immunities, resistances, and weaknesses', () => {
         ui.destroy()
     })
 
+    it('keeps rendering when preserved storage or an add button is missing', () => {
+        mountIwr()
+        const ui = new CreatureBuilderFormUI(buildConfig({ actorLevel: '1' }))
+        ui.initialize()
+        document.body.dispatchEvent(new Event('pointerup'))
+        document.body.dispatchEvent(new Event('pointerup'))
+        document.getElementById('iwrPreserved')?.remove()
+        document.getElementById('addImmunityButton')?.remove()
+
+        document.getElementById('addResistanceButton')?.click()
+        document
+            .querySelector<HTMLButtonElement>(
+                '#resistanceTypeMenu [data-iwr-type="fire"]',
+            )
+            ?.click()
+
+        expect(document.querySelector('[data-iwr-type="fire"]')).toBeTruthy()
+        ui.destroy()
+    })
+
     it('uses fallback labels when localization throws', () => {
         mountIwr()
         ;(window as any).game.i18n.localize = () => {

@@ -404,6 +404,27 @@ describe('actor iwr', () => {
         })
     })
 
+    it('keeps a second weakness of the same type and ignores a non-string type', () => {
+        expect(
+            iwrActorUpdate({
+                iwrPresent: 'true',
+                'weakness-0-type': 'fire',
+                'weakness-0-value': 5,
+                'weakness-1-type': 'fire',
+                'weakness-1-value': 10,
+                'weakness-1-exceptions': 'cold',
+                'immunity-0-type': 4,
+            }),
+        ).toEqual({
+            'system.attributes.immunities': [],
+            'system.attributes.resistances': [],
+            'system.attributes.weaknesses': [
+                { type: 'fire', value: 5 },
+                { type: 'fire', value: 10, exceptions: ['cold'] },
+            ],
+        })
+    })
+
     it('rejects preserved values that are not objects', () => {
         expect(
             iwrFromControls({
