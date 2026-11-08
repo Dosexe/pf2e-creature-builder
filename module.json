@@ -7,7 +7,7 @@
     "authors": [{"name": "dosexe"}],
     "compatibility": {
         "minimum": 14,
-        "verified": "14.369",
+        "verified": "14.370",
         "maximum": 14
     },
     "esmodules": ["dist/bundle.js"],
