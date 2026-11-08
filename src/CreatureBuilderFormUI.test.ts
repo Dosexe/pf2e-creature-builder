@@ -316,6 +316,18 @@ describe('CreatureBuilderFormUI', () => {
         expect(
             iwr.querySelector(`#${CSS.escape(`${fieldId}addImmunityButton`)}`),
         ).toBeTruthy()
+        expect(
+            iwr.querySelector(`#${CSS.escape(`${fieldId}immunityLabel`)} i`)
+                ?.className,
+        ).toBe('fa-solid fa-ankh fa-fw')
+        expect(
+            iwr.querySelector(`#${CSS.escape(`${fieldId}resistanceLabel`)} i`)
+                ?.className,
+        ).toBe('fa-solid fa-shield-virus fa-fw')
+        expect(
+            iwr.querySelector(`#${CSS.escape(`${fieldId}weaknessLabel`)} i`)
+                ?.className,
+        ).toBe('fa-solid fa-heart-crack fa-fw')
         const movement = root.querySelector(
             `#${CSS.escape(`${fieldId}sectionMovement`)}`,
         ) as HTMLDetailsElement
@@ -3882,6 +3894,62 @@ describe('Manual Input', () => {
             expect(editor.style.left).toBe('100px')
             expect(editor.style.top).toBe('50px')
         } finally {
+            HTMLElement.prototype.getBoundingClientRect = previousRect
+            ui.destroy()
+        }
+    })
+
+    it('places the damage editor inside a transformed window', () => {
+        const { ui, manual, damageBadge } = start()
+        enableManual(manual)
+        document.body.style.transform = 'translate(80px, 40px)'
+        Object.defineProperty(document.body, 'offsetWidth', {
+            configurable: true,
+            value: 250,
+        })
+        Object.defineProperty(document.body, 'offsetHeight', {
+            configurable: true,
+            value: 200,
+        })
+        const previousRect = HTMLElement.prototype.getBoundingClientRect
+        const box = (
+            left: number,
+            top: number,
+            width: number,
+            height: number,
+        ) =>
+            ({
+                x: left,
+                y: top,
+                left,
+                top,
+                right: left + width,
+                bottom: top + height,
+                width,
+                height,
+                toJSON() {
+                    return {}
+                },
+            }) as DOMRect
+        HTMLElement.prototype.getBoundingClientRect = function () {
+            if (this.classList.contains('damage-editor')) {
+                return box(0, 0, 100, 80)
+            }
+            if (this === document.body) return box(180, 90, 500, 400)
+            if (this === damageBadge) return box(200, 100, 40, 24)
+            return previousRect.call(this)
+        }
+
+        try {
+            damageBadge.click()
+            const editor = document.querySelector(
+                '.damage-editor',
+            ) as HTMLElement
+            expect(editor.hidden).toBe(false)
+            expect(editor.style.left).toBe('10px')
+            expect(editor.style.top).toBe('19px')
+        } finally {
+            document.body.style.transform = ''
             HTMLElement.prototype.getBoundingClientRect = previousRect
             ui.destroy()
         }
