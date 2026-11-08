@@ -77,11 +77,11 @@ The builder has one layout: a compact stat grid with a live preview sidebar.
 
 The form is split into two areas:
 
-| Left — Main Form                                                                 | Right — Live Preview                                                    |
-|----------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| All stat dropdowns, traits, lore skills, items/actions, and submit/reset buttons | A sticky sidebar showing computed stat values that updates in real time |
+| Left — Main Form                                                                                  | Right — Live Preview                                                    |
+|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| Identity, stats, movement, strikes, spellcasting, skills, items, and the submit and reset buttons | A sticky sidebar showing computed stat values that updates in real time |
 
-Each stat section (Ability Scores, Defence + Perception, Strikes, Spellcasting, Skills) is **collapsible** — click the section header to expand or collapse. **Skills** and **Lore Skills** are collapsed by default.
+Ability Scores, Defence + Perception, Movement and Senses, Strikes, Spellcasting, Skills, Lore Skills, and Items / Actions are **collapsible**. Click a section header to expand or collapse it. **Movement and Senses**, **Skills**, and **Lore Skills** start collapsed.
 
 ### Stat Grid
 
@@ -156,29 +156,38 @@ Dropped spells are automatically **linked to the creature's spellcasting entry**
 
 ---
 
-Below are the images of the form:
+## Form screenshots
 
-First part contains all the important values like Hit Points, Level, Name etc. and preview block on the right.
+The form scrolls in one window. The live preview stays on the right.
 
-![Page One of The Form](https://raw.githubusercontent.com/Dosexe/pf2e-creature-builder/refs/heads/main/images/PageOne.png)
+**Name, level, and defense.** Name, level, roadmap, size, and traits are at the top, with **Show Bonuses** and **Manual Input**. Ability scores and Defence + Perception follow. Immunities and movement are collapsed in this view. The preview shows the roadmap, level, and computed bonuses.
 
-The Second part contains all the skills and item dropdown zone.
+![Name, level, ability scores, and defence](images/PageOne.png)
 
-![Page Two of The Form](https://raw.githubusercontent.com/Dosexe/pf2e-creature-builder/refs/heads/main/images/PageTwo.png)
+**Movement, strikes, and spellcasting.** Speeds and senses come first. Strikes sets the table attack and any extra attacks. Spellcasting sets the spell DC, tradition, caster type, and spell list.
 
-The last part contains `Submit` button and `Reset to Defaults` button
+![Movement, strikes, and spellcasting](images/PageTwo.png)
 
-Traits will show you suggestions from the list of existing ones, or you can add a new one.
+**Skills, lore, and items.** The skill grid, lore skills, and the item drop zone. **Generate Attacks from Weapons** is on. **Reset to Defaults** and **Submit** are at the bottom.
 
-![Traits](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/TraitsSection.png?raw=true)
+![Skills, lore, items, and submit](images/PageThree.png)
 
-Attack section allow to add any number of specific attacks with modifiers.
+**Immunities, resistances, and weaknesses.** Each group has its own add button. A resistance or weakness shows the recommended range for the creature's level. Click on the row to edit.
 
-![Attacks](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/StrikesAttackItemBlock.png?raw=true)
+![Immunities, resistances, and weaknesses](images/IwrDefenceBlock.png)
 
-Lore section allow to specify any number of additional lore entries if needed.
+**Traits.** Suggestions come from the running system. Pick a trait from the list, or type one of your own.
 
-![Skill Section](https://github.com/Dosexe/pf2e-creature-builder/blob/main/images/SkillLoreItemBlock.png?raw=true)
+![Trait suggestions](images/TraitsSection.png)
 
-Here is a comparison of size in relation to UI:
-![Full UI Size](https://raw.githubusercontent.com/Dosexe/pf2e-creature-builder/refs/heads/main/images/FullUIImage.png)
+**Strikes.** The first row is the table strike. **Add Attack** adds a named strike with its own attack bonus and damage.
+
+![Strikes](images/StrikesAttackItemBlock.png)
+
+**Lore.** **Add Lore** adds a named lore skill and a bonus tier.
+
+![Lore skills](images/SkillLoreItemBlock.png)
+
+The builder beside an NPC sheet:
+
+![Creature Builder beside an NPC sheet](images/FullUIImage.png)
