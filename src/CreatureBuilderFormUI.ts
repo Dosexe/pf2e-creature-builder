@@ -2648,8 +2648,67 @@ class CreatureBuilderFormUI {
         const maxTop = Math.max(frame.top, frame.bottom - panel.height)
         const left = Math.min(Math.max(frame.left, anchor.left), maxLeft)
         const top = Math.min(Math.max(frame.top, anchor.bottom + 4), maxTop)
-        editor.style.left = `${left}px`
-        editor.style.top = `${top}px`
+        // position:fixed is anchored to a transformed window, not the viewport.
+        const origin = this.fixedOrigin(editor)
+        editor.style.left = `${(left - origin.left) / origin.scaleX}px`
+        editor.style.top = `${(top - origin.top) / origin.scaleY}px`
+    }
+
+    private fixedOrigin(element: HTMLElement): {
+        left: number
+        top: number
+        scaleX: number
+        scaleY: number
+    } {
+        const identity = { left: 0, top: 0, scaleX: 1, scaleY: 1 }
+        let node = element.parentElement
+        while (node) {
+            if (this.createsFixedContainingBlock(getComputedStyle(node))) {
+                const rect = node.getBoundingClientRect()
+                const scaleX =
+                    node.offsetWidth > 0 ? rect.width / node.offsetWidth : 1
+                const scaleY =
+                    node.offsetHeight > 0 ? rect.height / node.offsetHeight : 1
+                return {
+                    left: rect.left,
+                    top: rect.top,
+                    scaleX: scaleX || 1,
+                    scaleY: scaleY || 1,
+                }
+            }
+            node = node.parentElement
+        }
+        return identity
+    }
+
+    private createsFixedContainingBlock(style: CSSStyleDeclaration): boolean {
+        const active = (name: string) => {
+            const value = style.getPropertyValue(name).trim()
+            return value !== '' && value !== 'none' && value !== 'auto'
+        }
+        if (
+            active('transform') ||
+            active('translate') ||
+            active('scale') ||
+            active('rotate') ||
+            active('filter') ||
+            active('perspective') ||
+            active('backdrop-filter')
+        ) {
+            return true
+        }
+        return style.willChange
+            .split(',')
+            .some((part) =>
+                [
+                    'transform',
+                    'translate',
+                    'scale',
+                    'rotate',
+                    'filter',
+                    'perspective',
+                ].includes(part.trim()),
+            )
     }
 
     private applyDamageEditor(): void {

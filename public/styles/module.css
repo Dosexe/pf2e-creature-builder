@@ -192,7 +192,9 @@
 }
 
 .creatureBuilderForm .iwr-group-label {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
     margin-bottom: 0.25rem;
 }
 
