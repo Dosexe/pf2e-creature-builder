@@ -4,7 +4,7 @@ All notable changes to the PF2E Creature Builder module are documented here.
 
 ---
 
-## Unreleased
+## 3.1.0 Manual Input & IWR
 
 ### Added
 
