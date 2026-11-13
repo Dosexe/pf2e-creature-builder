@@ -5249,6 +5249,7 @@ describe('immunities, resistances, and weaknesses', () => {
                  data-token-label="Token image">
                 <button type="button" class="creature-image-preview" data-action="browseImage" aria-label="Portrait">
                     <img class="profile-img" alt="" src="actors/portrait.webp">
+                    <video class="profile-video" hidden muted playsinline loop preload="metadata"></video>
                 </button>
                 <span class="creature-image-mode">Portrait</span>
                 <file-picker name="img" data-image-target="portrait" value="actors/portrait.webp">
@@ -5296,6 +5297,7 @@ describe('immunities, resistances, and weaknesses', () => {
         expect(editor).toBeGreaterThan(-1)
         expect(editor).toBeLessThan(name)
         expect(source).toContain('type="imagevideo"')
+        expect(source).toContain('class="profile-video"')
         expect(source).toContain('name="img"')
         expect(source).toContain('name="prototypeToken.texture.src"')
         expect(source).not.toContain('<input type="hidden" name="img"')
@@ -5429,6 +5431,61 @@ describe('immunities, resistances, and weaknesses', () => {
         portraitPicker.dispatchEvent(new Event('change', { bubbles: true }))
         expect(preview.src).toContain('icons/chosen.webp')
         expect(portraitPicker.value).toBe('icons/chosen.webp')
+        expect(
+            editor.querySelector<HTMLVideoElement>('.profile-video')?.hidden,
+        ).toBe(true)
+        ui.destroy()
+    })
+
+    it('previews a video when it is selected and when the target changes', () => {
+        const ui = mountImageEditor()
+        const editor = imageEditor()
+        const img = editor.querySelector('.profile-img') as HTMLImageElement
+        const video = editor.querySelector('.profile-video') as HTMLVideoElement
+        const input = editor.querySelector<HTMLInputElement>(
+            'file-picker[data-image-target="portrait"] input',
+        )
+        const toggle = () =>
+            editor
+                .querySelector<HTMLButtonElement>(
+                    '[data-action="toggleImageTarget"]',
+                )
+                ?.click()
+
+        input!.value = 'tokens/wolf.webm?cache=1'
+        input!.dispatchEvent(new Event('change', { bubbles: true }))
+        expect(video.getAttribute('src')).toBe('tokens/wolf.webm?cache=1')
+        expect(video.hidden).toBe(false)
+        expect(img.hidden).toBe(true)
+
+        toggle()
+        expect(img.hidden).toBe(false)
+        expect(img.src).toContain('token.webp')
+        expect(video.hidden).toBe(true)
+        expect(video.hasAttribute('src')).toBe(false)
+
+        toggle()
+        expect(video.hidden).toBe(false)
+        expect(video.getAttribute('src')).toBe('tokens/wolf.webm?cache=1')
+        expect(img.hidden).toBe(true)
+
+        const hasVideoExtension = vi.fn((src: string) =>
+            src.endsWith('.custom'),
+        )
+        ;(globalThis as { foundry?: unknown }).foundry = {
+            helpers: {
+                media: { VideoHelper: { hasVideoExtension } },
+            },
+        }
+        try {
+            input!.value = 'tokens/wolf.custom'
+            input!.dispatchEvent(new Event('change', { bubbles: true }))
+            expect(hasVideoExtension).toHaveBeenCalledWith('tokens/wolf.custom')
+            expect(video.getAttribute('src')).toBe('tokens/wolf.custom')
+            expect(img.hidden).toBe(true)
+        } finally {
+            delete (globalThis as { foundry?: unknown }).foundry
+        }
         ui.destroy()
     })
 

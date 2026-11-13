@@ -1776,6 +1776,8 @@ class CreatureBuilderFormUI {
             if (!(picker instanceof HTMLElement)) return
             this.syncPicker(editor, picker, event)
         })
+        const mode = this.imageMode(editor)
+        this.showImage(editor, mode, this.storedImage(editor, mode))
     }
 
     private imageMode(editor: HTMLElement): 'portrait' | 'token' {
@@ -1835,6 +1837,29 @@ class CreatureBuilderFormUI {
         return value || this.defaultImage(editor, mode)
     }
 
+    private isVideoPath(path: string): boolean {
+        const hasVideoExtension = (
+            globalThis as {
+                foundry?: {
+                    helpers?: {
+                        media?: {
+                            VideoHelper?: {
+                                hasVideoExtension?: (src: string) => boolean
+                            }
+                        }
+                    }
+                }
+            }
+        ).foundry?.helpers?.media?.VideoHelper?.hasVideoExtension
+        if (typeof hasVideoExtension === 'function') {
+            return hasVideoExtension(path)
+        }
+        const file = path.split(/[?#]/, 1)[0]?.toLowerCase() ?? ''
+        return ['.webm', '.mp4', '.m4v', '.ogv'].some((extension) =>
+            file.endsWith(extension),
+        )
+    }
+
     private showImage(
         editor: HTMLElement,
         mode: 'portrait' | 'token',
@@ -1842,7 +1867,23 @@ class CreatureBuilderFormUI {
     ): void {
         if (this.imageMode(editor) !== mode) return
         const img = editor.querySelector<HTMLImageElement>('.profile-img')
-        if (img) img.src = path
+        const video = editor.querySelector<HTMLVideoElement>('.profile-video')
+        if (video && this.isVideoPath(path)) {
+            if (img) img.hidden = true
+            video.hidden = false
+            if (video.getAttribute('src') !== path) video.src = path
+            return
+        }
+        if (video && !video.hidden) {
+            video.pause()
+            video.removeAttribute('src')
+            video.load()
+            video.hidden = true
+        }
+        if (img) {
+            img.hidden = false
+            img.src = path
+        }
     }
 
     private syncPicker(
