@@ -149,5 +149,9 @@
     "pf2e-creature-builder.form.iwr.summary-double-vs": "双重对抗",
     "pf2e-creature-builder.form.iwr.remove": "移除",
     "pf2e-creature-builder.form.iwr.value": "数值",
-    "pf2e-creature-builder.form.iwr.recommended": "建议 {min}–{max}"
+    "pf2e-creature-builder.form.iwr.recommended": "建议 {min}–{max}",
+
+    "pf2e-creature-builder.form.image.portrait": "肖像",
+    "pf2e-creature-builder.form.image.token": "指示物图像",
+    "pf2e-creature-builder.form.image.remove": "移除"
 }

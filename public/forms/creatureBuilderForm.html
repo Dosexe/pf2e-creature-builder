@@ -14,6 +14,28 @@
             </div>
 
             <h2>{{localize "PF2EMONSTERMAKER.nameLevelRoadmap"}}</h2>
+            <div class="creature-image-editor" data-image-mode="portrait"
+                 data-default-portrait="{{defaultImg}}"
+                 data-default-token="{{defaultTokenImg}}"
+                 data-portrait-label="{{localize "pf2e-creature-builder.form.image.portrait"}}"
+                 data-token-label="{{localize "pf2e-creature-builder.form.image.token"}}">
+                <button type="button" class="creature-image-preview" data-action="browseImage"
+                        title="{{localize "pf2e-creature-builder.form.image.portrait"}}"
+                        aria-label="{{localize "pf2e-creature-builder.form.image.portrait"}}">
+                    <img class="profile-img" src="{{img}}" alt="{{name}}">
+                </button>
+                <div class="creature-image-controls">
+                    <span class="creature-image-mode">{{localize "pf2e-creature-builder.form.image.portrait"}}</span>
+                    <file-picker data-image-target="portrait" type="imagevideo" value="{{img}}"></file-picker>
+                    <file-picker data-image-target="token" type="imagevideo" value="{{tokenImg}}" hidden></file-picker>
+                    <input type="hidden" name="img" value="{{img}}">
+                    <input type="hidden" name="prototypeToken.texture.src" value="{{tokenImg}}">
+                    <div class="creature-image-actions">
+                        <button type="button" data-action="removeImage">{{localize "pf2e-creature-builder.form.image.remove"}}</button>
+                        <button type="button" class="creature-image-toggle" data-action="toggleImageTarget">{{localize "pf2e-creature-builder.form.image.token"}}</button>
+                    </div>
+                </div>
+            </div>
             <div class="form-group">
                 <label for="{{fieldId}}creatureBuilderName">
                     {{localize "PF2EMONSTERMAKER.name"}}

@@ -83,6 +83,11 @@ describe('language files', () => {
             'pf2e-creature-builder.form.iwr.add-resistance',
             'pf2e-creature-builder.form.iwr.add-weakness',
         ]
+        const imageKeys = [
+            'pf2e-creature-builder.form.image.portrait',
+            'pf2e-creature-builder.form.image.token',
+            'pf2e-creature-builder.form.image.remove',
+        ]
 
         for (const file of files) {
             const translations = JSON.parse(
@@ -107,7 +112,7 @@ describe('language files', () => {
                     expect.any(String),
                 )
             }
-            for (const key of iwrKeys) {
+            for (const key of [...iwrKeys, ...imageKeys]) {
                 expect(translationAt(expanded, key)).toEqual(expect.any(String))
                 expect(template).toContain(`{{localize "${key}"}}`)
             }

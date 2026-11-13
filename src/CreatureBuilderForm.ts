@@ -231,6 +231,67 @@ export function registerCreatureBuilderHelpers(): void {
     Handlebars.registerHelper('roadmapLabel', roadmapLabel)
 }
 
+const DEFAULT_CREATURE_ARTWORK = 'icons/svg/mystery-man.svg'
+
+type DefaultArtwork = {
+    img?: unknown
+    texture?: { src?: unknown }
+}
+
+function artworkPath(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined
+    const path = value.trim()
+    return path === '' ? undefined : path
+}
+
+function actorArtworkSource(actor: object): object {
+    const document = actor as { toObject?: () => object; type?: string }
+    if (typeof document.toObject === 'function') return document.toObject()
+    return { type: document.type ?? 'npc' }
+}
+
+export function defaultCreatureArtwork(actor: object): {
+    img: string
+    token: string
+} {
+    const fallback = {
+        img: DEFAULT_CREATURE_ARTWORK,
+        token: DEFAULT_CREATURE_ARTWORK,
+    }
+    const implementation = (
+        globalThis as {
+            Actor?: {
+                implementation?: {
+                    getDefaultArtwork?: (data: object) => DefaultArtwork
+                }
+            }
+        }
+    ).Actor?.implementation
+    const getDefaultArtwork = implementation?.getDefaultArtwork
+    if (typeof getDefaultArtwork !== 'function') return fallback
+    try {
+        const artwork = getDefaultArtwork.call(
+            implementation,
+            actorArtworkSource(actor),
+        )
+        const img = artworkPath(artwork?.img) ?? DEFAULT_CREATURE_ARTWORK
+        const token = artworkPath(artwork?.texture?.src) ?? img
+        return { img, token }
+    } catch {
+        return fallback
+    }
+}
+
+function actorImage(actor: object, path: string): string {
+    const value = foundry.utils.getProperty(actor, path)
+    return typeof value === 'string' ? value.trim() : ''
+}
+
+function imageUpdate(value: unknown, fallback: string): string {
+    const path = artworkPath(value)
+    return path ?? fallback
+}
+
 function onAddLore(
     this: CreatureBuilderForm,
     _event: PointerEvent,
@@ -278,7 +339,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             resizable: true,
         },
         position: {
-            width: 530,
+            width: 550,
             height: 620,
         },
         form: {
@@ -502,6 +563,18 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             ? formData[Statistics.name]
             : this.actor.name
         return { name: name, 'prototypeToken.name': name }
+    }
+
+    applyImages(formData: object) {
+        const images = formData as Record<string, unknown>
+        const defaults = defaultCreatureArtwork(this.actor)
+        return {
+            img: imageUpdate(images.img, defaults.img),
+            'prototypeToken.texture.src': imageUpdate(
+                images['prototypeToken.texture.src'],
+                defaults.token,
+            ),
+        }
     }
 
     applySize(formData: object) {
@@ -1180,6 +1253,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
                 }
             }
             Object.assign(updateData, this.applyName(formData))
+            Object.assign(updateData, this.applyImages(formData))
             Object.assign(updateData, this.applyLevel())
             Object.assign(updateData, this.applySize(formData))
             Object.assign(updateData, this.applyTraits(formData))
@@ -1564,6 +1638,18 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
         return `${this.id}-`
     }
 
+    private creatureImageContext() {
+        const defaults = defaultCreatureArtwork(this.actor)
+        const img = actorImage(this.actor, 'img') || defaults.img
+        const token = actorImage(this.actor, 'prototypeToken.texture.src')
+        return {
+            img,
+            tokenImg: token || img,
+            defaultImg: defaults.img,
+            defaultTokenImg: defaults.token,
+        }
+    }
+
     getData() {
         const detectedStats = this.detectActorStats()
         const detectedTraits = this.detectTraits()
@@ -1578,6 +1664,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
               )
 
         const spellLists = getCreatureSystem().spellLists()
+        const images = this.creatureImageContext()
 
         return {
             CreatureStatistics: JSON.parse(JSON.stringify(this.data)),
@@ -1585,6 +1672,10 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             RoadMaps: RoadMapRegistry.getInstance().getAllRoadmaps(),
             SpellLists: Object.keys(spellLists).length > 0 ? spellLists : null,
             name: this.actor.name,
+            img: images.img,
+            tokenImg: images.tokenImg,
+            defaultImg: images.defaultImg,
+            defaultTokenImg: images.defaultTokenImg,
             detectedStats: detectedStats,
             detectedTraits: detectedTraits,
             detectedSize: this.detectSize(),
