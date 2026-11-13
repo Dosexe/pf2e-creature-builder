@@ -26,10 +26,8 @@
                 </button>
                 <div class="creature-image-controls">
                     <span class="creature-image-mode">{{localize "pf2e-creature-builder.form.image.portrait"}}</span>
-                    <file-picker data-image-target="portrait" type="imagevideo" value="{{img}}"></file-picker>
-                    <file-picker data-image-target="token" type="imagevideo" value="{{tokenImg}}" hidden></file-picker>
-                    <input type="hidden" name="img" value="{{img}}">
-                    <input type="hidden" name="prototypeToken.texture.src" value="{{tokenImg}}">
+                    <file-picker name="img" data-image-target="portrait" type="imagevideo" value="{{img}}"></file-picker>
+                    <file-picker name="prototypeToken.texture.src" data-image-target="token" type="imagevideo" value="{{tokenImg}}" hidden></file-picker>
                     <div class="creature-image-actions">
                         <button type="button" data-action="removeImage">{{localize "pf2e-creature-builder.form.image.remove"}}</button>
                         <button type="button" class="creature-image-toggle" data-action="toggleImageTarget">{{localize "pf2e-creature-builder.form.image.token"}}</button>

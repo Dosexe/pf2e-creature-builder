@@ -250,7 +250,7 @@ function actorArtworkSource(actor: object): object {
     return { type: document.type ?? 'npc' }
 }
 
-export function defaultCreatureArtwork(actor: object): {
+function defaultCreatureArtwork(actor: object): {
     img: string
     token: string
 } {
@@ -277,7 +277,8 @@ export function defaultCreatureArtwork(actor: object): {
         const img = artworkPath(artwork?.img) ?? DEFAULT_CREATURE_ARTWORK
         const token = artworkPath(artwork?.texture?.src) ?? img
         return { img, token }
-    } catch {
+    } catch (error) {
+        globalLog(true, 'Failed to read default creature artwork', error)
         return fallback
     }
 }

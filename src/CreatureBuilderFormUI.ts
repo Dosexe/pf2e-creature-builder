@@ -1791,14 +1791,6 @@ class CreatureBuilderFormUI {
         )
     }
 
-    private imageInput(
-        editor: HTMLElement,
-        mode: 'portrait' | 'token',
-    ): HTMLInputElement | null {
-        const name = mode === 'portrait' ? 'img' : 'prototypeToken.texture.src'
-        return editor.querySelector<HTMLInputElement>(`input[name="${name}"]`)
-    }
-
     private defaultImage(
         editor: HTMLElement,
         mode: 'portrait' | 'token',
@@ -1818,11 +1810,9 @@ class CreatureBuilderFormUI {
             return eventTarget.value.trim()
         }
         const own = (picker as HTMLInputElement).value
-        if (typeof own === 'string' && own.trim() !== '') return own.trim()
+        if (typeof own === 'string') return own.trim()
         const input = picker.querySelector('input')
-        if (input instanceof HTMLInputElement && input.value.trim() !== '') {
-            return input.value.trim()
-        }
+        if (input instanceof HTMLInputElement) return input.value.trim()
         return (picker.getAttribute('value') ?? '').trim()
     }
 
@@ -1840,7 +1830,8 @@ class CreatureBuilderFormUI {
         editor: HTMLElement,
         mode: 'portrait' | 'token',
     ): string {
-        const value = this.imageInput(editor, mode)?.value.trim() ?? ''
+        const picker = this.pickerFor(editor, mode)
+        const value = picker ? this.pickerValue(picker) : ''
         return value || this.defaultImage(editor, mode)
     }
 
@@ -1864,16 +1855,12 @@ class CreatureBuilderFormUI {
         const path =
             this.pickerValue(picker, event.target) ||
             this.defaultImage(editor, target)
-        const input = this.imageInput(editor, target)
-        if (input) input.value = path
         this.showImage(editor, target, path)
     }
 
     private removeActiveImage(editor: HTMLElement): void {
         const mode = this.imageMode(editor)
         const path = this.defaultImage(editor, mode)
-        const input = this.imageInput(editor, mode)
-        if (input) input.value = path
         const picker = this.pickerFor(editor, mode)
         if (picker) this.setPickerValue(picker, path)
         this.showImage(editor, mode, path)

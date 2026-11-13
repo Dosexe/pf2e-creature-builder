@@ -10,6 +10,18 @@ import { globalLog } from '@/utils'
 /** Path to custom roadmaps folder relative to FoundryVTT Data directory */
 const CUSTOM_ROADMAPS_FOLDER = 'pf2e-creature-builder/custom-roadmaps'
 
+type FilePickerImplementation =
+    (typeof foundry.applications.apps.FilePicker)['implementation']
+
+/**
+ * Foundry v13 moved FilePicker off the global. Reading `globalThis.FilePicker`
+ * logs a compatibility warning and the global is removed in v15.
+ */
+function getFilePicker(): FilePickerImplementation | undefined {
+    return (globalThis as { foundry?: typeof foundry }).foundry?.applications
+        ?.apps?.FilePicker?.implementation
+}
+
 /**
  * Registry for managing both built-in and custom roadmaps.
  * Provides a centralized API for all roadmap operations.
@@ -102,8 +114,8 @@ export class RoadMapRegistry {
         try {
             globalLog(false, 'Loading custom roadmaps...')
 
-            // Check if FilePicker is available (FoundryVTT API)
-            if (typeof FilePicker === 'undefined') {
+            const filePicker = getFilePicker()
+            if (!filePicker) {
                 globalLog(
                     false,
                     'FilePicker not available, skipping custom roadmaps',
@@ -115,7 +127,7 @@ export class RoadMapRegistry {
             // Try to browse the custom roadmaps folder
             let files: string[] = []
             try {
-                const result = await FilePicker.browse(
+                const result = await filePicker.browse(
                     'data',
                     CUSTOM_ROADMAPS_FOLDER,
                 )

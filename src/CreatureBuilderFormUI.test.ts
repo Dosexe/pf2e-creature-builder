@@ -5251,16 +5251,14 @@ describe('immunities, resistances, and weaknesses', () => {
                     <img class="profile-img" alt="" src="actors/portrait.webp">
                 </button>
                 <span class="creature-image-mode">Portrait</span>
-                <file-picker data-image-target="portrait" value="actors/portrait.webp">
+                <file-picker name="img" data-image-target="portrait" value="actors/portrait.webp">
                     <input type="text" value="actors/portrait.webp">
                     <button type="button" class="file-picker"></button>
                 </file-picker>
-                <file-picker data-image-target="token" value="actors/token.webp" hidden>
+                <file-picker name="prototypeToken.texture.src" data-image-target="token" value="actors/token.webp" hidden>
                     <input type="text" value="actors/token.webp">
                     <button type="button" class="file-picker"></button>
                 </file-picker>
-                <input type="hidden" name="img" value="actors/portrait.webp">
-                <input type="hidden" name="prototypeToken.texture.src" value="actors/token.webp">
                 <button type="button" data-action="removeImage">Remove</button>
                 <button type="button" class="creature-image-toggle" data-action="toggleImageTarget">Token image</button>
             </div>
@@ -5274,8 +5272,19 @@ describe('immunities, resistances, and weaknesses', () => {
     const imageEditor = () =>
         document.querySelector('.creature-image-editor') as HTMLElement
 
-    const imageField = (name: string) =>
-        imageEditor().querySelector<HTMLInputElement>(`input[name="${name}"]`)
+    const imagePicker = (name: string) =>
+        imageEditor().querySelector<HTMLInputElement>(
+            `file-picker[name="${name}"]`,
+        )
+
+    const imagePath = (name: string) => {
+        const picker = imagePicker(name)
+        if (!picker) return undefined
+        if (typeof picker.value === 'string') return picker.value.trim()
+        const input = picker.querySelector('input')
+        if (input instanceof HTMLInputElement) return input.value.trim()
+        return (picker.getAttribute('value') ?? '').trim()
+    }
 
     it('puts the image editor before the name field', () => {
         const source = readFileSync(
@@ -5287,6 +5296,12 @@ describe('immunities, resistances, and weaknesses', () => {
         expect(editor).toBeGreaterThan(-1)
         expect(editor).toBeLessThan(name)
         expect(source).toContain('type="imagevideo"')
+        expect(source).toContain('name="img"')
+        expect(source).toContain('name="prototypeToken.texture.src"')
+        expect(source).not.toContain('<input type="hidden" name="img"')
+        expect(source).not.toContain(
+            '<input type="hidden" name="prototypeToken.texture.src"',
+        )
         expect(source).toContain('data-action="removeImage"')
         expect(source).toContain('data-action="toggleImageTarget"')
         expect(enLang['pf2e-creature-builder.form.image.portrait']).toBe(
@@ -5318,8 +5333,8 @@ describe('immunities, resistances, and weaknesses', () => {
 
         expect(editor.dataset.imageMode).toBe('token')
         expect(preview.src).toContain('token.webp')
-        expect(imageField('img')?.value).toBe('actors/portrait.webp')
-        expect(imageField('prototypeToken.texture.src')?.value).toBe(
+        expect(imagePath('img')).toBe('actors/portrait.webp')
+        expect(imagePath('prototypeToken.texture.src')).toBe(
             'actors/token.webp',
         )
         expect(editor.querySelector('.creature-image-mode')?.textContent).toBe(
@@ -5346,7 +5361,7 @@ describe('immunities, resistances, and weaknesses', () => {
             ?.click()
         expect(editor.dataset.imageMode).toBe('portrait')
         expect(preview.src).toContain('portrait.webp')
-        expect(imageField('prototypeToken.texture.src')?.value).toBe(
+        expect(imagePath('prototypeToken.texture.src')).toBe(
             'actors/token.webp',
         )
         ui.destroy()
@@ -5361,9 +5376,9 @@ describe('immunities, resistances, and weaknesses', () => {
             .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
             ?.click()
 
-        expect(imageField('img')?.value).toBe('icons/svg/mystery-man.svg')
+        expect(imagePath('img')).toBe('icons/svg/mystery-man.svg')
         expect(preview.src).toContain('mystery-man.svg')
-        expect(imageField('prototypeToken.texture.src')?.value).toBe(
+        expect(imagePath('prototypeToken.texture.src')).toBe(
             'actors/token.webp',
         )
         expect(
@@ -5381,11 +5396,11 @@ describe('immunities, resistances, and weaknesses', () => {
             .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
             ?.click()
 
-        expect(imageField('prototypeToken.texture.src')?.value).toBe(
+        expect(imagePath('prototypeToken.texture.src')).toBe(
             'icons/svg/mystery-token.svg',
         )
         expect(preview.src).toContain('mystery-token.svg')
-        expect(imageField('img')?.value).toBe('icons/svg/mystery-man.svg')
+        expect(imagePath('img')).toBe('icons/svg/mystery-man.svg')
         ui.destroy()
     })
 
@@ -5401,10 +5416,19 @@ describe('immunities, resistances, and weaknesses', () => {
         input!.dispatchEvent(new Event('change', { bubbles: true }))
 
         expect(preview.src).toContain('icons/new.webp')
-        expect(imageField('img')?.value).toBe('icons/new.webp')
-        expect(imageField('prototypeToken.texture.src')?.value).toBe(
+        expect(imagePath('img')).toBe('icons/new.webp')
+        expect(imagePath('prototypeToken.texture.src')).toBe(
             'actors/token.webp',
         )
+
+        const portraitPicker = editor.querySelector(
+            'file-picker[name="img"]',
+        ) as HTMLInputElement
+        portraitPicker.value = 'icons/chosen.webp'
+        portraitPicker.setAttribute('value', 'actors/portrait.webp')
+        portraitPicker.dispatchEvent(new Event('change', { bubbles: true }))
+        expect(preview.src).toContain('icons/chosen.webp')
+        expect(portraitPicker.value).toBe('icons/chosen.webp')
         ui.destroy()
     })
 
@@ -5433,15 +5457,52 @@ describe('immunities, resistances, and weaknesses', () => {
         ui.destroy()
     })
 
+    it('uses the default artwork when a file picker is cleared', () => {
+        const ui = mountImageEditor()
+        const editor = imageEditor()
+        const preview = editor.querySelector('.profile-img') as HTMLImageElement
+        const portraitPicker = imagePicker('img') as HTMLInputElement
+        const portraitInput = portraitPicker.querySelector(
+            'input',
+        ) as HTMLInputElement
+
+        portraitInput.value = '   '
+        portraitInput.dispatchEvent(new Event('change', { bubbles: true }))
+        expect(preview.src).toContain('mystery-man.svg')
+        expect(portraitInput.value).toBe('   ')
+
+        portraitPicker.value = ''
+        portraitPicker.setAttribute('value', 'actors/portrait.webp')
+        portraitInput.value = 'actors/portrait.webp'
+        portraitPicker.dispatchEvent(new Event('change', { bubbles: true }))
+        expect(preview.src).toContain('mystery-man.svg')
+        expect(portraitPicker.value).toBe('')
+
+        editor
+            .querySelector<HTMLButtonElement>(
+                '[data-action="toggleImageTarget"]',
+            )
+            ?.click()
+        const tokenPicker = imagePicker(
+            'prototypeToken.texture.src',
+        ) as HTMLInputElement
+        tokenPicker.value = '   '
+        tokenPicker.setAttribute('value', 'icons/attr.webp')
+        tokenPicker.dispatchEvent(new Event('change', { bubbles: true }))
+
+        expect(preview.src).toContain('mystery-token.svg')
+        expect(tokenPicker.value).toBe('   ')
+        expect(imagePath('img')).toBe('')
+        ui.destroy()
+    })
+
     it('falls back when an image path or editor control is missing', () => {
         const ui = mountImageEditor()
         const editor = imageEditor()
         const preview = editor.querySelector('.profile-img') as HTMLImageElement
-        const portraitPicker = editor.querySelector(
-            'file-picker[data-image-target="portrait"]',
-        ) as HTMLElement
-        const tokenPicker = editor.querySelector(
-            'file-picker[data-image-target="token"]',
+        const portraitPicker = imagePicker('img') as HTMLElement
+        const tokenPicker = imagePicker(
+            'prototypeToken.texture.src',
         ) as HTMLElement
 
         editor
@@ -5451,49 +5512,22 @@ describe('immunities, resistances, and weaknesses', () => {
             .querySelector('.creature-image-mode')
             ?.dispatchEvent(new Event('change', { bubbles: true }))
 
-        const portraitInput = portraitPicker.querySelector(
-            'input',
-        ) as HTMLInputElement
-        portraitInput.value = '   '
-        portraitInput.dispatchEvent(new Event('change', { bubbles: true }))
-        expect(imageField('img')?.value).toBe('icons/svg/mystery-man.svg')
-        expect(preview.src).toContain('mystery-man.svg')
-
+        tokenPicker.querySelector('input')?.remove()
         tokenPicker.dispatchEvent(new Event('change', { bubbles: true }))
-        expect(imageField('prototypeToken.texture.src')?.value).toBe(
-            'actors/token.webp',
-        )
-        expect(preview.src).toContain('mystery-man.svg')
+        expect(preview.src).toContain('portrait.webp')
 
-        const tokenInput = tokenPicker.querySelector(
-            'input',
-        ) as HTMLInputElement
-        tokenInput.value = '   '
-        tokenPicker.removeAttribute('value')
+        editor
+            .querySelector<HTMLButtonElement>(
+                '[data-action="toggleImageTarget"]',
+            )
+            ?.click()
         tokenPicker.dispatchEvent(new Event('change', { bubbles: true }))
-        expect(imageField('prototypeToken.texture.src')?.value).toBe(
-            'icons/svg/mystery-token.svg',
-        )
-
-        ;(tokenPicker as HTMLInputElement).value = 'icons/owned.webp'
-        tokenPicker.dispatchEvent(new Event('change', { bubbles: true }))
-        expect(imageField('prototypeToken.texture.src')?.value).toBe(
-            'icons/owned.webp',
-        )
-
-        ;(tokenPicker as HTMLInputElement).value = '   '
-        tokenPicker.setAttribute('value', 'icons/attr.webp')
-        tokenPicker.dispatchEvent(new Event('change', { bubbles: true }))
-        expect(imageField('prototypeToken.texture.src')?.value).toBe(
-            'icons/attr.webp',
-        )
-
-        tokenInput.remove()
-        ;(tokenPicker as HTMLInputElement).value = 'icons/owned.webp'
-        tokenPicker.dispatchEvent(new Event('change', { bubbles: true }))
-        expect(imageField('prototypeToken.texture.src')?.value).toBe(
-            'icons/owned.webp',
-        )
+        expect(preview.src).toContain('actors/token.webp')
+        editor
+            .querySelector<HTMLButtonElement>(
+                '[data-action="toggleImageTarget"]',
+            )
+            ?.click()
 
         const stray = document.createElement('file-picker')
         editor.append(stray)
@@ -5504,7 +5538,7 @@ describe('immunities, resistances, and weaknesses', () => {
         editor
             .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
             ?.click()
-        expect(imageField('img')?.value).toBe('icons/svg/mystery-man.svg')
+        expect(imagePath('img')).toBe('icons/svg/mystery-man.svg')
         delete editor.dataset.defaultPortrait
         editor
             .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
@@ -5521,8 +5555,6 @@ describe('immunities, resistances, and weaknesses', () => {
         editor
             .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
             ?.click()
-        imageField('img')?.remove()
-        imageField('prototypeToken.texture.src')?.remove()
         preview.remove()
         editor
             .querySelector<HTMLButtonElement>('[data-action="removeImage"]')

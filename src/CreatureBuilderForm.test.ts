@@ -265,6 +265,11 @@ describe('CreatureBuilderForm', () => {
             expect(form.applyImages({ img: '' }).img).toBe(
                 'icons/svg/mystery-man.svg',
             )
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Failed to read default creature artwork',
+                expect.any(Error),
+            )
         } finally {
             delete (Actor as { implementation?: unknown }).implementation
         }

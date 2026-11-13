@@ -14,6 +14,18 @@ import type { CustomRoadmap } from '@/roadmaps/model/roadMapSchemas'
 import { globalLog } from '@/utils'
 import { RoadMapRegistry } from './RoadMapRegistry'
 
+function stubFilePicker(implementation: { browse: ReturnType<typeof vi.fn> }) {
+    vi.stubGlobal('foundry', {
+        applications: {
+            apps: {
+                FilePicker: {
+                    implementation,
+                },
+            },
+        },
+    })
+}
+
 describe('RoadMapRegistry', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -135,7 +147,7 @@ describe('RoadMapRegistry', () => {
         })
 
         it('handles missing custom roadmaps folder gracefully', async () => {
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi
                     .fn()
                     .mockRejectedValue(new Error('Folder not found')),
@@ -153,7 +165,7 @@ describe('RoadMapRegistry', () => {
         })
 
         it('handles empty custom roadmaps folder', async () => {
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({ files: [] }),
             })
 
@@ -182,7 +194,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/tank.json'],
                 }),
@@ -236,7 +248,7 @@ describe('RoadMapRegistry', () => {
                 },
             ]
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: [
                         'pf2e-creature-builder/custom-roadmaps/presets.json',
@@ -261,7 +273,7 @@ describe('RoadMapRegistry', () => {
         })
 
         it('filters non-JSON files', async () => {
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: [
                         'pf2e-creature-builder/custom-roadmaps/readme.txt',
@@ -294,7 +306,7 @@ describe('RoadMapRegistry', () => {
         })
 
         it('handles fetch errors gracefully', async () => {
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: [
                         'pf2e-creature-builder/custom-roadmaps/broken.json',
@@ -321,7 +333,7 @@ describe('RoadMapRegistry', () => {
         })
 
         it('handles JSON parse errors gracefully', async () => {
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: [
                         'pf2e-creature-builder/custom-roadmaps/invalid.json',
@@ -383,7 +395,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -433,7 +445,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -478,7 +490,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -555,7 +567,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -631,7 +643,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -666,7 +678,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -701,7 +713,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -730,7 +742,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -754,7 +766,7 @@ describe('RoadMapRegistry', () => {
                 name: 'No Stats',
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -779,7 +791,7 @@ describe('RoadMapRegistry', () => {
                 stats: ['strength', 'high'],
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -810,7 +822,7 @@ describe('RoadMapRegistry', () => {
                 },
             ]
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -854,7 +866,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -917,7 +929,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: [
                         'pf2e-creature-builder/custom-roadmaps/warrior.json',
@@ -960,7 +972,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: [
                         'pf2e-creature-builder/custom-roadmaps/innate.json',
@@ -1008,7 +1020,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: [
                         'pf2e-creature-builder/custom-roadmaps/priest.json',
@@ -1054,7 +1066,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/bard.json'],
                 }),
@@ -1098,7 +1110,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/fey.json'],
                 }),
@@ -1140,7 +1152,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: [
                         'pf2e-creature-builder/custom-roadmaps/martial.json',
@@ -1179,7 +1191,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -1211,7 +1223,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/test.json'],
                 }),
@@ -1252,7 +1264,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: ['pf2e-creature-builder/custom-roadmaps/tank.json'],
                 }),
@@ -1302,7 +1314,7 @@ describe('RoadMapRegistry', () => {
                 },
             }
 
-            vi.stubGlobal('FilePicker', {
+            stubFilePicker({
                 browse: vi.fn().mockResolvedValue({
                     files: [
                         'pf2e-creature-builder/custom-roadmaps/custom.json',
