@@ -4,6 +4,17 @@ All notable changes to the PF2E Creature Builder module are documented here.
 
 ---
 
+## Unreleased
+
+### Added
+
+- A creature image editor for selecting portrait and token images.
+
+### Fixed
+
+- Improved compatibility with the current file picker for custom roadmap loading and folder browsing.
+- Adjusted form size
+
 ## 3.1.0 Manual Input & IWR
 
 ### Added
