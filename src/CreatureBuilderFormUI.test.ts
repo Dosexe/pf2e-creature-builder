@@ -5237,4 +5237,408 @@ describe('immunities, resistances, and weaknesses', () => {
             ui.destroy()
         }
     })
+
+    const mountImageEditor = () => {
+        document.querySelector('.creatureBuilderForm')?.insertAdjacentHTML(
+            'afterbegin',
+            `
+            <div class="creature-image-editor" data-image-mode="portrait"
+                 data-default-portrait="icons/svg/mystery-man.svg"
+                 data-default-token="icons/svg/mystery-token.svg"
+                 data-portrait-label="Portrait"
+                 data-token-label="Token image">
+                <button type="button" class="creature-image-preview" data-action="browseImage" aria-label="Portrait">
+                    <img class="profile-img" alt="" src="actors/portrait.webp">
+                    <video class="profile-video" hidden muted playsinline loop preload="metadata"></video>
+                </button>
+                <span class="creature-image-mode">Portrait</span>
+                <file-picker name="img" data-image-target="portrait" value="actors/portrait.webp">
+                    <input type="text" value="actors/portrait.webp">
+                    <button type="button" class="file-picker"></button>
+                </file-picker>
+                <file-picker name="prototypeToken.texture.src" data-image-target="token" value="actors/token.webp" hidden>
+                    <input type="text" value="actors/token.webp">
+                    <button type="button" class="file-picker"></button>
+                </file-picker>
+                <button type="button" data-action="removeImage">Remove</button>
+                <button type="button" class="creature-image-toggle" data-action="toggleImageTarget">Token image</button>
+            </div>
+        `,
+        )
+        const ui = new CreatureBuilderFormUI(buildConfig())
+        ui.initialize()
+        return ui
+    }
+
+    const imageEditor = () =>
+        document.querySelector('.creature-image-editor') as HTMLElement
+
+    const imagePicker = (name: string) =>
+        imageEditor().querySelector<HTMLInputElement>(
+            `file-picker[name="${name}"]`,
+        )
+
+    const imagePath = (name: string) => {
+        const picker = imagePicker(name)
+        if (!picker) return undefined
+        if (typeof picker.value === 'string') return picker.value.trim()
+        const input = picker.querySelector('input')
+        if (input instanceof HTMLInputElement) return input.value.trim()
+        return (picker.getAttribute('value') ?? '').trim()
+    }
+
+    it('puts the image editor before the name field', () => {
+        const source = readFileSync(
+            'public/forms/creatureBuilderForm.html',
+            'utf8',
+        )
+        const editor = source.indexOf('creature-image-editor')
+        const name = source.indexOf('creatureBuilderName')
+        expect(editor).toBeGreaterThan(-1)
+        expect(editor).toBeLessThan(name)
+        expect(source).toContain('type="imagevideo"')
+        expect(source).toContain('class="profile-video"')
+        expect(source).toContain('name="img"')
+        expect(source).toContain('name="prototypeToken.texture.src"')
+        expect(source).not.toContain('<input type="hidden" name="img"')
+        expect(source).not.toContain(
+            '<input type="hidden" name="prototypeToken.texture.src"',
+        )
+        expect(source).toContain('data-action="removeImage"')
+        expect(source).toContain('data-action="toggleImageTarget"')
+        expect(enLang['pf2e-creature-builder.form.image.portrait']).toBe(
+            'Portrait',
+        )
+        expect(enLang['pf2e-creature-builder.form.image.token']).toBe(
+            'Token image',
+        )
+        expect(enLang['pf2e-creature-builder.form.image.remove']).toBe('Remove')
+    })
+
+    it('edits the portrait by default and can switch to the token image', () => {
+        const ui = mountImageEditor()
+        const editor = imageEditor()
+        const preview = editor.querySelector('.profile-img') as HTMLImageElement
+        expect(editor.dataset.imageMode).toBe('portrait')
+        expect(preview.src).toContain('portrait.webp')
+        expect(
+            editor
+                .querySelector('file-picker[data-image-target="token"]')
+                ?.hasAttribute('hidden'),
+        ).toBe(true)
+
+        editor
+            .querySelector<HTMLButtonElement>(
+                '[data-action="toggleImageTarget"]',
+            )
+            ?.click()
+
+        expect(editor.dataset.imageMode).toBe('token')
+        expect(preview.src).toContain('token.webp')
+        expect(imagePath('img')).toBe('actors/portrait.webp')
+        expect(imagePath('prototypeToken.texture.src')).toBe(
+            'actors/token.webp',
+        )
+        expect(editor.querySelector('.creature-image-mode')?.textContent).toBe(
+            'Token image',
+        )
+        expect(
+            editor.querySelector('.creature-image-toggle')?.textContent,
+        ).toBe('Portrait')
+        expect(
+            editor
+                .querySelector('file-picker[data-image-target="portrait"]')
+                ?.hasAttribute('hidden'),
+        ).toBe(true)
+        expect(
+            editor
+                .querySelector('file-picker[data-image-target="token"]')
+                ?.hasAttribute('hidden'),
+        ).toBe(false)
+
+        editor
+            .querySelector<HTMLButtonElement>(
+                '[data-action="toggleImageTarget"]',
+            )
+            ?.click()
+        expect(editor.dataset.imageMode).toBe('portrait')
+        expect(preview.src).toContain('portrait.webp')
+        expect(imagePath('prototypeToken.texture.src')).toBe(
+            'actors/token.webp',
+        )
+        ui.destroy()
+    })
+
+    it('removes only the image currently being edited', () => {
+        const ui = mountImageEditor()
+        const editor = imageEditor()
+        const preview = editor.querySelector('.profile-img') as HTMLImageElement
+
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
+            ?.click()
+
+        expect(imagePath('img')).toBe('icons/svg/mystery-man.svg')
+        expect(preview.src).toContain('mystery-man.svg')
+        expect(imagePath('prototypeToken.texture.src')).toBe(
+            'actors/token.webp',
+        )
+        expect(
+            editor.querySelector<HTMLInputElement>(
+                'file-picker[data-image-target="portrait"] input',
+            )?.value,
+        ).toBe('icons/svg/mystery-man.svg')
+
+        editor
+            .querySelector<HTMLButtonElement>(
+                '[data-action="toggleImageTarget"]',
+            )
+            ?.click()
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
+            ?.click()
+
+        expect(imagePath('prototypeToken.texture.src')).toBe(
+            'icons/svg/mystery-token.svg',
+        )
+        expect(preview.src).toContain('mystery-token.svg')
+        expect(imagePath('img')).toBe('icons/svg/mystery-man.svg')
+        ui.destroy()
+    })
+
+    it('updates the preview when the file picker changes', () => {
+        const ui = mountImageEditor()
+        const editor = imageEditor()
+        const preview = editor.querySelector('.profile-img') as HTMLImageElement
+        const input = editor.querySelector<HTMLInputElement>(
+            'file-picker[data-image-target="portrait"] input',
+        )
+        expect(input).toBeTruthy()
+        input!.value = 'icons/new.webp'
+        input!.dispatchEvent(new Event('change', { bubbles: true }))
+
+        expect(preview.src).toContain('icons/new.webp')
+        expect(imagePath('img')).toBe('icons/new.webp')
+        expect(imagePath('prototypeToken.texture.src')).toBe(
+            'actors/token.webp',
+        )
+
+        const portraitPicker = editor.querySelector(
+            'file-picker[name="img"]',
+        ) as HTMLInputElement
+        portraitPicker.value = 'icons/chosen.webp'
+        portraitPicker.setAttribute('value', 'actors/portrait.webp')
+        portraitPicker.dispatchEvent(new Event('change', { bubbles: true }))
+        expect(preview.src).toContain('icons/chosen.webp')
+        expect(portraitPicker.value).toBe('icons/chosen.webp')
+        expect(
+            editor.querySelector<HTMLVideoElement>('.profile-video')?.hidden,
+        ).toBe(true)
+        ui.destroy()
+    })
+
+    it('previews a video when it is selected and when the target changes', () => {
+        const ui = mountImageEditor()
+        const editor = imageEditor()
+        const img = editor.querySelector('.profile-img') as HTMLImageElement
+        const video = editor.querySelector('.profile-video') as HTMLVideoElement
+        const input = editor.querySelector<HTMLInputElement>(
+            'file-picker[data-image-target="portrait"] input',
+        )
+        const toggle = () =>
+            editor
+                .querySelector<HTMLButtonElement>(
+                    '[data-action="toggleImageTarget"]',
+                )
+                ?.click()
+
+        input!.value = 'tokens/wolf.webm?cache=1'
+        input!.dispatchEvent(new Event('change', { bubbles: true }))
+        expect(video.getAttribute('src')).toBe('tokens/wolf.webm?cache=1')
+        expect(video.hidden).toBe(false)
+        expect(img.hidden).toBe(true)
+
+        toggle()
+        expect(img.hidden).toBe(false)
+        expect(img.src).toContain('token.webp')
+        expect(video.hidden).toBe(true)
+        expect(video.hasAttribute('src')).toBe(false)
+
+        toggle()
+        expect(video.hidden).toBe(false)
+        expect(video.getAttribute('src')).toBe('tokens/wolf.webm?cache=1')
+        expect(img.hidden).toBe(true)
+
+        const hasVideoExtension = vi.fn((src: string) =>
+            src.endsWith('.custom'),
+        )
+        ;(globalThis as { foundry?: unknown }).foundry = {
+            helpers: {
+                media: { VideoHelper: { hasVideoExtension } },
+            },
+        }
+        try {
+            input!.value = 'tokens/wolf.custom'
+            input!.dispatchEvent(new Event('change', { bubbles: true }))
+            expect(hasVideoExtension).toHaveBeenCalledWith('tokens/wolf.custom')
+            expect(video.getAttribute('src')).toBe('tokens/wolf.custom')
+            expect(img.hidden).toBe(true)
+        } finally {
+            delete (globalThis as { foundry?: unknown }).foundry
+        }
+        ui.destroy()
+    })
+
+    it('opens the active file picker from the preview', () => {
+        const ui = mountImageEditor()
+        const editor = imageEditor()
+        let browsed = false
+        editor
+            .querySelector('file-picker[data-image-target="portrait"] button')
+            ?.addEventListener('click', () => {
+                browsed = true
+            })
+        let tokenBrowsed = false
+        editor
+            .querySelector('file-picker[data-image-target="token"] button')
+            ?.addEventListener('click', () => {
+                tokenBrowsed = true
+            })
+
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="browseImage"]')
+            ?.click()
+
+        expect(browsed).toBe(true)
+        expect(tokenBrowsed).toBe(false)
+        ui.destroy()
+    })
+
+    it('uses the default artwork when a file picker is cleared', () => {
+        const ui = mountImageEditor()
+        const editor = imageEditor()
+        const preview = editor.querySelector('.profile-img') as HTMLImageElement
+        const portraitPicker = imagePicker('img') as HTMLInputElement
+        const portraitInput = portraitPicker.querySelector(
+            'input',
+        ) as HTMLInputElement
+
+        portraitInput.value = '   '
+        portraitInput.dispatchEvent(new Event('change', { bubbles: true }))
+        expect(preview.src).toContain('mystery-man.svg')
+        expect(portraitInput.value).toBe('   ')
+
+        portraitPicker.value = ''
+        portraitPicker.setAttribute('value', 'actors/portrait.webp')
+        portraitInput.value = 'actors/portrait.webp'
+        portraitPicker.dispatchEvent(new Event('change', { bubbles: true }))
+        expect(preview.src).toContain('mystery-man.svg')
+        expect(portraitPicker.value).toBe('')
+
+        editor
+            .querySelector<HTMLButtonElement>(
+                '[data-action="toggleImageTarget"]',
+            )
+            ?.click()
+        const tokenPicker = imagePicker(
+            'prototypeToken.texture.src',
+        ) as HTMLInputElement
+        tokenPicker.value = '   '
+        tokenPicker.setAttribute('value', 'icons/attr.webp')
+        tokenPicker.dispatchEvent(new Event('change', { bubbles: true }))
+
+        expect(preview.src).toContain('mystery-token.svg')
+        expect(tokenPicker.value).toBe('   ')
+        expect(imagePath('img')).toBe('')
+        ui.destroy()
+    })
+
+    it('falls back when an image path or editor control is missing', () => {
+        const ui = mountImageEditor()
+        const editor = imageEditor()
+        const preview = editor.querySelector('.profile-img') as HTMLImageElement
+        const portraitPicker = imagePicker('img') as HTMLElement
+        const tokenPicker = imagePicker(
+            'prototypeToken.texture.src',
+        ) as HTMLElement
+
+        editor
+            .querySelector('.creature-image-mode')
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        editor
+            .querySelector('.creature-image-mode')
+            ?.dispatchEvent(new Event('change', { bubbles: true }))
+
+        tokenPicker.querySelector('input')?.remove()
+        tokenPicker.dispatchEvent(new Event('change', { bubbles: true }))
+        expect(preview.src).toContain('portrait.webp')
+
+        editor
+            .querySelector<HTMLButtonElement>(
+                '[data-action="toggleImageTarget"]',
+            )
+            ?.click()
+        tokenPicker.dispatchEvent(new Event('change', { bubbles: true }))
+        expect(preview.src).toContain('actors/token.webp')
+        editor
+            .querySelector<HTMLButtonElement>(
+                '[data-action="toggleImageTarget"]',
+            )
+            ?.click()
+
+        const stray = document.createElement('file-picker')
+        editor.append(stray)
+        stray.dispatchEvent(new Event('change', { bubbles: true }))
+
+        delete editor.dataset.defaultPortrait
+        editor.dataset.defaultPortrait = '   '
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
+            ?.click()
+        expect(imagePath('img')).toBe('icons/svg/mystery-man.svg')
+        delete editor.dataset.defaultPortrait
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
+            ?.click()
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
+            ?.click()
+
+        portraitPicker.querySelector('input')?.remove()
+        editor.dataset.defaultPortrait = 'icons/svg/other.svg'
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
+            ?.click()
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
+            ?.click()
+        preview.remove()
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
+            ?.click()
+        portraitPicker.querySelector('button')?.remove()
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="browseImage"]')
+            ?.click()
+        portraitPicker.remove()
+        editor
+            .querySelector<HTMLButtonElement>('[data-action="removeImage"]')
+            ?.click()
+
+        delete editor.dataset.portraitLabel
+        delete editor.dataset.tokenLabel
+        editor.querySelector('.creature-image-mode')?.remove()
+        editor.querySelector('.creature-image-toggle')?.remove()
+        editor.querySelector('.creature-image-preview')?.remove()
+        tokenPicker.remove()
+        const toggle = document.createElement('button')
+        toggle.type = 'button'
+        toggle.dataset.action = 'toggleImageTarget'
+        editor.append(toggle)
+        toggle.click()
+        expect(editor.dataset.imageMode).toBe('token')
+        toggle.click()
+        expect(editor.dataset.imageMode).toBe('portrait')
+        ui.destroy()
+    })
 })

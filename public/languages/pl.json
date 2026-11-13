@@ -149,5 +149,9 @@
     "pf2e-creature-builder.form.iwr.summary-double-vs": "podwójne przeciw",
     "pf2e-creature-builder.form.iwr.remove": "Usuń",
     "pf2e-creature-builder.form.iwr.value": "Wartość",
-    "pf2e-creature-builder.form.iwr.recommended": "Zalecane {min}–{max}"
+    "pf2e-creature-builder.form.iwr.recommended": "Zalecane {min}–{max}",
+
+    "pf2e-creature-builder.form.image.portrait": "Portret",
+    "pf2e-creature-builder.form.image.token": "Obraz żetonu",
+    "pf2e-creature-builder.form.image.remove": "Usuń"
 }

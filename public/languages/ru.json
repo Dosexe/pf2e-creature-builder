@@ -148,5 +148,9 @@
     "pf2e-creature-builder.form.iwr.summary-double-vs": "двойное против",
     "pf2e-creature-builder.form.iwr.remove": "Удалить",
     "pf2e-creature-builder.form.iwr.value": "Значение",
-    "pf2e-creature-builder.form.iwr.recommended": "Рекомендуется {min}–{max}"
+    "pf2e-creature-builder.form.iwr.recommended": "Рекомендуется {min}–{max}",
+
+    "pf2e-creature-builder.form.image.portrait": "Портрет",
+    "pf2e-creature-builder.form.image.token": "Изображение жетона",
+    "pf2e-creature-builder.form.image.remove": "Удалить"
 }

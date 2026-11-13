@@ -688,6 +688,96 @@ summary.collapsibleHeader {
     min-width: 0;
 }
 
+.creatureBuilderForm .creature-image-editor {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin: 0.35rem 0 0.5rem;
+}
+
+.creatureBuilderForm .creature-image-preview {
+    flex: 0 0 10rem;
+    width: 10rem;
+    height: 10rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0.5rem;
+    background: rgba(0, 0, 0, 0.15);
+    box-shadow: none;
+    cursor: pointer;
+    line-height: 0;
+    overflow: hidden;
+}
+
+.creatureBuilderForm .creature-image-preview img,
+.creatureBuilderForm .creature-image-preview video {
+    width: 10rem;
+    height: 10rem;
+    object-fit: cover;
+    object-position: top;
+    border: none;
+    border-radius: 0.5rem;
+    display: block;
+}
+
+.creatureBuilderForm .creature-image-preview img[hidden],
+.creatureBuilderForm .creature-image-preview video[hidden] {
+    display: none !important;
+}
+
+.creatureBuilderForm .creature-image-controls {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.creatureBuilderForm .creature-image-mode {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.creatureBuilderForm .creature-image-editor file-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.creatureBuilderForm .creature-image-editor file-picker[hidden] {
+    display: none !important;
+}
+
+.creatureBuilderForm .creature-image-editor file-picker input[type="text"] {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+}
+
+.creatureBuilderForm .creature-image-editor file-picker button {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 0;
+}
+
+.creatureBuilderForm .creature-image-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.creatureBuilderForm .creature-image-actions button {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 0;
+}
+
 .creatureBuilderFormModern .form-main > .stat-row,
 .creatureBuilderFormModern .collapsibleContent > .stat-row {
     margin: 0.35rem 0;
@@ -1051,6 +1141,10 @@ summary.collapsibleHeader {
    Modern Form — Two-Column Layout with Preview Sidebar
    ============================================================================ */
 
+.application.creatureBuilderForm {
+    min-width: 575px;
+}
+
 .creatureBuilderFormModern .window-content {
     overflow: hidden !important;
     overflow-x: hidden !important;
@@ -1071,7 +1165,8 @@ summary.collapsibleHeader {
 
 .creatureBuilderFormModern .form-main {
     flex: 1;
-    min-width: 0;
+    min-width: 405px;
+    box-sizing: border-box;
     overflow-y: auto;
     overflow-x: hidden;
     padding-left: 2px;

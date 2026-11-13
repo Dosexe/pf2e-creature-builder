@@ -213,5 +213,9 @@
     "pf2e-creature-builder.form.iwr.summary-double-vs": "double vs",
     "pf2e-creature-builder.form.iwr.remove": "Remove",
     "pf2e-creature-builder.form.iwr.value": "Value",
-    "pf2e-creature-builder.form.iwr.recommended": "Recommended {min}–{max}"
+    "pf2e-creature-builder.form.iwr.recommended": "Recommended {min}–{max}",
+
+    "pf2e-creature-builder.form.image.portrait": "Portrait",
+    "pf2e-creature-builder.form.image.token": "Token image",
+    "pf2e-creature-builder.form.image.remove": "Remove"
 }

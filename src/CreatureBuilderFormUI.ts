@@ -1,6 +1,6 @@
 /**
  * Creature Builder Form UI Controller
- * Handles client-side form interactions: size, traits, lore skills, and roadmap selection
+ * Handles client-side form interactions: images, size, traits, lore skills, and roadmap selection
  * This class is instantiated by the CreatureBuilderForm Application V2 after rendering
  */
 
@@ -431,6 +431,8 @@ class CreatureBuilderFormUI {
         roadmapSelect?.addEventListener('change', () => {
             this.setRoadmap(roadmapSelect)
         })
+
+        this.setupImageEditor()
     }
 
     /**
@@ -1743,6 +1745,206 @@ class CreatureBuilderFormUI {
             throw new Error(`Element with id '${this.elementId(id)}' not found`)
         }
         return element
+    }
+
+    // ========================================================================
+    // Portrait and token image
+    // ========================================================================
+
+    private setupImageEditor(): void {
+        const editor = this.root.querySelector<HTMLElement>(
+            '.creature-image-editor',
+        )
+        if (!editor) return
+        editor.addEventListener('click', (event) => {
+            const action = (event.target as Element)
+                .closest('[data-action]')
+                ?.getAttribute('data-action')
+            if (action === 'removeImage') {
+                event.preventDefault()
+                this.removeActiveImage(editor)
+            } else if (action === 'toggleImageTarget') {
+                event.preventDefault()
+                this.toggleImageTarget(editor)
+            } else if (action === 'browseImage') {
+                event.preventDefault()
+                this.browseActiveImage(editor)
+            }
+        })
+        editor.addEventListener('change', (event) => {
+            const picker = (event.target as Element).closest('file-picker')
+            if (!(picker instanceof HTMLElement)) return
+            this.syncPicker(editor, picker, event)
+        })
+        const mode = this.imageMode(editor)
+        this.showImage(editor, mode, this.storedImage(editor, mode))
+    }
+
+    private imageMode(editor: HTMLElement): 'portrait' | 'token' {
+        return editor.dataset.imageMode === 'token' ? 'token' : 'portrait'
+    }
+
+    private pickerFor(
+        editor: HTMLElement,
+        mode: 'portrait' | 'token',
+    ): HTMLElement | null {
+        return editor.querySelector<HTMLElement>(
+            `file-picker[data-image-target="${mode}"]`,
+        )
+    }
+
+    private defaultImage(
+        editor: HTMLElement,
+        mode: 'portrait' | 'token',
+    ): string {
+        const path =
+            mode === 'portrait'
+                ? editor.dataset.defaultPortrait
+                : editor.dataset.defaultToken
+        return path && path.trim() !== '' ? path : 'icons/svg/mystery-man.svg'
+    }
+
+    private pickerValue(
+        picker: HTMLElement,
+        eventTarget?: EventTarget | null,
+    ): string {
+        if (eventTarget instanceof HTMLInputElement) {
+            return eventTarget.value.trim()
+        }
+        const own = (picker as HTMLInputElement).value
+        if (typeof own === 'string') return own.trim()
+        const input = picker.querySelector('input')
+        if (input instanceof HTMLInputElement) return input.value.trim()
+        return (picker.getAttribute('value') ?? '').trim()
+    }
+
+    private setPickerValue(picker: HTMLElement, path: string): void {
+        picker.setAttribute('value', path)
+        const input = picker.querySelector('input')
+        if (input instanceof HTMLInputElement && input.value !== path) {
+            input.value = path
+        }
+        const control = picker as HTMLInputElement
+        if (control.value !== path) control.value = path
+    }
+
+    private storedImage(
+        editor: HTMLElement,
+        mode: 'portrait' | 'token',
+    ): string {
+        const picker = this.pickerFor(editor, mode)
+        const value = picker ? this.pickerValue(picker) : ''
+        return value || this.defaultImage(editor, mode)
+    }
+
+    private isVideoPath(path: string): boolean {
+        const hasVideoExtension = (
+            globalThis as {
+                foundry?: {
+                    helpers?: {
+                        media?: {
+                            VideoHelper?: {
+                                hasVideoExtension?: (src: string) => boolean
+                            }
+                        }
+                    }
+                }
+            }
+        ).foundry?.helpers?.media?.VideoHelper?.hasVideoExtension
+        if (typeof hasVideoExtension === 'function') {
+            return hasVideoExtension(path)
+        }
+        const file = path.split(/[?#]/, 1)[0]?.toLowerCase() ?? ''
+        return ['.webm', '.mp4', '.m4v', '.ogv'].some((extension) =>
+            file.endsWith(extension),
+        )
+    }
+
+    private showImage(
+        editor: HTMLElement,
+        mode: 'portrait' | 'token',
+        path: string,
+    ): void {
+        if (this.imageMode(editor) !== mode) return
+        const img = editor.querySelector<HTMLImageElement>('.profile-img')
+        const video = editor.querySelector<HTMLVideoElement>('.profile-video')
+        if (video && this.isVideoPath(path)) {
+            if (img) img.hidden = true
+            video.hidden = false
+            if (video.getAttribute('src') !== path) video.src = path
+            return
+        }
+        if (video && !video.hidden) {
+            video.pause()
+            video.removeAttribute('src')
+            video.load()
+            video.hidden = true
+        }
+        if (img) {
+            img.hidden = false
+            img.src = path
+        }
+    }
+
+    private syncPicker(
+        editor: HTMLElement,
+        picker: HTMLElement,
+        event: Event,
+    ): void {
+        const target = picker.dataset.imageTarget
+        if (target !== 'portrait' && target !== 'token') return
+        const path =
+            this.pickerValue(picker, event.target) ||
+            this.defaultImage(editor, target)
+        this.showImage(editor, target, path)
+    }
+
+    private removeActiveImage(editor: HTMLElement): void {
+        const mode = this.imageMode(editor)
+        const path = this.defaultImage(editor, mode)
+        const picker = this.pickerFor(editor, mode)
+        if (picker) this.setPickerValue(picker, path)
+        this.showImage(editor, mode, path)
+    }
+
+    private browseActiveImage(editor: HTMLElement): void {
+        const button = this.pickerFor(
+            editor,
+            this.imageMode(editor),
+        )?.querySelector('button')
+        if (button instanceof HTMLButtonElement) button.click()
+    }
+
+    private toggleImageTarget(editor: HTMLElement): void {
+        const next =
+            this.imageMode(editor) === 'portrait' ? 'token' : 'portrait'
+        editor.dataset.imageMode = next
+        for (const mode of ['portrait', 'token'] as const) {
+            const picker = this.pickerFor(editor, mode)
+            if (!picker) continue
+            if (mode === next) picker.removeAttribute('hidden')
+            else picker.setAttribute('hidden', '')
+        }
+        const portraitLabel = editor.dataset.portraitLabel ?? 'Portrait'
+        const tokenLabel = editor.dataset.tokenLabel ?? 'Token image'
+        const activeLabel = next === 'portrait' ? portraitLabel : tokenLabel
+        const inactiveLabel = next === 'portrait' ? tokenLabel : portraitLabel
+        const modeLabel = editor.querySelector<HTMLElement>(
+            '.creature-image-mode',
+        )
+        if (modeLabel) modeLabel.textContent = activeLabel
+        const toggle = editor.querySelector<HTMLElement>(
+            '.creature-image-toggle',
+        )
+        if (toggle) toggle.textContent = inactiveLabel
+        const preview = editor.querySelector<HTMLButtonElement>(
+            '.creature-image-preview',
+        )
+        if (preview) {
+            preview.title = activeLabel
+            preview.setAttribute('aria-label', activeLabel)
+        }
+        this.showImage(editor, next, this.storedImage(editor, next))
     }
 
     // ========================================================================

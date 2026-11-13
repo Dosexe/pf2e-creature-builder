@@ -12,7 +12,7 @@ A Foundry VTT module for the Pathfinder 2E and Starfinder 2E systems that lets y
 ### Key Features
 
 - Support for all official roadmaps from the [Pathfinder 2e rules](https://2e.aonprd.com/Rules.aspx?ID=2919) and [Starfinder 2e rules](https://2e.aonsrd.com/rules/1034-building-npcs)
-- Build from an existing creature — inherits attributes, skills, traits, spellcasting, strikes, and immunities, resistances, and weaknesses
+- Build from an existing creature — inherits attributes, skills, traits, spellcasting, strikes, immunities, resistances, weaknesses, and the portrait and token images
 - Lore skills, traits, and full spellcasting support
 - Support for themed spell lists on Pathfinder 2e
 - Custom roadmaps [BETA] (see [ROADMAPS.md](ROADMAPS.md))
@@ -39,6 +39,7 @@ When starting from an **existing creature**, the new creature will **inherit all
 - Spellcasting (if present)
 - Strikes
 - Immunities, resistances, and weaknesses
+- Portrait and token image
 
 Existing strikes are listed under **Strikes** with the attack name and the closest attack-bonus and damage tiers. On submit, each listed attack is copied from the original strike. Traits (including melee or ranged), attack effects, and extra damage such as persistent and splash stay as they were.
 
@@ -63,7 +64,7 @@ By default:
 
 If you plan to customize values manually rather than using a roadmap, consult the [PF2e Official Creature Building Guide](https://2e.aonprd.com/Rules.aspx?ID=995) to ensure the creature remains balanced.
 
-Once all values are set, click the **Submit** button. This will generate a new creature and automatically open its sheet. The prototype token uses the name from the form.
+Once all values are set, click the **Submit** button. This will generate a new creature and automatically open its sheet. The prototype token uses the name from the form. Its image is the token image chosen above the name.
 
 If you want to start over at any time, click **Reset to Defaults**, which will clear all changes made in the form.
 
@@ -93,6 +94,10 @@ INT [Low v]     +1    WIS [Moderate v] +4 CHA [High v]     +5
 ```
 
 Use the **Show Bonuses** checkbox at the top of the form to hide or show the bonus badges.
+
+### Portrait and token
+
+Above the name, the form shows the creature portrait. Click the picture or use the file field to choose an image. **Token image** switches the preview and the file field to the prototype token. Switch back with **Portrait**. **Remove** restores the default artwork for the image you are editing.
 
 ### Size
 

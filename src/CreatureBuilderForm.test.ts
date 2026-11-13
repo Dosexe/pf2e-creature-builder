@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as SpellCopyStrategies from '@/spellcasting/SpellCopyStrategies'
 import * as SpellListResolverModule from '@/spellcasting/SpellListResolver'
@@ -179,6 +180,129 @@ describe('CreatureBuilderForm', () => {
             name: 'Fallback',
             'prototypeToken.name': 'Fallback',
         })
+    })
+
+    it('writes the portrait and token image paths', () => {
+        const form = new CreatureBuilderForm(buildActor())
+        expect(
+            form.applyImages({
+                img: 'actors/portrait.webp',
+                'prototypeToken.texture.src': 'actors/token.webp',
+            }),
+        ).toEqual({
+            img: 'actors/portrait.webp',
+            'prototypeToken.texture.src': 'actors/token.webp',
+        })
+    })
+
+    it('replaces a blank image with the default artwork', () => {
+        const form = new CreatureBuilderForm(buildActor())
+        expect(
+            form.applyImages({
+                img: '   ',
+                'prototypeToken.texture.src': '',
+            }),
+        ).toEqual({
+            img: 'icons/svg/mystery-man.svg',
+            'prototypeToken.texture.src': 'icons/svg/mystery-man.svg',
+        })
+        expect(form.applyImages({})).toEqual({
+            img: 'icons/svg/mystery-man.svg',
+            'prototypeToken.texture.src': 'icons/svg/mystery-man.svg',
+        })
+    })
+
+    it('uses the system default artwork when a removed image is saved', () => {
+        const implementation = {
+            getDefaultArtwork: vi.fn(() => ({
+                img: 'systems/pf2e/icons/default-icons/npc.svg',
+                texture: { src: 'systems/pf2e/icons/default-icons/npc.svg' },
+            })),
+        }
+        ;(Actor as { implementation?: unknown }).implementation = implementation
+        try {
+            const actor = buildActor({
+                type: 'npc',
+                toObject: () => ({ type: 'npc', name: 'Goblin' }),
+            })
+            const form = new CreatureBuilderForm(actor)
+            expect(form.applyImages({ img: '' })).toEqual({
+                img: 'systems/pf2e/icons/default-icons/npc.svg',
+                'prototypeToken.texture.src':
+                    'systems/pf2e/icons/default-icons/npc.svg',
+            })
+            expect(implementation.getDefaultArtwork).toHaveBeenCalledWith({
+                type: 'npc',
+                name: 'Goblin',
+            })
+        } finally {
+            delete (Actor as { implementation?: unknown }).implementation
+        }
+    })
+
+    it('uses mystery-man when the system artwork omits an image', () => {
+        ;(Actor as { implementation?: unknown }).implementation = {
+            getDefaultArtwork: () => undefined,
+        }
+        try {
+            const form = new CreatureBuilderForm(buildActor({ type: 'npc' }))
+            expect(form.applyImages({})).toEqual({
+                img: 'icons/svg/mystery-man.svg',
+                'prototypeToken.texture.src': 'icons/svg/mystery-man.svg',
+            })
+        } finally {
+            delete (Actor as { implementation?: unknown }).implementation
+        }
+    })
+
+    it('falls back when default artwork cannot be read', () => {
+        ;(Actor as { implementation?: unknown }).implementation = {
+            getDefaultArtwork: () => {
+                throw new Error('unavailable')
+            },
+        }
+        try {
+            const form = new CreatureBuilderForm(buildActor())
+            expect(form.applyImages({ img: '' }).img).toBe(
+                'icons/svg/mystery-man.svg',
+            )
+            expect(globalLog).toHaveBeenCalledWith(
+                true,
+                'Failed to read default creature artwork',
+                expect.any(Error),
+            )
+        } finally {
+            delete (Actor as { implementation?: unknown }).implementation
+        }
+    })
+
+    it('exposes the creature portrait and token image', () => {
+        const form = new CreatureBuilderForm(
+            buildActor({
+                img: 'actors/portrait.webp',
+                prototypeToken: { texture: { src: 'actors/token.webp' } },
+            }),
+        )
+        const data = form.getData()
+        expect(data.img).toBe('actors/portrait.webp')
+        expect(data.tokenImg).toBe('actors/token.webp')
+        expect(data.defaultImg).toBe('icons/svg/mystery-man.svg')
+        expect(data.defaultTokenImg).toBe('icons/svg/mystery-man.svg')
+    })
+
+    it('uses the portrait when the token image is missing', () => {
+        const form = new CreatureBuilderForm(
+            buildActor({ img: 'actors/portrait.webp' }),
+        )
+        expect(form.getData().img).toBe('actors/portrait.webp')
+        expect(form.getData().tokenImg).toBe('actors/portrait.webp')
+    })
+
+    it('uses default artwork when the creature has no images', () => {
+        const form = new CreatureBuilderForm(buildActor())
+        const data = form.getData()
+        expect(data.img).toBe('icons/svg/mystery-man.svg')
+        expect(data.tokenImg).toBe('icons/svg/mystery-man.svg')
     })
 
     it('writes a creature size onto the actor', () => {
@@ -2007,6 +2131,35 @@ describe('CreatureBuilderForm', () => {
         expect(form.actor).toBe(originalActor)
     })
 
+    it('copies portrait and token images onto the cloned actor', async () => {
+        const originalActor = buildActor({ img: 'actors/old.webp' })
+        const newActor = buildActor({
+            deleteEmbeddedDocuments: vi.fn().mockResolvedValue(undefined),
+        })
+        ;(originalActor as any).clone = vi.fn().mockResolvedValue(newActor)
+        const form = new CreatureBuilderForm(originalActor)
+        vi.spyOn(form, 'applyStrike').mockResolvedValue(undefined)
+        vi.spyOn(form, 'applySpellcasting').mockResolvedValue(undefined)
+        vi.spyOn(form, 'applySkills').mockResolvedValue(undefined)
+        vi.spyOn(form, 'applyLoreSkills').mockResolvedValue(undefined)
+
+        // biome-ignore lint/complexity/useLiteralKeys: protected property
+        await form['_updateObject'](undefined as unknown as Event, {
+            [Statistics.name]: 'New Monster',
+            [Statistics.level]: '1',
+            img: 'actors/portrait.webp',
+            'prototypeToken.texture.src': 'actors/token.webp',
+        })
+
+        expect((originalActor as any).clone).toHaveBeenCalledWith(
+            expect.objectContaining({
+                img: 'actors/portrait.webp',
+                'prototypeToken.texture.src': 'actors/token.webp',
+            }),
+            { save: true },
+        )
+    })
+
     it('records the current schema version on a new Starfinder creature', async () => {
         const game = (
             globalThis as unknown as { game: Record<string, unknown> }
@@ -2194,8 +2347,11 @@ describe('CreatureBuilderForm', () => {
                 'creatureBuilderForm.html',
             )
             expect(CreatureBuilderForm.DEFAULT_OPTIONS.position).toEqual(
-                expect.objectContaining({ width: 530, height: 620 }),
+                expect.objectContaining({ width: 575, height: 620 }),
             )
+            const css = readFileSync('public/styles/module.css', 'utf8')
+            expect(css).toContain('min-width: 575px')
+            expect(css).toContain('min-width: 405px')
             expect(CreatureBuilderForm.DEFAULT_OPTIONS.window.title).toBe(
                 'PF2EMONSTERMAKER.title',
             )
