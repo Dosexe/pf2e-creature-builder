@@ -340,7 +340,7 @@ export class CreatureBuilderForm extends HandlebarsApplicationMixin(
             resizable: true,
         },
         position: {
-            width: 550,
+            width: 575,
             height: 620,
         },
         form: {

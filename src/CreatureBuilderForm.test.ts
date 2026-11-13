@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as SpellCopyStrategies from '@/spellcasting/SpellCopyStrategies'
 import * as SpellListResolverModule from '@/spellcasting/SpellListResolver'
@@ -2346,8 +2347,11 @@ describe('CreatureBuilderForm', () => {
                 'creatureBuilderForm.html',
             )
             expect(CreatureBuilderForm.DEFAULT_OPTIONS.position).toEqual(
-                expect.objectContaining({ width: 550, height: 620 }),
+                expect.objectContaining({ width: 575, height: 620 }),
             )
+            const css = readFileSync('public/styles/module.css', 'utf8')
+            expect(css).toContain('min-width: 575px')
+            expect(css).toContain('min-width: 405px')
             expect(CreatureBuilderForm.DEFAULT_OPTIONS.window.title).toBe(
                 'PF2EMONSTERMAKER.title',
             )

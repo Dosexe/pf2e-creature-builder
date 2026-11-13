@@ -1141,6 +1141,10 @@ summary.collapsibleHeader {
    Modern Form — Two-Column Layout with Preview Sidebar
    ============================================================================ */
 
+.application.creatureBuilderForm {
+    min-width: 575px;
+}
+
 .creatureBuilderFormModern .window-content {
     overflow: hidden !important;
     overflow-x: hidden !important;
@@ -1161,7 +1165,8 @@ summary.collapsibleHeader {
 
 .creatureBuilderFormModern .form-main {
     flex: 1;
-    min-width: 0;
+    min-width: 405px;
+    box-sizing: border-box;
     overflow-y: auto;
     overflow-x: hidden;
     padding-left: 2px;
